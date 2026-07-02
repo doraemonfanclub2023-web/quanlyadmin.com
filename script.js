@@ -300,13 +300,23 @@ function renderHomeData() {
 }
 
 /* ====================================================
-   6. KHỞI CHẠY KHI TẢI TRANG
+   6. KHỞI CHẠY KHI TẢI TRANG (SỬA LỖI VÒNG LẶP CHUYỂN HƯỚNG)
    ==================================================== */
 document.addEventListener('DOMContentLoaded', () => {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    const isLoginPage = window.location.pathname.endsWith('index.html') || window.location.pathname === '/' || window.location.pathname.endsWith('quanlyadmin/');
+
     if (currentUser) {
-        showPage('home'); 
+        // Nếu đã đăng nhập thành công mà cố vào trang đăng nhập, tự động đá sang dashboard
+        if (isLoginPage) {
+            window.location.href = "dashboard.html";
+        } else {
+            showPage('home'); 
+        }
     } else {
-        window.location.href = "index.html"; 
+        // Nếu chưa đăng nhập và KHÔNG PHẢI đang ở trang login, thì mới đẩy ra trang login
+        if (!isLoginPage) {
+            window.location.href = "index.html"; 
+        }
     }
 });
