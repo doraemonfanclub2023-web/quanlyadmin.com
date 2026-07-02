@@ -3,37 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ thống Quản lý Doraemon Fanclub</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Doraemon Fanclub Admin</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { display: flex; height: 100vh; background: #f8fafc; color: #1e293b; }
+        
+        /* Sidebar */
+        .sidebar { width: 260px; background: #1e293b; color: #fff; display: flex; flex-direction: column; justify-content: space-between; }
+        .sidebar-brand { padding: 24px 20px; font-size: 18px; font-weight: 700; border-bottom: 1px solid #334155; background: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; }
+        .sidebar-menu { list-style: none; padding: 15px 0; }
+        .sidebar-menu li { padding: 14px 24px; cursor: pointer; transition: 0.2s; font-size: 15px; display: flex; align-items: center; gap: 10px; color: #cbd5e1; }
+        .sidebar-menu li:hover { background: #334155; color: #fff; }
+        .btn-logout { padding: 20px 24px; cursor: pointer; background: #0f172a; border-top: 1px solid #334155; color: #f87171; font-weight: 600; text-align: left; }
+        .btn-logout:hover { background: #dc2626; color: #fff; }
+
+        /* Main Content */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        .header { background: #fff; padding: 18px 40px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; justify-content: flex-end; align-items: center; }
+        .content-body { padding: 40px; flex: 1; }
+
+        /* Dashboard UI Elements */
+        h2 { color: #1e3a8a; font-size: 24px; margin-bottom: 25px; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 25px; margin-bottom: 35px; }
+        .card { background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; border-top: 4px solid #3b82f6; }
+        .card h3 { font-size: 14px; color: #64748b; text-transform: uppercase; margin-bottom: 10px; }
+        .card h1 { font-size: 36px; color: #1e293b; }
+        
+        .activity { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .activity h3 { margin-bottom: 20px; font-size: 16px; color: #334155; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
+        .activity ul { list-style: none; }
+        .activity li { padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; line-height: 1.6; }
+        .activity li:last-child { border-bottom: none; }
+
+        /* Tables & Forms */
+        .account-form-box { background: #fff; padding: 25px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 30px; }
+        .inline-form { display: flex; gap: 15px; flex-wrap: wrap; }
+        .inline-form input, .inline-form select, .inline-form textarea { padding: 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px; }
+        .inline-form input { flex: 1; min-width: 200px; }
+        .btn-create { background: #10b981; color: #fff; border: none; padding: 10px 20px; border-radius: 4px; font-weight: 600; cursor: pointer; }
+        .btn-create:hover { background: #059669; }
+        
+        .table-container { background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; margin-top: 15px; }
+        .table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+        .table th { background: #f8fafc; padding: 14px 20px; font-weight: 600; color: #475569; border-bottom: 2px solid #e2e8f0; }
+        .table td { padding: 14px 20px; border-bottom: 1px solid #f1f5f9; }
+        .btn-delete { background: #ef4444; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .btn-delete:hover { background: #dc2626; }
+        .badge-default { color: #94a3b8; font-style: italic; }
+    </style>
 </head>
 <body>
 
-    <!-- HEADER (ĐÃ XÓA HOÀN TOÀN Ô XIN CHÀO) -->
-    <header class="header">
-        <h2>DORAEMON FANCLUB ADMIN</h2>
-    </header>
-
-    <div class="container">
-        <!-- SIDEBAR TRÁI -->
-        <aside class="sidebar">
-            <ul>
-                <li><a href="javascript:void(0);" onclick="showPage('home')">Trang chủ</a></li>
-                <li><a href="javascript:void(0);" onclick="showPage('members')">Quản lý thành viên</a></li>
-                <li><a href="javascript:void(0);" onclick="showPage('game')">Quản lý Mini Game</a></li>
-                <li><a href="javascript:void(0);" onclick="showPage('notice')">Quản lý thông báo</a></li>
-                <li><a href="javascript:void(0);" onclick="showPage('setting')">Cài đặt hệ thống</a></li>
-                <li><a href="javascript:void(0);" class="logout" onclick="logout()">Đăng xuất</a></li>
+    <!-- SIDEBAR DIỀU HƯỚNG SPA -->
+    <div class="sidebar">
+        <div>
+            <div class="sidebar-brand">Doraemon Fanclub Admin</div>
+            <ul class="sidebar-menu">
+                <li onclick="showPage('home')">Trang chủ</li>
+                <li onclick="showPage('members')">Quản lý thành viên</li>
+                <li onclick="showPage('notice')">Quản lý thông báo</li>
+                <li onclick="showPage('setting')">Cài đặt hệ thống</li>
             </ul>
-        </aside>
-
-        <!-- NỘI DUNG CHÍNH -->
-        <main class="content">
-            <div id="pageContent">
-                <!-- JavaScript sẽ tự động đổ giao diện mặc định vào đây -->
-            </div>
-        </main>
+        </div>
+        <div class="btn-logout" onclick="logout()">Đăng xuất</div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- KHU VỰC HIỂN THỊ NỘI DUNG CHÍNH -->
+    <div class="main-content">
+        <div class="header">
+            <span style="font-weight: 600; color: #475569;">Hệ thống Quản trị Đám mây 🌐</span>
+        </div>
+        <div class="content-body" id="pageContent">
+            <!-- Dữ liệu trang động được điền từ Firebase qua hàm showPage() -->
+        </div>
+    </div>
+
+    <!-- KHAI BÁO TYPE="MODULE" ĐỂ KẾT NỐI FIREBASE -->
+    <script type="module" src="script.js"></script>
 </body>
 </html>
