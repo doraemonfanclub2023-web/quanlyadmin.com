@@ -1,325 +1,252 @@
-/* ====================================================
-   1. KHỞI TẠO VÀ ĐỒNG BỘ DỮ LIỆU CHUẨN (TUYỆT ĐỐI KHÔNG GHI ĐÈ)
-   ==================================================== */
-if (!localStorage.getItem('users')) {
-    const defaultUsers = [
-        { username: 'BQT001', password: '123', name: 'Nguyễn Tuấn Khải', role: 'Ban Quản Trị' },
-        { username: 'BQT002', password: '123', name: 'Cao Ngọc Duyên', role: 'Admin' }
-    ];
-    localStorage.setItem('users', JSON.stringify(defaultUsers));
-}
+// 1. CẤU HÌNH CLOUD FIREBASE CỦA BẠN
+const firebaseConfig = {
+  apiKey: "AIzaSyC-U9L1plaQ6pcP7Iecg4RO0GirBjunISM",
+  authDomain: "admin-27099.firebaseapp.com",
+  databaseURL: "https://admin-27099-default-rtdb.firebaseio.com", // Đã bổ sung URL kết nối data đám mây
+  projectId: "admin-27099",
+  storageBucket: "admin-27099.firebasestorage.app",
+  messagingSenderId: "510976750235",
+  appId: "1:510976750235:web:78d3e138d302235a788c3e",
+  measurementId: "G-GG545GEB8M"
+};
 
-if (!localStorage.getItem('notices')) {
-    const defaultNotices = [
-        { id: 1, title: 'Cập nhật hệ thống vận hành', content: 'Hệ thống vận hành ổn định trên nền tảng LocalStorage thời gian thực.', date: '02/07/2026' },
-        { id: 2, title: 'Đồng bộ hóa dữ liệu', content: 'Cập nhật và đồng bộ hóa tự động dữ liệu nội bộ Dora Fanclub Việt Nam.', date: '02/07/2026' }
-    ];
-    localStorage.setItem('notices', JSON.stringify(defaultNotices));
-}
+// Khởi tạo các module kết nối trực tiếp của Firebase qua CDN đám mây
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, set, get, child, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
 /* ====================================================
-   2. HÀM XỬ LÝ ĐĂNG NHẬP & ĐĂNG XUẤT
+   2. KHỞI TẠO TÀI KHOẢN GỐC TRÊN CLOUD (CHẠY DUY NHẤT 1 LẦN ĐẦU)
    ==================================================== */
-function login() {
+async function initDatabase() {
+    const dbRef = ref(db);
+    const snapshot = await get(child(dbRef, 'users'));
+    if (!snapshot.exists()) {
+        const defaultUsers = {
+            "BQT001": { username: 'BQT001', password: '123', name: 'Nguyễn Tuấn Khải', role: 'Ban Quản Trị' },
+            "BQT002": { username: 'BQT002', password: '123', name: 'Cao Ngọc Duyên', role: 'Admin' }
+        };
+        await set(ref(db, 'users'), defaultUsers);
+    }
+}
+initDatabase();
+
+/* ====================================================
+   3. XỬ LÝ ĐĂNG NHẬP / ĐĂNG XUẤT (BẢO MẬT PHIÊN BẰNG SESSION)
+   ==================================================== */
+window.login = async function() {
     const userInp = document.getElementById('username')?.value.trim();
     const passInp = document.getElementById('password')?.value.trim();
     const errorDiv = document.getElementById('error');
 
     if (!userInp || !passInp) return;
 
-    const userList = JSON.parse(localStorage.getItem('users')) || [];
-    const validUser = userList.find(u => u.username === userInp && u.password === passInp);
-
-    if (validUser) {
-        localStorage.setItem('currentUser', JSON.stringify(validUser));
-        if (errorDiv) errorDiv.style.display = 'none';
-        window.location.href = "dashboard.html";
-    } else {
-        if (errorDiv) errorDiv.style.display = 'block';
+    const snapshot = await get(ref(db, `users/${userInp}`));
+    if (snapshot.exists()) {
+        const userData = snapshot.val();
+        if (userData.password === passInp) {
+            sessionStorage.setItem('currentUser', JSON.stringify(userData));
+            window.location.href = "dashboard.html";
+            return;
+        }
     }
+    if (errorDiv) errorDiv.style.display = 'block';
 }
 
-function logout() {
-    localStorage.removeItem('currentUser');
+window.logout = function() {
+    sessionStorage.removeItem('currentUser');
     window.location.href = "index.html";
 }
 
 /* ====================================================
-   3. CƠ CHẾ ĐỔ DỮ LIỆU ĐỘNG (SPA) + PHÂN QUYỀN TRUY CẬP
+   4. SPA ROUTER & RENDER HTML GIAO DIỆN ĐỘNG
    ==================================================== */
-function getPageContent(pageId, userRole) {
-    const noticeList = JSON.parse(localStorage.getItem('notices')) || [];
-    
+window.getPageContent = function(pageId, userRole) {
     const pages = {
         home: `
             <h2>Tổng quan hệ thống</h2>
             <div class="cards">
-                <div class="card">
-                    <h3>👥 Thành viên</h3>
-                    <h1 id="countMembers">7</h1>
-                </div>
-                <div class="card">
-                    <h3>🎁 Mini Game</h3>
-                    <h1>0</h1>
-                </div>
-                <div class="card">
-                    <h3>📢 Thông báo</h3>
-                    <h1 id="countNotices">${noticeList.length}</h1>
-                </div>
+                <div class="card"><h3>👥 Thành viên</h3><h1 id="countMembers">7</h1></div>
+                <div class="card"><h3>🎁 Mini Game</h3><h1>0</h1></div>
+                <div class="card"><h3>📢 Thông báo</h3><h1 id="countNotices">0</h1></div>
             </div>
             <div class="activity">
                 <h3>📋 Hoạt động hệ thống gần đây</h3>
-                <ul id="homeNoticeList"></ul>
+                <ul id="homeNoticeList">Đang kết nối Cloud...</ul>
             </div>
         `,
         members: `
-            <h2>Quản lý thành viên (Tài khoản)</h2>
-            <br>
+            <h2>Quản lý thành viên (Tài khoản)</h2><br>
             <div class="account-form-box">
                 <h3>➕ Thêm tài khoản quản trị mới</h3>
                 <div class="inline-form">
                     <input type="text" id="newUsername" placeholder="Mã tài khoản...">
                     <input type="password" id="newPassword" placeholder="Mật khẩu...">
-                    <select id="newRole">
-                        <option value="Admin">Admin</option>
-                        <option value="Ban Quản Trị">Ban Quản Trị</option>
-                    </select>
+                    <select id="newRole"><option value="Admin">Admin</option><option value="Ban Quản Trị">Ban Quản Trị</option></select>
                     <button onclick="addAccount()" class="btn-create">Tạo tài khoản</button>
                 </div>
             </div>
-
             <div class="table-container">
-                <h3>📋 Danh sách tài khoản hệ thống</h3>
                 <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Mã Tài Khoản</th>
-                            <th>Chức vụ</th>
-                            <th>Thao tác</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>Mã Tài Khoản</th><th>Chức vụ</th><th>Thao tác</th></tr></thead>
                     <tbody id="userTableBody"></tbody>
                 </table>
             </div>
         `,
-        game: `
-            <h2>Quản lý Mini Game</h2>
-            <div class="activity" style="margin-top: 20px;">
-                <p>Chức năng quản lý các mini-game Doraemon đang được thiết lập cấu trúc dữ liệu...</p>
-            </div>
-        `,
         notice: `
-            <h2>Quản lý thông báo</h2>
-            <br>
-            <!-- ẨN BIỂU MẪU ĐĂNG NẾU LÀ ADMIN -->
+            <h2>Quản lý thông báo</h2><br>
             ${userRole === 'Admin' ? '' : `
             <div class="account-form-box">
                 <h3>📝 Soạn thông báo mới</h3>
                 <div class="inline-form" style="display: flex; flex-direction: column; gap: 15px;">
-                    <input type="text" id="noticeTitle" placeholder="Nhập tiêu đề thông báo..." style="width: 100%;">
-                    <textarea id="noticeContent" placeholder="Nhập nội dung chi tiết thông báo..." style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px; min-height: 80px; font-family: inherit;"></textarea>
-                    <button onclick="addNotice()" class="btn-create" style="align-self: flex-start; min-width: 150px;">Đăng thông báo</button>
+                    <input type="text" id="noticeTitle" placeholder="Nhập tiêu đề thông báo...">
+                    <textarea id="noticeContent" placeholder="Nhập nội dung..."></textarea>
+                    <button onclick="addNotice()" class="btn-create">Đăng thông báo</button>
                 </div>
             </div>
             `}
-
             <div class="table-container">
-                <h3>📋 Nhật ký thông báo đã đăng</h3>
                 <table class="table">
-                    <thead>
-                        <tr>
-                            <th style="width: 25%;">Ngày đăng</th>
-                            <th style="width: 30%;">Tiêu đề</th>
-                            <th style="width: 35%;">Nội dung</th>
-                            <th style="width: 10%;">Thao tác</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>Ngày đăng</th><th>Tiêu đề</th><th>Nội dung</th><th>Thao tác</th></tr></thead>
                     <tbody id="noticeTableBody"></tbody>
                 </table>
             </div>
-        `,
-        setting: `
-            <h2>Cài đặt hệ thống</h2>
-            <div class="activity" style="margin-top: 20px;">
-                <p>Cấu hình hệ thống sâu, bảo mật biểu mẫu, và dọn dẹp bộ nhớ đệm cache LocalStorage.</p>
-            </div>
         `
     };
-    return pages[pageId] || '';
+    return pages[pageId] || '<h2>Chức năng đang phát triển</h2>';
 }
 
-function showPage(pageId) {
-    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    const role = currentUser ? currentUser.role : '';
-    
-    if (role === 'Admin' && pageId === 'setting') {
-        alert('⛔ CẢNH BÁO BẢO MẬT:\nTài khoản cấp độ "Admin" không có quyền truy cập vào mục Cài đặt hệ thống!\nVui lòng liên hệ Ban Quản Trị.');
+window.showPage = function(pageId) {
+    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+    if (!currentUser) return;
+
+    if (currentUser.role === 'Admin' && pageId === 'setting') {
+        alert('⛔ Bạn không có quyền truy cập vào Cài đặt hệ thống!');
         return;
     }
 
     const contentDiv = document.getElementById('pageContent');
     if (contentDiv) {
-        contentDiv.innerHTML = getPageContent(pageId, role);
+        contentDiv.innerHTML = getPageContent(pageId, currentUser.role);
         
-        if (pageId === 'members') { renderUserTable(); }
-        if (pageId === 'home') { renderHomeData(); }
-        if (pageId === 'notice') { renderNoticeTable(); }
+        if (pageId === 'home') listenToHomeData();
+        if (pageId === 'notice') listenToNoticeTable();
+        if (pageId === 'members') listenToUserTable();
     }
 }
 
 /* ====================================================
-   4. LOGIC QUẢN LÝ TÀI KHOẢN
+   5. ĐỒNG BỘ REALTIME DỮ LIỆU TỰ ĐỘNG TỪ CLOUD (KHÔNG CẦN F5)
    ==================================================== */
-function renderUserTable() {
-    const tbody = document.getElementById('userTableBody');
-    if (!tbody) return;
-    
-    const userList = JSON.parse(localStorage.getItem('users')) || [];
-    tbody.innerHTML = '';
+function listenToHomeData() {
+    onValue(ref(db, 'notices'), (snapshot) => {
+        const homeNoticeUl = document.getElementById('homeNoticeList');
+        const countNoticesEl = document.getElementById('countNotices');
+        if (!homeNoticeUl) return;
 
-    userList.forEach(user => {
-        let actionHTML = `<button onclick="deleteAccount('${user.username}')" class="btn-delete">Xóa</button>`;
-        if (user.username === 'BQT001' || user.username === 'BQT002') {
-            actionHTML = `<span class="badge-default">Hệ thống</span>`;
+        homeNoticeUl.innerHTML = '';
+        if (!snapshot.exists()) {
+            homeNoticeUl.innerHTML = '<li>Chưa có thông báo nào trên hệ thống đám mây.</li>';
+            if (countNoticesEl) countNoticesEl.innerText = '0';
+            return;
         }
 
-        tbody.innerHTML += `
-            <tr>
-                <td><strong>${user.username}</strong></td>
-                <td>${user.role}</td>
-                <td>${actionHTML}</td>
-            </tr>
-        `;
+        const notices = [];
+        snapshot.forEach((childSnapshot) => {
+            notices.unshift({ id: childSnapshot.key, ...childSnapshot.val() });
+        });
+
+        if (countNoticesEl) countNoticesEl.innerText = notices.length;
+        notices.forEach(n => {
+            homeNoticeUl.innerHTML += `<li><strong>[${n.date}] ${n.title}:</strong> ${n.content}</li>`;
+        });
     });
 }
 
-function addAccount() {
-    const username = document.getElementById('newUsername')?.value.trim();
-    const password = document.getElementById('newPassword')?.value.trim();
-    const role = document.getElementById('newRole')?.value;
+function listenToNoticeTable() {
+    onValue(ref(db, 'notices'), (snapshot) => {
+        const tbody = document.getElementById('noticeTableBody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
 
-    if (!username || !password) {
-        alert('Vui lòng điền đầy đủ Mã tài khoản và Mật khẩu!');
-        return;
-    }
+        if (!snapshot.exists()) return;
 
-    let userList = JSON.parse(localStorage.getItem('users')) || [];
-    if (userList.some(user => user.username === username)) {
-        alert('Mã tài khoản này đã tồn tại trên hệ thống!');
-        return;
-    }
-
-    userList.push({ username, password, name: 'Thành viên BQT', role });
-    localStorage.setItem('users', JSON.stringify(userList));
-    alert(`Đã tạo thành công tài khoản ${username}!`);
-    renderUserTable();
-}
-
-function deleteAccount(username) {
-    if (confirm(`Bạn có chắc chắn muốn xóa tài khoản ${username}?`)) {
-        let userList = JSON.parse(localStorage.getItem('users')) || [];
-        userList = userList.filter(user => user.username !== username);
-        localStorage.setItem('users', JSON.stringify(userList));
-        renderUserTable();
-    }
-}
-
-/* ====================================================
-   5. LOGIC THÔNG BÁO ĐỘNG
-   ==================================================== */
-function renderNoticeTable() {
-    const tbody = document.getElementById('noticeTableBody');
-    if (!tbody) return;
-
-    const noticeList = JSON.parse(localStorage.getItem('notices')) || [];
-    tbody.innerHTML = '';
-
-    noticeList.forEach(notice => {
-        tbody.innerHTML += `
-            <tr>
-                <td>${notice.date}</td>
-                <td><strong>${notice.title}</strong></td>
-                <td>${notice.content}</td>
-                <td><button onclick="deleteNotice(${notice.id})" class="btn-delete">Xóa</button></td>
-            </tr>
-        `;
+        snapshot.forEach((childSnapshot) => {
+            const key = childSnapshot.key;
+            const n = childSnapshot.val();
+            tbody.innerHTML = `
+                <tr>
+                    <td>${n.date}</td>
+                    <td><strong>${n.title}</strong></td>
+                    <td>${n.content}</td>
+                    <td><button onclick="deleteNotice('${key}')" class="btn-delete">Xóa</button></td>
+                </tr>
+            ` + tbody.innerHTML;
+        });
     });
 }
 
-function addNotice() {
+window.addNotice = async function() {
     const title = document.getElementById('noticeTitle')?.value.trim();
     const content = document.getElementById('noticeContent')?.value.trim();
+    if (!title || !content) return alert('Vui lòng điền đủ tiêu đề và nội dung!');
 
-    if (!title || !content) {
-        alert('Vui lòng nhập đầy đủ tiêu đề và nội dung thông báo!');
-        return;
-    }
-
-    let noticeList = JSON.parse(localStorage.getItem('notices')) || [];
     const today = new Date();
     const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
 
-    const newNotice = {
-        id: Date.now(),
-        title: title,
-        content: content,
-        date: dateStr
-    };
-
-    noticeList.unshift(newNotice);
-    localStorage.setItem('notices', JSON.stringify(noticeList));
-    
-    alert('Đăng thông báo hệ thống thành công!');
-    renderNoticeTable();
+    await push(ref(db, 'notices'), { title, content, date: dateStr });
+    alert('Đăng thành công lên Cloud toàn hệ thống!');
 }
 
-function deleteNotice(id) {
-    if (confirm('Bạn có chắc muốn xóa thông báo này?')) {
-        let noticeList = JSON.parse(localStorage.getItem('notices')) || [];
-        noticeList = noticeList.filter(n => n.id !== id);
-        localStorage.setItem('notices', JSON.stringify(noticeList));
-        renderNoticeTable();
+window.deleteNotice = async function(key) {
+    if (confirm('Xóa thông báo này trên Cloud?')) {
+        await remove(ref(db, `notices/${key}`));
     }
 }
 
-function renderHomeData() {
-    const noticeList = JSON.parse(localStorage.getItem('notices')) || [];
-    
-    const countMembersEl = document.getElementById('countMembers');
-    if (countMembersEl) countMembersEl.innerText = '7';
+function listenToUserTable() {
+    onValue(ref(db, 'users'), (snapshot) => {
+        const tbody = document.getElementById('userTableBody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
 
-    const countNoticesEl = document.getElementById('countNotices');
-    if (countNoticesEl) countNoticesEl.innerText = noticeList.length;
+        snapshot.forEach((childSnapshot) => {
+            const u = childSnapshot.val();
+            let actionHTML = `<button onclick="deleteAccount('${u.username}')" class="btn-delete">Xóa</button>`;
+            if (u.username === 'BQT001' || u.username === 'BQT002') actionHTML = `<span>Hệ thống</span>`;
 
-    const homeNoticeUl = document.getElementById('homeNoticeList');
-    if (homeNoticeUl) {
-        homeNoticeUl.innerHTML = '';
-        if (noticeList.length === 0) {
-            homeNoticeUl.innerHTML = '<li>Chưa có hoạt động hay thông báo nào trên hệ thống.</li>';
-        } else {
-            noticeList.forEach(notice => {
-                homeNoticeUl.innerHTML += `<li><strong>[${notice.date}] ${notice.title}:</strong> ${notice.content}</li>`;
-            });
-        }
+            tbody.innerHTML += `<tr><td><strong>${u.username}</strong></td><td>${u.role}</td><td>${actionHTML}</td></tr>`;
+        });
+    });
+}
+
+window.addAccount = async function() {
+    const username = document.getElementById('newUsername')?.value.trim();
+    const password = document.getElementById('newPassword')?.value.trim();
+    const role = document.getElementById('newRole')?.value;
+    if (!username || !password) return alert('Thiếu thông tin tạo tài khoản!');
+
+    await set(ref(db, `users/${username}`), { username, password, role });
+    alert('Thêm tài khoản đồng bộ thành công!');
+}
+
+window.deleteAccount = async function(username) {
+    if (confirm('Xóa tài khoản này khỏi hệ thống đám mây?')) {
+        await remove(ref(db, `users/${username}`));
     }
 }
 
-/* ====================================================
-   6. KHỞI CHẠY KHI TẢI TRANG
-   ==================================================== */
+// 6. KHỞI CHẠY KHI TẢI TRANG
 document.addEventListener('DOMContentLoaded', () => {
-    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
     const isLoginPage = document.getElementById('username') !== null;
 
     if (currentUser) {
-        if (isLoginPage) {
-            window.location.href = "dashboard.html";
-        } else {
-            showPage('home'); 
-        }
+        if (isLoginPage) window.location.href = "dashboard.html";
+        else showPage('home');
     } else {
-        if (!isLoginPage) {
-            window.location.href = "index.html"; 
-        }
+        if (!isLoginPage) window.location.href = "index.html";
     }
 });
