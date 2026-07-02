@@ -1,13 +1,22 @@
 /* ====================================================
    1. KHỞI TẠO DỮ LIỆU BAN ĐẦU TRONG LOCALSTORAGE
    ==================================================== */
-// Khởi tạo cố định đúng 2 tài khoản phân quyền khác nhau
+// Khởi tạo 2 tài khoản phân quyền cố định
 if (!localStorage.getItem('users')) {
     const defaultUsers = [
-        { username: 'BQT001', password: '123', name: 'BQT', role: 'Ban Quản Trị' },
-        { username: 'BQT002', password: '123', name: 'ADMIN', role: 'Admin' }
+        { username: 'BQT001', password: '123', name: 'Nguyễn Tuấn Khải', role: 'Ban Quản Trị' },
+        { username: 'BQT002', password: '123', name: 'Cao Ngọc Duyên', role: 'Admin' }
     ];
     localStorage.setItem('users', JSON.stringify(defaultUsers));
+}
+
+// Khởi tạo dữ liệu thông báo mẫu nếu chưa có
+if (!localStorage.getItem('notices')) {
+    const defaultNotices = [
+        { id: 1, title: 'Cập nhật hệ thống vận hành', content: 'Hệ thống vận hành ổn định trên nền tảng LocalStorage thời gian thực.', date: '02/07/2026' },
+        { id: 2, title: 'Đồng bộ hóa dữ liệu', content: 'Cập nhật và đồng bộ hóa tự động dữ liệu nội bộ Dora Fanclub Việt Nam.', date: '02/07/2026' }
+    ];
+    localStorage.setItem('notices', JSON.stringify(defaultNotices));
 }
 
 /* ====================================================
@@ -44,7 +53,8 @@ const pages = {
         <div class="cards">
             <div class="card">
                 <h3>👥 Thành viên</h3>
-                <h1 id="countMembers">2</h1>
+                <!-- Theo hình image_6d3881.png: Cố định mặc định hiển thị là 7 người -->
+                <h1 id="countMembers">7</h1>
             </div>
             <div class="card">
                 <h3>🎁 Mini Game</h3>
@@ -52,14 +62,13 @@ const pages = {
             </div>
             <div class="card">
                 <h3>📢 Thông báo</h3>
-                <h1>2</h1>
+                <h1 id="countNotices">2</h1>
             </div>
         </div>
         <div class="activity">
             <h3>📋 Hoạt động hệ thống gần đây</h3>
-            <ul>
-                <li>Hệ thống vận hành ổn định trên nền tảng LocalStorage thời gian thực.</li>
-                <li>Cập nhật và đồng bộ hóa tự động dữ liệu nội bộ Dora Fanclub Việt Nam.</li>
+            <ul id="homeNoticeList">
+                <!-- Thông báo động sẽ được đồng bộ hiển thị tại đây -->
             </ul>
         </div>
     `,
@@ -71,7 +80,7 @@ const pages = {
             <div class="inline-form">
                 <input type="text" id="newUsername" placeholder="Mã tài khoản...">
                 <input type="password" id="newPassword" placeholder="Mật khẩu...">
-                <input type="text" id="newName" placeholder="Họ và tên...">
+                <!-- Theo hình image_6d3800.png: Đã ẩn ô nhập Họ và tên -->
                 <select id="newRole">
                     <option value="Admin">Admin</option>
                     <option value="Ban Quản Trị">Ban Quản Trị</option>
@@ -86,7 +95,7 @@ const pages = {
                 <thead>
                     <tr>
                         <th>Mã Tài Khoản</th>
-                        <th>Họ và Tên</th>
+                        <!-- Theo hình image_6d3800.png: Đã loại bỏ cột Họ và tên dùng chung -->
                         <th>Chức vụ</th>
                         <th>Thao tác</th>
                     </tr>
@@ -105,8 +114,32 @@ const pages = {
     `,
     notice: `
         <h2>Quản lý thông báo</h2>
-        <div class="activity" style="margin-top: 20px;">
-            <p>Chức năng cập nhật, gửi thông báo fanpage đang được kết nối API nội bộ...</p>
+        <br>
+        <!-- Theo hình image_6d3b9e.png: Thêm Form tự soạn thông báo -->
+        <div class="account-form-box">
+            <h3>📝 Soạn thông báo mới</h3>
+            <div class="inline-form" style="display: flex; flex-direction: column; gap: 15px;">
+                <input type="text" id="noticeTitle" placeholder="Nhập tiêu đề thông báo..." style="width: 100%;">
+                <textarea id="noticeContent" placeholder="Nhập nội dung chi tiết thông báo..." style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px; min-height: 80px; font-family: inherit;"></textarea>
+                <button onclick="addNotice()" class="btn-create" style="align-self: flex-start; min-width: 150px;">Đăng thông báo</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <h3>📋 Nhật ký thông báo đã đăng</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">Ngày đăng</th>
+                        <th style="width: 30%;">Tiêu đề</th>
+                        <th style="width: 35%;">Nội dung</th>
+                        <th style="width: 10%;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="noticeTableBody">
+                    <!-- Danh sách bài đăng thông báo hiển thị ở đây -->
+                </tbody>
+            </table>
         </div>
     `,
     setting: `
@@ -117,14 +150,12 @@ const pages = {
     `
 };
 
-// Hàm hiển thị trang có tích hợp KIỂM TRA QUYỀN TRUY CẬP
 function showPage(pageId) {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     
-    // Nếu tài khoản hiện tại là Admin mà cố tình bấm vào "Cài đặt hệ thống" (setting)
     if (currentUser && currentUser.role === 'Admin' && pageId === 'setting') {
         alert('⛔ CẢNH BÁO BẢO MẬT:\nTài khoản cấp độ "Admin" không có quyền truy cập vào mục Cài đặt hệ thống!\nVui lòng liên hệ Ban Quản Trị.');
-        return; // Chặn đứng hành động, không cho đổi trang
+        return;
     }
 
     const contentDiv = document.getElementById('pageContent');
@@ -132,12 +163,13 @@ function showPage(pageId) {
         contentDiv.innerHTML = pages[pageId];
         
         if (pageId === 'members') { renderUserTable(); }
-        if (pageId === 'home') { updateHomeCount(); }
+        if (pageId === 'home') { renderHomeData(); }
+        if (pageId === 'notice') { renderNoticeTable(); }
     }
 }
 
 /* ====================================================
-   4. LOGIC XỬ LÝ QUẢN LÝ TÀI KHOẢN (LOCALSTORAGE)
+   4. LOGIC QUẢN LÝ TÀI KHOẢN (ĐÃ ẨN DANH TÍNH DÙNG CHUNG)
    ==================================================== */
 function renderUserTable() {
     const tbody = document.getElementById('userTableBody');
@@ -152,10 +184,10 @@ function renderUserTable() {
             actionHTML = `<span class="badge-default">Hệ thống</span>`;
         }
 
+        // Bỏ hiển thị cột họ tên theo hình ảnh chỉ định
         tbody.innerHTML += `
             <tr>
                 <td><strong>${user.username}</strong></td>
-                <td>${user.name}</td>
                 <td>${user.role}</td>
                 <td>${actionHTML}</td>
             </tr>
@@ -166,11 +198,10 @@ function renderUserTable() {
 function addAccount() {
     const username = document.getElementById('newUsername').value.trim();
     const password = document.getElementById('newPassword').value.trim();
-    const name = document.getElementById('newName').value.trim();
     const role = document.getElementById('newRole').value;
 
-    if (!username || !password || !name) {
-        alert('Vui lòng điền đầy đủ thông tin tài khoản!');
+    if (!username || !password) {
+        alert('Vui lòng điền đầy đủ Mã tài khoản và Mật khẩu!');
         return;
     }
 
@@ -180,7 +211,8 @@ function addAccount() {
         return;
     }
 
-    userList.push({ username, password, name, role });
+    // Mặc định tên trống hoặc trùng tên vì dùng chung hệ thống phân quyền ẩn
+    userList.push({ username, password, name: 'Thành viên BQT', role });
     localStorage.setItem('users', JSON.stringify(userList));
     alert(`Đã tạo thành công tài khoản ${username}!`);
     renderUserTable();
@@ -195,16 +227,92 @@ function deleteAccount(username) {
     }
 }
 
-function updateHomeCount() {
-    const countEl = document.getElementById('countMembers');
-    if (countEl) {
-        const userList = JSON.parse(localStorage.getItem('users')) || [];
-        countEl.innerText = userList.length;
+/* ====================================================
+   5. LOGIC SOẠN THẢO VÀ ĐỒNG BỘ THÔNG BÁO ĐỘNG (BQT TỰ SOẠN)
+   ==================================================== */
+function renderNoticeTable() {
+    const tbody = document.getElementById('noticeTableBody');
+    if (!tbody) return;
+
+    const noticeList = JSON.parse(localStorage.getItem('notices')) || [];
+    tbody.innerHTML = '';
+
+    noticeList.forEach(notice => {
+        tbody.innerHTML += `
+            <tr>
+                <td>${notice.date}</td>
+                <td><strong>${notice.title}</strong></td>
+                <td>${notice.content}</td>
+                <td><button onclick="deleteNotice(${notice.id})" class="btn-delete">Xóa</button></td>
+            </tr>
+        `;
+    });
+}
+
+function addNotice() {
+    const title = document.getElementById('noticeTitle').value.trim();
+    const content = document.getElementById('noticeContent').value.trim();
+
+    if (!title || !content) {
+        alert('Vui lòng nhập đầy đủ tiêu đề và nội dung thông báo!');
+        return;
+    }
+
+    let noticeList = JSON.parse(localStorage.getItem('notices')) || [];
+    
+    // Lấy ngày hiện tại định dạng DD/MM/YYYY
+    const today = new Date();
+    const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+
+    const newNotice = {
+        id: Date.now(), // tạo ID ngẫu nhiên duy nhất
+        title: title,
+        content: content,
+        date: dateStr
+    };
+
+    noticeList.unshift(newNotice); // Đưa thông báo mới lên đầu mảng
+    localStorage.setItem('notices', JSON.stringify(noticeList));
+    
+    alert('Đăng thông báo hệ thống thành công!');
+    renderNoticeTable();
+}
+
+function deleteNotice(id) {
+    if (confirm('Bạn có chắc muốn xóa thông báo này?')) {
+        let noticeList = JSON.parse(localStorage.getItem('notices')) || [];
+        noticeList = noticeList.filter(n => n.id !== id);
+        localStorage.setItem('notices', JSON.stringify(noticeList));
+        renderNoticeTable();
+    }
+}
+
+function renderHomeData() {
+    // Đảm bảo số lượng thành viên luôn là 7 cố định
+    const countMembersEl = document.getElementById('countMembers');
+    if (countMembersEl) countMembersEl.innerText = '7';
+
+    // Cập nhật số lượng thông báo thực tế đang có
+    const noticeList = JSON.parse(localStorage.getItem('notices')) || [];
+    const countNoticesEl = document.getElementById('countNotices');
+    if (countNoticesEl) countNoticesEl.innerText = noticeList.length;
+
+    // Đổ danh sách ra ngoài trang chủ
+    const homeNoticeUl = document.getElementById('homeNoticeList');
+    if (homeNoticeUl) {
+        homeNoticeUl.innerHTML = '';
+        if (noticeList.length === 0) {
+            homeNoticeUl.innerHTML = '<li>Chưa có hoạt động hay thông báo nào trên hệ thống.</li>';
+        } else {
+            noticeList.forEach(notice => {
+                homeNoticeUl.innerHTML += `<li><strong>[${notice.date}] ${notice.title}:</strong> ${notice.content}</li>`;
+            });
+        }
     }
 }
 
 /* ====================================================
-   5. KHỞI CHẠY KHI TẢI TRANG
+   6. KHỞI CHẠY KHI TẢI TRANG
    ==================================================== */
 document.addEventListener('DOMContentLoaded', () => {
     const nameSpan = document.getElementById('userName');
