@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập - Hệ thống Nội bộ Dora Fanclub</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-body">
+
+    <div class="login-container">
+        <h1>DORAEMON FANCLUB VIỆT NAM</h1>
+        <p class="subtitle">Hệ thống Quản trị Nội bộ</p>
+        
+        <!-- Khối hiển thị thông báo lỗi khi nhập sai tài khoản -->
+        <div id="error" class="error-msg" style="display: none;">
+            Sai tài khoản hoặc mật khẩu!
+        </div>
+
+        <div class="form-group">
+            <label for="username">Tài khoản</label>
+            <input type="text" id="username" placeholder="Nhập tài khoản BQT...">
+        </div>
+
+        <div class="form-group">
+            <label for="password">Mật khẩu</label>
+            <input type="password" id="password" placeholder="Nhập mật khẩu...">
+        </div>
+
+        <button onclick="login()" class="btn-login">Đăng nhập</button>
+        
+        <div class="footer-text">
+            © 2026 Dora Fanclub Việt Nam
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
