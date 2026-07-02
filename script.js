@@ -1,10 +1,11 @@
 /* ====================================================
    1. KHỞI TẠO DỮ LIỆU BAN ĐẦU TRONG LOCALSTORAGE
    ==================================================== */
+// Khởi tạo cố định đúng 2 tài khoản phân quyền khác nhau
 if (!localStorage.getItem('users')) {
     const defaultUsers = [
-        { username: 'BQT001', password: '123', name: 'Nguyễn Tuấn Khải', role: 'Ban Quản Trị' },
-        { username: 'BQT002', password: '123', name: 'Cao Ngọc Duyên', role: 'Admin' }
+        { username: 'BQT2026', password: 'BQTFP-08-014', name: 'BQT', role: 'Ban Quản Trị' },
+        { username: 'ADMIN2026', password: 'FPC-06-001', name: 'ADMIN', role: 'Admin' }
     ];
     localStorage.setItem('users', JSON.stringify(defaultUsers));
 }
@@ -35,7 +36,7 @@ function logout() {
 }
 
 /* ====================================================
-   3. CƠ CHẾ ĐỔ DỮ LIỆU ĐỘNG (SPA) CHO DASHBOARD.HTML
+   3. CƠ CHẾ ĐỔ DỮ LIỆU ĐỘNG (SPA) + PHÂN QUYỀN TRUY CẬP
    ==================================================== */
 const pages = {
     home: `
@@ -68,7 +69,7 @@ const pages = {
         <div class="account-form-box">
             <h3>➕ Thêm tài khoản quản trị mới</h3>
             <div class="inline-form">
-                <input type="text" id="newUsername" placeholder="Mã tài khoản (Ví dụ: BQT003)...">
+                <input type="text" id="newUsername" placeholder="Mã tài khoản...">
                 <input type="password" id="newPassword" placeholder="Mật khẩu...">
                 <input type="text" id="newName" placeholder="Họ và tên...">
                 <select id="newRole">
@@ -91,7 +92,7 @@ const pages = {
                     </tr>
                 </thead>
                 <tbody id="userTableBody">
-                    <!-- Dữ liệu tài khoản render ở đây -->
+                    <!-- Dữ liệu render ở đây -->
                 </tbody>
             </table>
         </div>
@@ -111,22 +112,27 @@ const pages = {
     setting: `
         <h2>Cài đặt hệ thống</h2>
         <div class="activity" style="margin-top: 20px;">
-            <p>Cấu hình hệ thống, bảo mật biểu mẫu, và dọn dẹp bộ nhớ đệm cache LocalStorage.</p>
+            <p>Cấu hình hệ thống sâu, bảo mật biểu mẫu, và dọn dẹp bộ nhớ đệm cache LocalStorage.</p>
         </div>
     `
 };
 
+// Hàm hiển thị trang có tích hợp KIỂM TRA QUYỀN TRUY CẬP
 function showPage(pageId) {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    
+    // Nếu tài khoản hiện tại là Admin mà cố tình bấm vào "Cài đặt hệ thống" (setting)
+    if (currentUser && currentUser.role === 'Admin' && pageId === 'setting') {
+        alert('⛔ CẢNH BÁO BẢO MẬT:\nTài khoản cấp độ "Admin" không có quyền truy cập vào mục Cài đặt hệ thống!\nVui lòng liên hệ Ban Quản Trị.');
+        return; // Chặn đứng hành động, không cho đổi trang
+    }
+
     const contentDiv = document.getElementById('pageContent');
     if (contentDiv && pages[pageId]) {
         contentDiv.innerHTML = pages[pageId];
         
-        if (pageId === 'members') {
-            renderUserTable();
-        }
-        if (pageId === 'home') {
-            updateHomeCount();
-        }
+        if (pageId === 'members') { renderUserTable(); }
+        if (pageId === 'home') { updateHomeCount(); }
     }
 }
 
@@ -169,7 +175,6 @@ function addAccount() {
     }
 
     let userList = JSON.parse(localStorage.getItem('users')) || [];
-    
     if (userList.some(user => user.username === username)) {
         alert('Mã tài khoản này đã tồn tại trên hệ thống!');
         return;
@@ -177,7 +182,6 @@ function addAccount() {
 
     userList.push({ username, password, name, role });
     localStorage.setItem('users', JSON.stringify(userList));
-
     alert(`Đã tạo thành công tài khoản ${username}!`);
     renderUserTable();
 }
