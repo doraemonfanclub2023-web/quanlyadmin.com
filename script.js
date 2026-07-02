@@ -4,8 +4,8 @@
 // Khởi tạo cố định đúng 2 tài khoản phân quyền khác nhau
 if (!localStorage.getItem('users')) {
     const defaultUsers = [
-        { username: 'BQT2026', password: 'BQTFP-08-014', name: 'BQT', role: 'Ban Quản Trị' },
-        { username: 'ADMIN2026', password: 'FPC-06-001', name: 'ADMIN', role: 'Admin' }
+        { username: 'BQT001', password: '123', name: 'Nguyễn Tuấn Khải', role: 'Ban Quản Trị' },
+        { username: 'BQT002', password: '123', name: 'Cao Ngọc Duyên', role: 'Admin' }
     ];
     localStorage.setItem('users', JSON.stringify(defaultUsers));
 }
