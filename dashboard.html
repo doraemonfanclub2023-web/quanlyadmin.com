@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ thống Quản lý Doraemon Fanclub</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header class="header">
+        <h2>DORAEMON FANCLUB ADMIN</h2>
+        <div class="user-box">
+            Xin chào, <span id="userName">Đang tải...</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- SIDEBAR TRÁI -->
+        <aside class="sidebar">
+            <ul>
+                <li><a href="#">Trang chủ</a></li>
+                <li><a href="#">Quản lý thành viên</a></li>
+                <li><a href="#">Quản lý Mini Game</a></li>
+                <li><a href="#">Quản lý thông báo</a></li>
+                <li><a href="#">Cài đặt hệ thống</a></li>
+                <li><a href="javascript:void(0);" class="logout" onclick="logout()">Đăng xuất</a></li>
+            </ul>
+        </aside>
+
+        <!-- NỘI DUNG CHÍNH -->
+        <main class="content">
+            <h2>Tổng quan hệ thống</h2>
+            
+            <div class="cards">
+                <div class="card">
+                    <h3>👥 Thành viên</h3>
+                    <h1>2</h1>
+                </div>
+                <div class="card">
+                    <h3>🎁 Mini Game</h3>
+                    <h1>0</h1>
+                </div>
+                <div class="card">
+                    <h3>📢 Thông báo</h3>
+                    <h1>2</h1>
+                </div>
+            </div>
+
+            <div class="activity">
+                <h3>📋 Hoạt động hệ thống gần đây</h3>
+                <ul>
+                    <li>Hệ thống vận hành ổn định trên nền tảng LocalStorage thời gian thực.</li>
+                    <li>Cập nhật và đồng bộ hóa tự động dữ liệu nội bộ Dora Fanclub Việt Nam.</li>
+                </ul>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
