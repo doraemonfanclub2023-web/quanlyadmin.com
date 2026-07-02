@@ -1,7 +1,6 @@
 /* ====================================================
    1. KHỞI TẠO DỮ LIỆU BAN ĐẦU TRONG LOCALSTORAGE
    ==================================================== */
-// Khởi tạo danh sách tài khoản mẫu ban đầu nếu chưa có
 if (!localStorage.getItem('users')) {
     const defaultUsers = [
         { username: 'BQT001', password: '123', name: 'Nguyễn Tuấn Khải', role: 'Ban Quản Trị' },
@@ -13,13 +12,11 @@ if (!localStorage.getItem('users')) {
 /* ====================================================
    2. HÀM XỬ LÝ ĐĂNG NHẬP & ĐĂNG XUẤT
    ==================================================== */
-// Hàm xử lý đăng nhập (dùng cho index.html)
 function login() {
     const userInp = document.getElementById('username').value.trim();
     const passInp = document.getElementById('password').value.trim();
     const errorDiv = document.getElementById('error');
 
-    // Lấy danh sách tài khoản từ LocalStorage để đối chiếu động
     const userList = JSON.parse(localStorage.getItem('users')) || [];
     const validUser = userList.find(u => u.username === userInp && u.password === passInp);
 
@@ -32,7 +29,6 @@ function login() {
     }
 }
 
-// Đăng xuất
 function logout() {
     localStorage.removeItem('currentUser');
     window.location.href = "index.html";
@@ -41,7 +37,6 @@ function logout() {
 /* ====================================================
    3. CƠ CHẾ ĐỔ DỮ LIỆU ĐỘNG (SPA) CHO DASHBOARD.HTML
    ==================================================== */
-// Cấu trúc nội dung của từng trang quản lý
 const pages = {
     home: `
         <h2>Tổng quan hệ thống</h2>
@@ -84,20 +79,22 @@ const pages = {
             </div>
         </div>
 
-        <h3>📋 Danh sách tài khoản hệ thống</h3>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Mã Tài Khoản</th>
-                    <th>Họ và Tên</th>
-                    <th>Chức vụ</th>
-                    <th>Thao tác</th>
-                </tr>
-            </thead>
-            <tbody id="userTableBody">
-                <!-- Dữ liệu tài khoản sẽ tự động render ở đây -->
-            </tbody>
-        </table>
+        <div class="table-container">
+            <h3>📋 Danh sách tài khoản hệ thống</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Mã Tài Khoản</th>
+                        <th>Họ và Tên</th>
+                        <th>Chức vụ</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="userTableBody">
+                    <!-- Dữ liệu tài khoản render ở đây -->
+                </tbody>
+            </table>
+        </div>
     `,
     game: `
         <h2>Quản lý Mini Game</h2>
@@ -119,17 +116,14 @@ const pages = {
     `
 };
 
-// Hàm thực hiện chuyển đổi nội dung trang qua id
 function showPage(pageId) {
     const contentDiv = document.getElementById('pageContent');
     if (contentDiv && pages[pageId]) {
         contentDiv.innerHTML = pages[pageId];
         
-        // Nếu chọn trang quản lý thành viên, render danh sách tài khoản ngay
         if (pageId === 'members') {
             renderUserTable();
         }
-        // Nếu chọn trang chủ, đếm lại số lượng tài khoản thực tế
         if (pageId === 'home') {
             updateHomeCount();
         }
@@ -137,9 +131,8 @@ function showPage(pageId) {
 }
 
 /* ====================================================
-   4. LOGIC XỬ LÝ QUẢN LÝ TÀI KHOẢN (ĐỌC/GHI LOCALSTORAGE)
+   4. LOGIC XỬ LÝ QUẢN LÝ TÀI KHOẢN (LOCALSTORAGE)
    ==================================================== */
-// Hàm hiển thị danh sách tài khoản ra bảng HTML
 function renderUserTable() {
     const tbody = document.getElementById('userTableBody');
     if (!tbody) return;
@@ -149,7 +142,6 @@ function renderUserTable() {
 
     userList.forEach(user => {
         let actionHTML = `<button onclick="deleteAccount('${user.username}')" class="btn-delete">Xóa</button>`;
-        // Không cho phép tự xóa 2 tài khoản admin gốc
         if (user.username === 'BQT001' || user.username === 'BQT002') {
             actionHTML = `<span class="badge-default">Hệ thống</span>`;
         }
@@ -165,7 +157,6 @@ function renderUserTable() {
     });
 }
 
-// Hàm thêm một tài khoản mới
 function addAccount() {
     const username = document.getElementById('newUsername').value.trim();
     const password = document.getElementById('newPassword').value.trim();
@@ -179,21 +170,18 @@ function addAccount() {
 
     let userList = JSON.parse(localStorage.getItem('users')) || [];
     
-    // Kiểm tra xem mã tài khoản đã tồn tại chưa
     if (userList.some(user => user.username === username)) {
         alert('Mã tài khoản này đã tồn tại trên hệ thống!');
         return;
     }
 
-    // Đẩy tài khoản mới vào mảng và lưu lại LocalStorage
     userList.push({ username, password, name, role });
     localStorage.setItem('users', JSON.stringify(userList));
 
     alert(`Đã tạo thành công tài khoản ${username}!`);
-    renderUserTable(); // Cập nhật lại giao diện bảng
+    renderUserTable();
 }
 
-// Hàm xóa tài khoản
 function deleteAccount(username) {
     if (confirm(`Bạn có chắc chắn muốn xóa tài khoản ${username}?`)) {
         let userList = JSON.parse(localStorage.getItem('users')) || [];
@@ -203,7 +191,6 @@ function deleteAccount(username) {
     }
 }
 
-// Cập nhật số lượng thành viên hiển thị trên thẻ card trang chủ
 function updateHomeCount() {
     const countEl = document.getElementById('countMembers');
     if (countEl) {
@@ -221,7 +208,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentUser = JSON.parse(localStorage.getItem('currentUser'));
         if (currentUser) {
             nameSpan.innerText = `${currentUser.name} (${currentUser.role})`;
-            // Mặc định ban đầu đổ dữ liệu trang chủ (home) vào
             showPage('home');
         } else {
             window.location.href = "index.html";
