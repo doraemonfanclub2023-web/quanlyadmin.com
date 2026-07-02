@@ -10,7 +10,6 @@ const firebaseConfig = {
   measurementId: "G-GG545GEB8M"
 };
 
-// Khởi tạo các module kết nối trực tiếp của Firebase qua CDN đám mây
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getDatabase, ref, set, get, child, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
@@ -18,7 +17,7 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 /* ====================================================
-   2. KHỞI TẠO TÀI KHOẢN GỐC TRÊN CLOUD (CHẠY DUY NHẤT 1 LẦN ĐẦU)
+   2. KHỞI TẠO TÀI KHOẢN GỐC TRÊN CLOUD
    ==================================================== */
 async function initDatabase() {
     const dbRef = ref(db);
@@ -34,7 +33,7 @@ async function initDatabase() {
 initDatabase();
 
 /* ====================================================
-   3. XỬ LÝ ĐĂNG NHẬP / ĐĂNG XUẤT (BẢO MẬT PHIÊN BẰNG SESSION)
+   3. XỬ LÝ ĐĂNG NHẬP / ĐĂNG XUẤT
    ==================================================== */
 window.login = async function() {
     const userInp = document.getElementById('username')?.value.trim();
@@ -79,7 +78,6 @@ window.getPageContent = function(pageId, userRole) {
         `,
         members: `
             <h2>Quản lý thành viên (Tài khoản)</h2><br>
-            /* ĐÃ CẬP NHẬT: Nếu là Admin thì ẩn hoàn toàn Form thêm thành viên mới */
             ${userRole === 'Admin' ? '' : `
             <div class="account-form-box">
                 <h3>➕ Thêm tài khoản quản trị mới</h3>
@@ -141,7 +139,7 @@ window.showPage = function(pageId) {
 }
 
 /* ====================================================
-   5. ĐỒNG BỘ REALTIME DỮ LIỆU TỰ ĐỘNG TỪ CLOUD (KHÔNG CẦN F5)
+   5. ĐỒNG BỘ REALTIME DỮ LIỆU TỰ ĐỘNG TỪ CLOUD
    ==================================================== */
 function listenToHomeData() {
     onValue(ref(db, 'notices'), (snapshot) => {
@@ -183,7 +181,6 @@ function listenToNoticeTable() {
             const key = childSnapshot.key;
             const n = childSnapshot.val();
             
-            // Nếu tài khoản hiện tại có role là 'Admin' -> hiển thị chữ, nếu không -> hiển thị nút xóa
             const actionHTML = userRole === 'Admin' 
                 ? `<span class="badge-default" style="color: #94a3b8; font-style: italic;">Không có quyền</span>` 
                 : `<button onclick="deleteNotice('${key}')" class="btn-delete">Xóa</button>`;
@@ -235,7 +232,6 @@ function listenToUserTable() {
         snapshot.forEach((childSnapshot) => {
             const u = childSnapshot.val();
             
-            // ĐIỀU CHỈNH: Admin không được quyền xóa bất kỳ thành viên nào
             let actionHTML = `<button onclick="deleteAccount('${u.username}')" class="btn-delete">Xóa</button>`;
             if (userRole === 'Admin') {
                 actionHTML = `<span class="badge-default" style="color: #94a3b8; font-style: italic;">Không có quyền</span>`;
@@ -249,7 +245,6 @@ function listenToUserTable() {
 }
 
 window.addAccount = async function() {
-    // TĂNG CƯỜNG BẢO MẬT: Chặn Admin cố tình gọi hàm thêm tài khoản từ Console
     const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
     if (currentUser && currentUser.role === 'Admin') {
         return alert('⛔ Bạn không có quyền thêm thành viên mới!');
@@ -265,7 +260,6 @@ window.addAccount = async function() {
 }
 
 window.deleteAccount = async function(username) {
-    // TĂNG CƯỜNG BẢO MẬT: Chặn Admin gọi hàm xóa tài khoản từ Console
     const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
     if (currentUser && currentUser.role === 'Admin') {
         return alert('⛔ Bạn không có quyền xóa thành viên này!');
@@ -276,9 +270,6 @@ window.deleteAccount = async function(username) {
     }
 }
 
-/* ====================================================
-   6. KHỞI CHẠY KHI TẢI TRANG
-   ==================================================== */
 document.addEventListener('DOMContentLoaded', () => {
     const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
     const isLoginPage = document.getElementById('username') !== null;
