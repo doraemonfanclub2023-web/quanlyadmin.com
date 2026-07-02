@@ -1,7 +1,6 @@
 /* ====================================================
    1. KHỞI TẠO DỮ LIỆU BAN ĐẦU TRONG LOCALSTORAGE
    ==================================================== */
-// Khởi tạo 2 tài khoản phân quyền cố định
 if (!localStorage.getItem('users')) {
     const defaultUsers = [
         { username: 'BQT001', password: '123', name: 'Nguyễn Tuấn Khải', role: 'Ban Quản Trị' },
@@ -10,7 +9,6 @@ if (!localStorage.getItem('users')) {
     localStorage.setItem('users', JSON.stringify(defaultUsers));
 }
 
-// Khởi tạo dữ liệu thông báo mẫu nếu chưa có
 if (!localStorage.getItem('notices')) {
     const defaultNotices = [
         { id: 1, title: 'Cập nhật hệ thống vận hành', content: 'Hệ thống vận hành ổn định trên nền tảng LocalStorage thời gian thực.', date: '02/07/2026' },
@@ -53,7 +51,6 @@ const pages = {
         <div class="cards">
             <div class="card">
                 <h3>👥 Thành viên</h3>
-                <!-- Theo hình image_6d3881.png: Cố định mặc định hiển thị là 7 người -->
                 <h1 id="countMembers">7</h1>
             </div>
             <div class="card">
@@ -68,7 +65,7 @@ const pages = {
         <div class="activity">
             <h3>📋 Hoạt động hệ thống gần đây</h3>
             <ul id="homeNoticeList">
-                <!-- Thông báo động sẽ được đồng bộ hiển thị tại đây -->
+                <!-- Thông báo động hiển thị tại đây -->
             </ul>
         </div>
     `,
@@ -80,7 +77,6 @@ const pages = {
             <div class="inline-form">
                 <input type="text" id="newUsername" placeholder="Mã tài khoản...">
                 <input type="password" id="newPassword" placeholder="Mật khẩu...">
-                <!-- Theo hình image_6d3800.png: Đã ẩn ô nhập Họ và tên -->
                 <select id="newRole">
                     <option value="Admin">Admin</option>
                     <option value="Ban Quản Trị">Ban Quản Trị</option>
@@ -95,7 +91,6 @@ const pages = {
                 <thead>
                     <tr>
                         <th>Mã Tài Khoản</th>
-                        <!-- Theo hình image_6d3800.png: Đã loại bỏ cột Họ và tên dùng chung -->
                         <th>Chức vụ</th>
                         <th>Thao tác</th>
                     </tr>
@@ -115,7 +110,6 @@ const pages = {
     notice: `
         <h2>Quản lý thông báo</h2>
         <br>
-        <!-- Theo hình image_6d3b9e.png: Thêm Form tự soạn thông báo -->
         <div class="account-form-box">
             <h3>📝 Soạn thông báo mới</h3>
             <div class="inline-form" style="display: flex; flex-direction: column; gap: 15px;">
@@ -169,7 +163,7 @@ function showPage(pageId) {
 }
 
 /* ====================================================
-   4. LOGIC QUẢN LÝ TÀI KHOẢN (ĐÃ ẨN DANH TÍNH DÙNG CHUNG)
+   4. LOGIC QUẢN LÝ TÀI KHOẢN
    ==================================================== */
 function renderUserTable() {
     const tbody = document.getElementById('userTableBody');
@@ -184,7 +178,6 @@ function renderUserTable() {
             actionHTML = `<span class="badge-default">Hệ thống</span>`;
         }
 
-        // Bỏ hiển thị cột họ tên theo hình ảnh chỉ định
         tbody.innerHTML += `
             <tr>
                 <td><strong>${user.username}</strong></td>
@@ -211,7 +204,6 @@ function addAccount() {
         return;
     }
 
-    // Mặc định tên trống hoặc trùng tên vì dùng chung hệ thống phân quyền ẩn
     userList.push({ username, password, name: 'Thành viên BQT', role });
     localStorage.setItem('users', JSON.stringify(userList));
     alert(`Đã tạo thành công tài khoản ${username}!`);
@@ -228,7 +220,7 @@ function deleteAccount(username) {
 }
 
 /* ====================================================
-   5. LOGIC SOẠN THẢO VÀ ĐỒNG BỘ THÔNG BÁO ĐỘNG (BQT TỰ SOẠN)
+   5. LOGIC THÔNG BÁO ĐỘNG
    ==================================================== */
 function renderNoticeTable() {
     const tbody = document.getElementById('noticeTableBody');
@@ -259,19 +251,17 @@ function addNotice() {
     }
 
     let noticeList = JSON.parse(localStorage.getItem('notices')) || [];
-    
-    // Lấy ngày hiện tại định dạng DD/MM/YYYY
     const today = new Date();
     const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
 
     const newNotice = {
-        id: Date.now(), // tạo ID ngẫu nhiên duy nhất
+        id: Date.now(),
         title: title,
         content: content,
         date: dateStr
     };
 
-    noticeList.unshift(newNotice); // Đưa thông báo mới lên đầu mảng
+    noticeList.unshift(newNotice);
     localStorage.setItem('notices', JSON.stringify(noticeList));
     
     alert('Đăng thông báo hệ thống thành công!');
@@ -288,16 +278,14 @@ function deleteNotice(id) {
 }
 
 function renderHomeData() {
-    // Đảm bảo số lượng thành viên luôn là 7 cố định
+    // SỬA LỖI: Thêm điều kiện check tồn tại trước khi điền dữ liệu
     const countMembersEl = document.getElementById('countMembers');
     if (countMembersEl) countMembersEl.innerText = '7';
 
-    // Cập nhật số lượng thông báo thực tế đang có
     const noticeList = JSON.parse(localStorage.getItem('notices')) || [];
     const countNoticesEl = document.getElementById('countNotices');
     if (countNoticesEl) countNoticesEl.innerText = noticeList.length;
 
-    // Đổ danh sách ra ngoài trang chủ
     const homeNoticeUl = document.getElementById('homeNoticeList');
     if (homeNoticeUl) {
         homeNoticeUl.innerHTML = '';
@@ -315,14 +303,10 @@ function renderHomeData() {
    6. KHỞI CHẠY KHI TẢI TRANG
    ==================================================== */
 document.addEventListener('DOMContentLoaded', () => {
-    const nameSpan = document.getElementById('userName');
-    if (nameSpan) {
-        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-        if (currentUser) {
-            nameSpan.innerText = `${currentUser.name} (${currentUser.role})`;
-            showPage('home');
-        } else {
-            window.location.href = "index.html";
-        }
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (currentUser) {
+        showPage('home'); 
+    } else {
+        window.location.href = "index.html"; 
     }
 });
