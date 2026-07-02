@@ -2,7 +2,7 @@
 const firebaseConfig = {
   apiKey: "AIzaSyC-U9L1plaQ6pcP7Iecg4RO0GirBjunISM",
   authDomain: "admin-27099.firebaseapp.com",
-  databaseURL: "https://admin-27099-default-rtdb.firebaseio.com", // Đã bổ sung URL kết nối data đám mây
+  databaseURL: "https://admin-27099-default-rtdb.firebaseio.com", 
   projectId: "admin-27099",
   storageBucket: "admin-27099.firebasestorage.app",
   messagingSenderId: "510976750235",
@@ -79,6 +79,8 @@ window.getPageContent = function(pageId, userRole) {
         `,
         members: `
             <h2>Quản lý thành viên (Tài khoản)</h2><br>
+            /* ĐÃ CẬP NHẬT: Nếu là Admin thì ẩn hoàn toàn Form thêm thành viên mới */
+            ${userRole === 'Admin' ? '' : `
             <div class="account-form-box">
                 <h3>➕ Thêm tài khoản quản trị mới</h3>
                 <div class="inline-form">
@@ -88,6 +90,7 @@ window.getPageContent = function(pageId, userRole) {
                     <button onclick="addAccount()" class="btn-create">Tạo tài khoản</button>
                 </div>
             </div>
+            `}
             <div class="table-container">
                 <table class="table">
                     <thead><tr><th>Mã Tài Khoản</th><th>Chức vụ</th><th>Thao tác</th></tr></thead>
@@ -166,6 +169,9 @@ function listenToHomeData() {
 }
 
 function listenToNoticeTable() {
+    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+    const userRole = currentUser ? currentUser.role : '';
+
     onValue(ref(db, 'notices'), (snapshot) => {
         const tbody = document.getElementById('noticeTableBody');
         if (!tbody) return;
@@ -176,12 +182,18 @@ function listenToNoticeTable() {
         snapshot.forEach((childSnapshot) => {
             const key = childSnapshot.key;
             const n = childSnapshot.val();
+            
+            // Nếu tài khoản hiện tại có role là 'Admin' -> hiển thị chữ, nếu không -> hiển thị nút xóa
+            const actionHTML = userRole === 'Admin' 
+                ? `<span class="badge-default" style="color: #94a3b8; font-style: italic;">Không có quyền</span>` 
+                : `<button onclick="deleteNotice('${key}')" class="btn-delete">Xóa</button>`;
+
             tbody.innerHTML = `
                 <tr>
                     <td>${n.date}</td>
                     <td><strong>${n.title}</strong></td>
                     <td>${n.content}</td>
-                    <td><button onclick="deleteNotice('${key}')" class="btn-delete">Xóa</button></td>
+                    <td>${actionHTML}</td>
                 </tr>
             ` + tbody.innerHTML;
         });
@@ -201,12 +213,20 @@ window.addNotice = async function() {
 }
 
 window.deleteNotice = async function(key) {
+    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+    if (currentUser && currentUser.role === 'Admin') {
+        return alert('⛔ Bạn không có quyền xóa thông báo này!');
+    }
+
     if (confirm('Xóa thông báo này trên Cloud?')) {
         await remove(ref(db, `notices/${key}`));
     }
 }
 
 function listenToUserTable() {
+    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+    const userRole = currentUser ? currentUser.role : '';
+
     onValue(ref(db, 'users'), (snapshot) => {
         const tbody = document.getElementById('userTableBody');
         if (!tbody) return;
@@ -214,8 +234,14 @@ function listenToUserTable() {
 
         snapshot.forEach((childSnapshot) => {
             const u = childSnapshot.val();
+            
+            // ĐIỀU CHỈNH: Admin không được quyền xóa bất kỳ thành viên nào
             let actionHTML = `<button onclick="deleteAccount('${u.username}')" class="btn-delete">Xóa</button>`;
-            if (u.username === 'BQT001' || u.username === 'BQT002') actionHTML = `<span>Hệ thống</span>`;
+            if (userRole === 'Admin') {
+                actionHTML = `<span class="badge-default" style="color: #94a3b8; font-style: italic;">Không có quyền</span>`;
+            } else if (u.username === 'BQT001' || u.username === 'BQT002') {
+                actionHTML = `<span>Hệ thống</span>`;
+            }
 
             tbody.innerHTML += `<tr><td><strong>${u.username}</strong></td><td>${u.role}</td><td>${actionHTML}</td></tr>`;
         });
@@ -223,6 +249,12 @@ function listenToUserTable() {
 }
 
 window.addAccount = async function() {
+    // TĂNG CƯỜNG BẢO MẬT: Chặn Admin cố tình gọi hàm thêm tài khoản từ Console
+    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+    if (currentUser && currentUser.role === 'Admin') {
+        return alert('⛔ Bạn không có quyền thêm thành viên mới!');
+    }
+
     const username = document.getElementById('newUsername')?.value.trim();
     const password = document.getElementById('newPassword')?.value.trim();
     const role = document.getElementById('newRole')?.value;
@@ -233,12 +265,20 @@ window.addAccount = async function() {
 }
 
 window.deleteAccount = async function(username) {
+    // TĂNG CƯỜNG BẢO MẬT: Chặn Admin gọi hàm xóa tài khoản từ Console
+    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+    if (currentUser && currentUser.role === 'Admin') {
+        return alert('⛔ Bạn không có quyền xóa thành viên này!');
+    }
+
     if (confirm('Xóa tài khoản này khỏi hệ thống đám mây?')) {
         await remove(ref(db, `users/${username}`));
     }
 }
 
-// 6. KHỞI CHẠY KHI TẢI TRANG
+/* ====================================================
+   6. KHỞI CHẠY KHI TẢI TRANG
+   ==================================================== */
 document.addEventListener('DOMContentLoaded', () => {
     const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
     const isLoginPage = document.getElementById('username') !== null;
