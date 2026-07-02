@@ -1,7 +1,6 @@
 /* ====================================================
-   1. KHỞI TẠO VÀ ĐỒNG BỘ DỮ LIỆU (KHÔNG GHI ĐÈ KHI REFRESH)
+   1. KHỞI TẠO VÀ ĐỒNG BỘ DỮ LIỆU CHUẨN (CHỈ CHẠY 1 LẦN ĐẦU)
    ==================================================== */
-// Chỉ khởi tạo tài khoản nếu hệ thống chưa từng có dữ liệu users
 if (!localStorage.getItem('users')) {
     const defaultUsers = [
         { username: 'BQT001', password: '123', name: 'Nguyễn Tuấn Khải', role: 'Ban Quản Trị' },
@@ -10,7 +9,6 @@ if (!localStorage.getItem('users')) {
     localStorage.setItem('users', JSON.stringify(defaultUsers));
 }
 
-// Chỉ khởi tạo thông báo nếu hệ thống chưa từng có dữ liệu notices
 if (!localStorage.getItem('notices')) {
     const defaultNotices = [
         { id: 1, title: 'Cập nhật hệ thống vận hành', content: 'Hệ thống vận hành ổn định trên nền tảng LocalStorage thời gian thực.', date: '02/07/2026' },
@@ -111,7 +109,7 @@ function getPageContent(pageId, userRole) {
         notice: `
             <h2>Quản lý thông báo</h2>
             <br>
-            <!-- ẨN HOÀN TOÀN BIỂU MẪU ĐĂNG NGAY TỪ GỐC HTML NẾU LÀ ADMIN -->
+            <!-- KIỂM TRA QUYỀN ĐỂ ẨN FORM ĐĂNG NẾU LÀ ADMIN -->
             ${userRole === 'Admin' ? '' : `
             <div class="account-form-box">
                 <h3>📝 Soạn thông báo mới</h3>
@@ -162,7 +160,7 @@ function showPage(pageId) {
     if (contentDiv) {
         contentDiv.innerHTML = getPageContent(pageId, role);
         
-        // Thực thi hàm đổ dữ liệu an toàn
+        // Thực thi hàm đổ dữ liệu
         if (pageId === 'members') { renderUserTable(); }
         if (pageId === 'home') { renderHomeData(); }
         if (pageId === 'notice') { renderNoticeTable(); }
@@ -285,10 +283,11 @@ function deleteNotice(id) {
 }
 
 function renderHomeData() {
+    const noticeList = JSON.parse(localStorage.getItem('notices')) || [];
+    
     const countMembersEl = document.getElementById('countMembers');
     if (countMembersEl) countMembersEl.innerText = '7';
 
-    const noticeList = JSON.parse(localStorage.getItem('notices')) || [];
     const countNoticesEl = document.getElementById('countNotices');
     if (countNoticesEl) countNoticesEl.innerText = noticeList.length;
 
@@ -306,7 +305,7 @@ function renderHomeData() {
 }
 
 /* ====================================================
-   6. KHỞI CHẠY KHI TẢI TRANG (TỐI ƯU CHỐNG TRẮNG TRANG)
+   6. KHỞI CHẠY KHI TẢI TRANG
    ==================================================== */
 document.addEventListener('DOMContentLoaded', () => {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
