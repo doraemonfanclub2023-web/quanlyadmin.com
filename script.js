@@ -300,14 +300,16 @@ function renderHomeData() {
 }
 
 /* ====================================================
-   6. KHỞI CHẠY KHI TẢI TRANG (SỬA LỖI VÒNG LẶP CHUYỂN HƯỚNG)
+   6. KHỞI CHẠY KHI TẢI TRANG (TỐI ƯU TUYỆT ĐỐI CHO GITHUB PAGES)
    ==================================================== */
 document.addEventListener('DOMContentLoaded', () => {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    const isLoginPage = window.location.pathname.endsWith('index.html') || window.location.pathname === '/' || window.location.pathname.endsWith('quanlyadmin/');
+    
+    // Kiểm tra trực tiếp xem có phần tử nhập liệu của trang Login (index.html) trên DOM không
+    const isLoginPage = document.getElementById('username') !== null;
 
     if (currentUser) {
-        // Nếu đã đăng nhập thành công mà cố vào trang đăng nhập, tự động đá sang dashboard
+        // Nếu đã đăng nhập thành công mà đang ở trang login, tự động chuyển sang dashboard
         if (isLoginPage) {
             window.location.href = "dashboard.html";
         } else {
