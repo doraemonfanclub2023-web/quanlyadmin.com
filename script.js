@@ -1,13 +1,16 @@
 /* ====================================================
-   1. KHỞI TẠO VÀ ĐỒNG BỘ DỮ LIỆU ĐỒNG NHẤT
+   1. KHỞI TẠO VÀ ĐỒNG BỘ DỮ LIỆU (KHÔNG GHI ĐÈ KHI REFRESH)
    ==================================================== */
-// Luôn cập nhật danh sách tài khoản hệ thống chuẩn để tránh xung đột dữ liệu cũ
-const defaultUsers = [
-    { username: 'BQT001', password: '123', name: 'Nguyễn Tuấn Khải', role: 'Ban Quản Trị' },
-    { username: 'BQT002', password: '123', name: 'Cao Ngọc Duyên', role: 'Admin' }
-];
-localStorage.setItem('users', JSON.stringify(defaultUsers));
+// Chỉ khởi tạo tài khoản nếu hệ thống chưa từng có dữ liệu users
+if (!localStorage.getItem('users')) {
+    const defaultUsers = [
+        { username: 'BQT001', password: '123', name: 'Nguyễn Tuấn Khải', role: 'Ban Quản Trị' },
+        { username: 'BQT002', password: '123', name: 'Cao Ngọc Duyên', role: 'Admin' }
+    ];
+    localStorage.setItem('users', JSON.stringify(defaultUsers));
+}
 
+// Chỉ khởi tạo thông báo nếu hệ thống chưa từng có dữ liệu notices
 if (!localStorage.getItem('notices')) {
     const defaultNotices = [
         { id: 1, title: 'Cập nhật hệ thống vận hành', content: 'Hệ thống vận hành ổn định trên nền tảng LocalStorage thời gian thực.', date: '02/07/2026' },
