@@ -1,5 +1,5 @@
 /* ====================================================
-   1. KHỞI TẠO VÀ ĐỒNG BỘ DỮ LIỆU CHUẨN (CHỈ CHẠY 1 LẦN ĐẦU)
+   1. KHỞI TẠO VÀ ĐỒNG BỘ DỮ LIỆU CHUẨN (TUYỆT ĐỐI KHÔNG GHI ĐÈ)
    ==================================================== */
 if (!localStorage.getItem('users')) {
     const defaultUsers = [
@@ -48,6 +48,8 @@ function logout() {
    3. CƠ CHẾ ĐỔ DỮ LIỆU ĐỘNG (SPA) + PHÂN QUYỀN TRUY CẬP
    ==================================================== */
 function getPageContent(pageId, userRole) {
+    const noticeList = JSON.parse(localStorage.getItem('notices')) || [];
+    
     const pages = {
         home: `
             <h2>Tổng quan hệ thống</h2>
@@ -62,7 +64,7 @@ function getPageContent(pageId, userRole) {
                 </div>
                 <div class="card">
                     <h3>📢 Thông báo</h3>
-                    <h1 id="countNotices">2</h1>
+                    <h1 id="countNotices">${noticeList.length}</h1>
                 </div>
             </div>
             <div class="activity">
@@ -109,7 +111,7 @@ function getPageContent(pageId, userRole) {
         notice: `
             <h2>Quản lý thông báo</h2>
             <br>
-            <!-- KIỂM TRA QUYỀN ĐỂ ẨN FORM ĐĂNG NẾU LÀ ADMIN -->
+            <!-- ẨN BIỂU MẪU ĐĂNG NẾU LÀ ADMIN -->
             ${userRole === 'Admin' ? '' : `
             <div class="account-form-box">
                 <h3>📝 Soạn thông báo mới</h3>
@@ -150,7 +152,6 @@ function showPage(pageId) {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     const role = currentUser ? currentUser.role : '';
     
-    // Chặn Admin vào mục cài đặt
     if (role === 'Admin' && pageId === 'setting') {
         alert('⛔ CẢNH BÁO BẢO MẬT:\nTài khoản cấp độ "Admin" không có quyền truy cập vào mục Cài đặt hệ thống!\nVui lòng liên hệ Ban Quản Trị.');
         return;
@@ -160,7 +161,6 @@ function showPage(pageId) {
     if (contentDiv) {
         contentDiv.innerHTML = getPageContent(pageId, role);
         
-        // Thực thi hàm đổ dữ liệu
         if (pageId === 'members') { renderUserTable(); }
         if (pageId === 'home') { renderHomeData(); }
         if (pageId === 'notice') { renderNoticeTable(); }
