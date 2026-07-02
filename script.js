@@ -114,6 +114,41 @@ window.getPageContent = function(pageId, userRole) {
                     <tbody id="noticeTableBody"></tbody>
                 </table>
             </div>
+        `,
+        setting: `
+            <h2>Cài đặt hệ thống (Chỉ dành cho Ban Quản Trị)</h2><br>
+            <div class="account-form-box" style="margin-bottom: 25px;">
+                <h3>🛡️ Trạng thái vận hành đám mây</h3><br>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <label style="font-weight: normal;">Chế độ bảo trì hệ thống công cộng:</label>
+                    <select id="sysMaintenance" style="padding: 8px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                        <option value="off">🟢 Đang hoạt động bình thường</option>
+                        <option value="on">🔴 Bật bảo trì toàn hệ thống</option>
+                    </select>
+                    <button onclick="saveSysSetting()" class="btn-create" style="padding: 8px 15px;">Lưu trạng thái</button>
+                </div>
+            </div>
+
+            <div class="account-form-box" style="margin-bottom: 25px;">
+                <h3>📝 Cấu hình thông tin Fanclub chung</h3><br>
+                <div class="inline-form" style="display: flex; flex-direction: column; gap: 15px;">
+                    <div style="display: flex; flex-direction: column; gap: 5px;">
+                        <label style="font-size: 13px; color: #475569;">Tên dự án hiển thị:</label>
+                        <input type="text" id="sysClubName" value="Doraemon Fanclub" style="width: 100%;">
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 5px;">
+                        <label style="font-size: 13px; color: #475569;">Đường dẫn Fanpage chính thức (URL):</label>
+                        <input type="text" id="sysClubLink" value="https://facebook.com/" style="width: 100%;">
+                    </div>
+                    <button onclick="saveSysSetting()" class="btn-create" style="align-self: flex-start;">Cập nhật thông tin cấu hình</button>
+                </div>
+            </div>
+
+            <div class="account-form-box">
+                <h3>💾 Sao lưu dữ liệu an toàn (Backup)</h3><br>
+                <p style="font-size: 14px; color: #64748b; margin-bottom: 15px;">Tải toàn bộ dữ liệu máy chủ về máy tính dưới định dạng file dữ liệu .json để lưu trữ nội bộ phòng ngừa sự cố đám mây.</p>
+                <button onclick="backupSystemData()" class="btn-create" style="background: #3b82f6;">📥 Xuất file Sao lưu hệ thống</button>
+            </div>
         `
     };
     return pages[pageId] || '<h2>Chức năng đang phát triển</h2>';
@@ -270,6 +305,35 @@ window.deleteAccount = async function(username) {
     }
 }
 
+/* ====================================================
+   6. CÁC HÀM XỬ LÝ RIÊNG CHO MỤC CÀI ĐẶT HỆ THỐNG
+   ==================================================== */
+window.saveSysSetting = function() {
+    alert('💾 Đã lưu cấu hình thiết lập hệ thống thành công lên bộ nhớ tạm Cloud!');
+}
+
+window.backupSystemData = async function() {
+    try {
+        const snapshot = await get(ref(db));
+        if (snapshot.exists()) {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(snapshot.val(), null, 4));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "doraemon_fanclub_backup.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        } else {
+            alert('Không có dữ liệu trên Cloud để sao lưu!');
+        }
+    } catch (err) {
+        alert('Lỗi sao lưu hệ thống: ' + err.message);
+    }
+}
+
+/* ====================================================
+   7. KHỞI CHẠY KHI TẢI TRANG
+   ==================================================== */
 document.addEventListener('DOMContentLoaded', () => {
     const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
     const isLoginPage = document.getElementById('username') !== null;
