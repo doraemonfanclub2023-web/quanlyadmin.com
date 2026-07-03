@@ -17,7 +17,7 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 /* ====================================================
-   2. KHỞI TẠO TÀI KHOẢN GỐC TRÊN CLOUD
+   2. KHỔI TẠO TÀI KHOẢN GỐC TRÊN CLOUD
    ==================================================== */
 async function initDatabase() {
     const dbRef = ref(db);
@@ -159,6 +159,26 @@ window.getPageContent = function(pageId, userRole) {
                 <p style="font-size: 14px; color: #64748b; margin-bottom: 15px;">Tải toàn bộ dữ liệu máy chủ về máy tính dưới định dạng file dữ liệu .json để lưu trữ nội bộ phòng ngừa sự cố đám mây.</p>
                 <button onclick="backupSystemData()" class="btn-create" style="background: #3b82f6;">📥 Xuất file Sao lưu hệ thống</button>
             </div>
+        `,
+        account: `
+            <h2>Thông tin tài khoản cá nhân</h2><br>
+            <div class="account-form-box" style="max-width: 500px;">
+                <h3>👤 Hồ sơ cá nhân</h3><br>
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div style="display: flex; flex-direction: column; gap: 5px;">
+                        <label style="font-size: 13px; color: #475569;">Mã tài khoản:</label>
+                        <input type="text" id="profileUsername" readonly style="background-color: #f1f5f9; cursor: not-allowed; width: 100%; font-weight: bold;">
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 5px;">
+                        <label style="font-size: 13px; color: #475569;">Chức vụ hệ thống:</label>
+                        <input type="text" id="profileRole" readonly style="background-color: #f1f5f9; cursor: not-allowed; width: 100%;">
+                    </div>
+                    <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 10px 0;">
+                    <div style="padding: 10px; background-color: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; color: #b45309; font-size: 13px;">
+                        🔒 <strong>Lưu ý bảo mật:</strong> Để thay đổi thông tin mật khẩu hoặc chỉnh sửa tài khoản, vui lòng liên hệ trực tiếp với người quản lý cấp cao hoặc thực hiện thông qua trang quản trị Cloud.
+                    </div>
+                </div>
+            </div>
         `
     };
     return pages[pageId] || '<h2>Chức năng đang phát triển</h2>';
@@ -181,6 +201,7 @@ window.showPage = function(pageId) {
         if (pageId === 'notice') window.listenToNoticeTable();
         if (pageId === 'members') window.listenToUserTable();
         if (pageId === 'setting') window.loadSystemSettings();
+        if (pageId === 'account') window.loadProfileData(); 
     }
 }
 
@@ -324,8 +345,16 @@ window.deleteAccount = async function(username) {
 }
 
 /* ====================================================
-   6. CÁC HÀM XỬ LÝ RIÊNG CHO MỤC CÀI ĐẶT HỆ THỐNG
+   6. CÁC HÀM XỬ LÝ RIÊNG CHO MỤC CÀI ĐẶT HỆ THỐNG & PROFILE
    ==================================================== */
+window.loadProfileData = function() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser) return;
+    
+    if (document.getElementById('profileUsername')) document.getElementById('profileUsername').value = currentUser.username;
+    if (document.getElementById('profileRole')) document.getElementById('profileRole').value = currentUser.role;
+}
+
 window.loadSystemSettings = async function() {
     try {
         const dbRef = ref(db);
@@ -385,16 +414,14 @@ window.backupSystemData = async function() {
 /* ====================================================
    7. KHỞI CHẠY KHI TẢI TRANG & ĐĂNG KÝ SỰ KIỆN CLICK MENU ĐỘNG
    ==================================================== */
-// HÀM ÉP BUỘC RENDER TRANG CHỦ KHÔNG QUA TRUNG GIAN WINDOW
 function forceRenderHomeDirectly() {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     const contentDiv = document.getElementById('pageContent');
     
     if (currentUser && contentDiv) {
-        // Chỉ chèn nội dung nếu vùng này đang trống rỗng hoàn toàn
         if (contentDiv.innerHTML.trim() === '' || contentDiv.innerHTML.includes('Đang kết nối Cloud...')) {
             contentDiv.innerHTML = window.getPageContent('home', currentUser.role);
-            window.listenToHomeData(); // Kích hoạt lắng nghe dữ liệu Firebase
+            window.listenToHomeData(); 
             console.log("-> Đã kích hoạt cơ chế Ép Render Trang Chủ Thành Công!");
         }
     }
@@ -410,12 +437,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
     } else {
-        // CHẠY NGAY LẬP TỨC 2 NHỊP ĐỂ PHÒNG NGỪA TRÌNH DUYỆT ĐƠ TRONG LÚC TẢI MODULE
         forceRenderHomeDirectly();
         setTimeout(forceRenderHomeDirectly, 100);
         setTimeout(forceRenderHomeDirectly, 400);
 
-        // KHẮC PHỤC LỖI CLICK MENU BẰNG ỦY QUYỀN SỰ KIỆN
         const sidebar = document.querySelector('.sidebar');
         if (sidebar) {
             sidebar.addEventListener('click', (e) => {
@@ -431,7 +456,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // THEO DÕI TRẠNG THÁI BẢO TRÌ TỪ CLOUD
         onValue(ref(db, 'system_config/maintenance'), (snapshot) => {
             const isMaintenance = snapshot.val();
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
