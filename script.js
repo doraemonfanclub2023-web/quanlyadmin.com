@@ -387,25 +387,42 @@ window.backupSystemData = async function() {
    7. KHỞI CHẠY KHI TẢI TRANG & ĐĂNG KÝ SỰ KIỆN CLICK MENU ĐỘNG
    ==================================================== */
 document.addEventListener('DOMContentLoaded', () => {
-    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     const isLoginPage = document.getElementById('username') !== null;
 
-    if (currentUser) {
-        if (isLoginPage) {
+    // KIỂM TRA ĐIỀU HƯỚNG SỚM NẾU ĐANG Ở TRANG LOGIN
+    if (isLoginPage) {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        if (currentUser) {
             window.location.href = "dashboard.html";
             return;
         }
-        
-        // --- CHỮA TRIỆT ĐỂ LỖI TRẮNG TRANG BẰNG CƠ CHẾ SỰ KIỆN HOÃN (EVENT LOOP) ---
-        // Hoãn 50ms giúp Layout HTML của Dashboard vẽ hoàn thiện trước khi gọi showPage('home')
-        setTimeout(() => {
+    } else {
+        // --- GIẢI PHÁP ĐẶC TRỊ TRẮNG TRANG: VÒNG LẶP KIỂM TRA (POLLING) ---
+        // Liên tục kiểm tra xem LocalStorage và DOM đã khớp lệnh chưa, giải quyết triệt để vấn đề bất đồng bộ khi chuyển trang.
+        let checkAttempts = 0;
+        const autoLoadHome = setInterval(() => {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
             const contentDiv = document.getElementById('pageContent');
-            if (contentDiv && contentDiv.innerHTML.trim() === '') {
-                window.showPage('home');
+
+            checkAttempts++;
+
+            if (currentUser && contentDiv) {
+                clearInterval(autoLoadHome); // Dừng vòng lặp khi mọi thứ đã sẵn sàng
+                if (contentDiv.innerHTML.trim() === '') {
+                    window.showPage('home'); // Render trang chủ lập tức
+                }
+            } 
+            
+            // Nếu kiểm tra quá 20 lần (tương đương 1 giây) mà vẫn không thấy User đăng nhập, đá về index.html
+            if (checkAttempts > 20) {
+                clearInterval(autoLoadHome);
+                if (!currentUser) {
+                    window.location.href = "index.html";
+                }
             }
-        }, 50);
-        // --------------------------------------------------------------------------
-        
+        }, 50); // Cứ mỗi 50ms kiểm tra một lần
+        // ------------------------------------------------------------------
+
         // KHẮC PHỤC LỖI CLICK MENU BẰNG ỦY QUYỀN SỰ KIỆN
         const sidebar = document.querySelector('.sidebar');
         if (sidebar) {
@@ -422,18 +439,16 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // THEO DÕI TRẠNG THÁI BẢO TRÌ TỪ CLOUD (CHẠY NGẦM KHÔNG ẢNH HƯỞNG GIAO DIỆN)
+        // THEO DÕI TRẠNG THÁI BẢO TRÌ TỪ CLOUD (CHẠY NGẦM)
         onValue(ref(db, 'system_config/maintenance'), (snapshot) => {
             const isMaintenance = snapshot.val();
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
             
-            if (isMaintenance === 'on' && currentUser.role !== 'Ban Quản Trị') {
+            if (isMaintenance === 'on' && currentUser && currentUser.role !== 'Ban Quản Trị') {
                 alert('🔴 Hệ thống đang trong chế độ bảo trì công cộng. Vui lòng quay lại sau!');
                 localStorage.removeItem('currentUser');
                 window.location.href = "index.html";
             }
         });
-
-    } else {
-        if (!isLoginPage) window.location.href = "index.html";
     }
 });
