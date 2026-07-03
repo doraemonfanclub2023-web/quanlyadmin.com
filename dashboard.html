@@ -50,11 +50,120 @@
         .btn-delete { background: #ef4444; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
         .btn-delete:hover { background: #dc2626; }
         .badge-default { color: #94a3b8; font-style: italic; }
+
+        /* ====================================================
+           MÃ CSS TỐI ƯU HÓA GIAO DIỆN MOBILE CHUẨN SPA
+           ==================================================== */
+        @media screen and (max-width: 768px) {
+            body {
+                display: block !important; /* Phá vỡ bố cục chia đôi màn hình */
+                height: auto;
+            }
+
+            /* 1. Biến đổi Sidebar thành Thanh điều hướng bám dưới đáy */
+            .sidebar {
+                width: 100% !important;
+                height: 60px !important;
+                position: fixed !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                z-index: 9999 !important;
+                flex-direction: row !important;
+                box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.15);
+            }
+
+            /* Ẩn dòng chữ thương hiệu để nhường khoảng trống */
+            .sidebar-brand {
+                display: none !important;
+            }
+
+            /* Ép menu ul xếp thành hàng ngang */
+            .sidebar > div:first-child {
+                width: 100%;
+                height: 100%;
+            }
+
+            .sidebar-menu {
+                display: flex !important;
+                flex-direction: row !important;
+                justify-content: space-around !important;
+                align-items: center !important;
+                padding: 0 !important;
+                height: 100% !important;
+                width: calc(100% - 90px) !important; /* Chừa không gian cho nút đăng xuất */
+                float: left;
+            }
+
+            .sidebar-menu li {
+                padding: 0 !important;
+                height: 100% !important;
+                flex: 1;
+                justify-content: center;
+                font-size: 12px !important;
+                text-align: center;
+                border-bottom: none !important;
+                white-space: nowrap;
+            }
+
+            /* Đưa nút đăng xuất lên nằm chung hàng dưới đáy */
+            .btn-logout {
+                width: 90px !important;
+                height: 100% !important;
+                padding: 0 !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                font-size: 12px !important;
+                border-top: none !important;
+                border-left: 1px solid #334155;
+                float: right;
+            }
+
+            /* 2. Cấu hình lại khu vực hiển thị nội dung chính */
+            .main-content {
+                width: 100% !important;
+                display: block !important;
+            }
+
+            .header {
+                padding: 15px 20px !important;
+                justify-content: center !important; /* Căn giữa tên hệ thống trên mobile */
+            }
+
+            .content-body {
+                padding: 20px 15px 80px 15px !important; /* Dưới đáy padding 80px chống bị menu che mất */
+            }
+
+            /* 3. Tối ưu các thẻ Card và Form */
+            .cards {
+                grid-template-columns: 1fr !important; /* Ép về một cột duy nhất */
+                gap: 15px !important;
+            }
+
+            .inline-form {
+                flex-direction: column !important;
+            }
+
+            .inline-form input, .inline-form select, .inline-form textarea, .btn-create {
+                width: 100% !important;
+            }
+
+            /* 4. Chống tràn bảng hiển thị */
+            .table-container {
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .table {
+                min-width: 550px; /* Giữ cấu trúc bảng không bị méo */
+            }
+        }
     </style>
 </head>
 <body>
 
-    <!-- SIDEBAR DIỀU HƯỚNG SPA -->
+    <!-- SIDEBAR ĐIỀU HƯỚNG SPA -->
     <div class="sidebar">
         <div>
             <div class="sidebar-brand">Doraemon Fanclub Admin</div>
