@@ -397,7 +397,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // --- 🎛️ KHẮC PHỤC LỖI CLICK MENU BẰNG ỦY QUYỀN SỰ KIỆN ---
+        // 1. TỰ ĐỘNG TẢI TRANG CHỦ NGAY KHI VÀO DASHBOARD (SỬA LỖI TRẮNG TRANG)
+        // Cho hiện giao diện Home ngay lập tức, không chờ đợi hay lồng vào hàm lắng nghe của Cloud nữa
+        const contentDiv = document.getElementById('pageContent');
+        if (contentDiv && contentDiv.innerHTML.trim() === '') {
+            window.showPage('home');
+        }
+        
+        // 2. KHẮC PHỤC LỖI CLICK MENU BẰNG ỦY QUYỀN SỰ KIỆN
         const sidebar = document.querySelector('.sidebar');
         if (sidebar) {
             sidebar.addEventListener('click', (e) => {
@@ -413,7 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // --- 🛡️ THEO DÕI TRẠNG THÁI BẢO TRÌ TỪ CLOUD ---
+        // 3. THEO DÕI TRẠNG THÁI BẢO TRÌ TỪ CLOUD (CHỈ CHẠY NGẦM ĐỂ KIỂM TRA QUYỀN TRUY CẬP)
         onValue(ref(db, 'system_config/maintenance'), (snapshot) => {
             const isMaintenance = snapshot.val();
             
@@ -421,12 +428,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('🔴 Hệ thống đang trong chế độ bảo trì công cộng. Vui lòng quay lại sau!');
                 localStorage.removeItem('currentUser');
                 window.location.href = "index.html";
-            } else {
-                // Chỉ tự động kích hoạt trang home khi vùng chứa rỗng HOÀN TOÀN lúc tải trang đầu tiên
-                const contentDiv = document.getElementById('pageContent');
-                if (contentDiv && contentDiv.innerHTML.trim() === '') {
-                    window.showPage('home');
-                }
             }
         });
 
