@@ -395,17 +395,15 @@ document.addEventListener('DOMContentLoaded', () => {
         onValue(ref(db, 'system_config/maintenance'), (snapshot) => {
             const isMaintenance = snapshot.val();
             
-            // Nếu bật bảo trì VÀ tài khoản hiện tại KHÔNG PHẢI là Ban Quản Trị (ví dụ là Admin)
             if (isMaintenance === 'on' && currentUser.role !== 'Ban Quản Trị') {
                 alert('🔴 Hệ thống đang trong chế độ bảo trì công cộng. Vui lòng quay lại sau!');
-                
-                // Xóa phiên đăng nhập của Admin và đưa về trang chủ/đăng nhập
                 localStorage.removeItem('currentUser');
                 window.location.href = "index.html";
             } else {
-                // Nếu bình thường hoặc là BQT thì cho xem trang home như cũ
-                if (!document.getElementById('pageContent')?.innerHTML) {
-                    showPage('home');
+                // SỬA TẠI ĐÂY: Nếu vùng chứa đang trống rỗng, tự động gọi hiển thị trang home luôn!
+                const contentDiv = document.getElementById('pageContent');
+                if (contentDiv && !contentDiv.innerHTML.trim()) {
+                    window.showPage('home');
                 }
             }
         });
