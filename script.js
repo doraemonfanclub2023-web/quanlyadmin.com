@@ -88,7 +88,7 @@ window.getPageContent = function(pageId, userRole) {
         `,
         members: `
             <h2>Quản lý thành viên (Tài khoản)</h2><br>
-            \${userRole === 'Admin' ? '' : \`
+            ${userRole === 'Admin' ? '' : `
             <div class="account-form-box">
                 <h3>➕ Thêm tài khoản quản trị mới</h3>
                 <div class="inline-form">
@@ -98,7 +98,7 @@ window.getPageContent = function(pageId, userRole) {
                     <button onclick="addAccount()" class="btn-create">Tạo tài khoản</button>
                 </div>
             </div>
-            \`}
+            `}
             <div class="table-container">
                 <table class="table">
                     <thead><tr><th>Mã Tài Khoản</th><th>Chức vụ</th><th>Thao tác</th></tr></thead>
@@ -108,7 +108,7 @@ window.getPageContent = function(pageId, userRole) {
         `,
         notice: `
             <h2>Quản lý thông báo</h2><br>
-            \${userRole === 'Admin' ? '' : \`
+            ${userRole === 'Admin' ? '' : `
             <div class="account-form-box">
                 <h3>📝 Soạn thông báo mới</h3>
                 <div class="inline-form" style="display: flex; flex-direction: column; gap: 15px;">
@@ -117,7 +117,7 @@ window.getPageContent = function(pageId, userRole) {
                     <button onclick="addNotice()" class="btn-create">Đăng thông báo</button>
                 </div>
             </div>
-            \`}
+            `}
             <div class="table-container">
                 <table class="table">
                     <thead><tr><th>Ngày đăng</th><th>Tiêu đề</th><th>Nội dung</th><th>Thao tác</th></tr></thead>
@@ -168,10 +168,12 @@ window.showPage = function(pageId) {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (!currentUser) return;
 
-   if (currentUser.role !== 'Admin' && pageId === 'setting') {
-    alert('⛔ Bạn không có quyền truy cập vào Cài đặt hệ thống!');
-    return;
-}
+    // SỬA LỖI CHECK QUYỀN TRUY CẬP SETTING
+    if (pageId === 'setting' && currentUser.role !== 'Ban Quản Trị') {
+        alert('⛔ Bạn không có quyền truy cập vào Cài đặt hệ thống!');
+        return;
+    }
+
     const contentDiv = document.getElementById('pageContent');
     if (contentDiv) {
         contentDiv.innerHTML = window.getPageContent(pageId, currentUser.role);
@@ -184,12 +186,12 @@ window.showPage = function(pageId) {
 }
 
 /* ====================================================
-   5. ĐỒNG BỘ REALTIME DỮ LIỆU TỰ ĐỘNG TỪ CLOUD (ĐÃ SỬA LỖI ĐÓNG GÓI MODULE)
+   5. ĐỒNG BỘ REALTIME DỮ LIỆU TỰ ĐỘNG TỪ CLOUD
    ==================================================== */
 window.listenToHomeData = function() {
-    // Tự động đếm số lượng tài khoản thành viên hiển thị trên widget Home
     onValue(ref(db, 'users'), (snapshot) => {
         const countMembersEl = document.getElementById('countMembers');
+        // Check kỹ phần tử tồn tại trước khi gán dữ liệu tránh báo đỏ
         if (countMembersEl) {
             countMembersEl.innerText = snapshot.exists() ? Object.keys(snapshot.val()).length : '0';
         }
@@ -214,7 +216,7 @@ window.listenToHomeData = function() {
 
         if (countNoticesEl) countNoticesEl.innerText = notices.length;
         notices.forEach(n => {
-            homeNoticeUl.innerHTML += `<li><strong>[\${n.date}] \${n.title}:</strong> \${n.content}</li>`;
+            homeNoticeUl.innerHTML += `<li><strong>[${n.date}] ${n.title}:</strong> ${n.content}</li>`;
         });
     });
 }
@@ -236,14 +238,14 @@ window.listenToNoticeTable = function() {
             
             const actionHTML = userRole === 'Admin' 
                 ? `<span class="badge-default" style="color: #94a3b8; font-style: italic;">Không có quyền</span>` 
-                : `<button onclick="deleteNotice('\${key}')" class="btn-delete">Xóa</button>`;
+                : `<button onclick="deleteNotice('${key}')" class="btn-delete">Xóa</button>`;
 
             tbody.innerHTML = `
                 <tr>
-                    <td>\${n.date}</td>
-                    <td><strong>\${n.title}</strong></td>
-                    <td>\${n.content}</td>
-                    <td>\${actionHTML}</td>
+                    <td>${n.date}</td>
+                    <td><strong>${n.title}</strong></td>
+                    <td>${n.content}</td>
+                    <td>${actionHTML}</td>
                 </tr>
             ` + tbody.innerHTML;
         });
@@ -256,7 +258,7 @@ window.addNotice = async function() {
     if (!title || !content) return alert('Vui lòng điền đủ tiêu đề và nội dung!');
 
     const today = new Date();
-    const dateStr = `\${String(today.getDate()).padStart(2, '0')}/\${String(today.getMonth() + 1).padStart(2, '0')}/\${today.getFullYear()}`;
+    const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
 
     await push(ref(db, 'notices'), { title, content, date: dateStr });
     alert('Đăng thành công lên Cloud toàn hệ thống!');
@@ -269,7 +271,7 @@ window.deleteNotice = async function(key) {
     }
 
     if (confirm('Xóa thông báo này trên Cloud?')) {
-        await remove(ref(db, `notices/\${key}`));
+        await remove(ref(db, `notices/${key}`));
     }
 }
 
@@ -285,14 +287,14 @@ window.listenToUserTable = function() {
         snapshot.forEach((childSnapshot) => {
             const u = childSnapshot.val();
             
-            let actionHTML = `<button onclick="deleteAccount('\${u.username}')" class="btn-delete">Xóa</button>`;
+            let actionHTML = `<button onclick="deleteAccount('${u.username}')" class="btn-delete">Xóa</button>`;
             if (userRole === 'Admin') {
                 actionHTML = `<span class="badge-default" style="color: #94a3b8; font-style: italic;">Không có quyền</span>`;
             } else if (u.username === 'BQT001' || u.username === 'BQT002') {
                 actionHTML = `<span>Hệ thống</span>`;
             }
 
-            tbody.innerHTML += `<tr><td><strong>\${u.username}</strong></td><td>\${u.role}</td><td>\${actionHTML}</td></tr>`;
+            tbody.innerHTML += `<tr><td><strong>${u.username}</strong></td><td>${u.role}</td><td>${actionHTML}</td></tr>`;
         });
     });
 }
@@ -308,7 +310,7 @@ window.addAccount = async function() {
     const role = document.getElementById('newRole')?.value;
     if (!username || !password) return alert('Thiếu thông tin tạo tài khoản!');
 
-    await set(ref(db, `users/\${username}`), { username, password, role });
+    await set(ref(db, `users/${username}`), { username, password, role });
     alert('Thêm tài khoản đồng bộ thành công!');
 }
 
@@ -319,7 +321,7 @@ window.deleteAccount = async function(username) {
     }
 
     if (confirm('Xóa tài khoản này khỏi hệ thống đám mây?')) {
-        await remove(ref(db, `users/\${username}`));
+        await remove(ref(db, `users/${username}`));
     }
 }
 
@@ -395,29 +397,23 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // --- ĐOẠN KHẮC PHỤC LỖI CLICK MENU (ỦY QUYỀN SỰ KIỆN) ---
-        // Tự động tìm menu sidebar và gán sự kiện click động mà không phụ thuộc vào onclick trong HTML
+        // --- 🎛️ KHẮC PHỤC LỖI CLICK MENU BẰNG ỦY QUYỀN SỰ KIỆN ---
         const sidebar = document.querySelector('.sidebar');
         if (sidebar) {
             sidebar.addEventListener('click', (e) => {
-                // Tìm xem phần tử được click (hoặc cha của nó) có gọi hàm showPage không
-                const target = e.target.closest('[onclick^="showPage"], [onclick^="window.showPage"]');
+                const target = e.target.closest('[onclick*="showPage"]');
                 if (target) {
-                    e.preventDefault(); // Ngăn chặn hành vi mặc định
-                    
-                    // Trích xuất tên trang từ chuỗi showPage('xyz')
+                    e.preventDefault();
                     const attr = target.getAttribute('onclick');
                     const match = attr.match(/showPage\(['"]([^'"]+)['"]\)/);
                     if (match && match[1]) {
-                        const pageId = match[1];
-                        window.showPage(pageId); // Kích hoạt chuyển trang
+                        window.showPage(match[1]);
                     }
                 }
             });
         }
-        // -------------------------------------------------------
 
-        // KÍCH HOẠT LẮNG NGHE TRẠNG THÁI BẢO TRÌ TỪ CLOUD
+        // --- 🛡️ THEO DÕI TRẠNG THÁI BẢO TRÌ TỪ CLOUD ---
         onValue(ref(db, 'system_config/maintenance'), (snapshot) => {
             const isMaintenance = snapshot.val();
             
@@ -426,9 +422,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.removeItem('currentUser');
                 window.location.href = "index.html";
             } else {
-                // Tự động tải trang chủ 'home' nếu vùng chứa đang trống rỗng
+                // Chỉ tự động kích hoạt trang home khi vùng chứa rỗng HOÀN TOÀN lúc tải trang đầu tiên
                 const contentDiv = document.getElementById('pageContent');
-                if (contentDiv && !contentDiv.innerHTML.trim()) {
+                if (contentDiv && contentDiv.innerHTML.trim() === '') {
                     window.showPage('home');
                 }
             }
