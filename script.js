@@ -143,10 +143,11 @@ window.getPageContent = function(pageId, userRole) {
                         <option value="off">🟢 Đang hoạt động bình thường</option>
                         <option value="on">🔴 Bật bảo trì toàn hệ thống</option>
                     </select>
-                    <button onclick="saveSysSetting()" class="btn-create" style="padding: 8px 15px;">Lưu trạng thái</button>
+                    <button onclick="saveSysSettingOnly()" class="btn-create" style="padding: 8px 15px;">Lưu trạng thái</button>
                 </div>
             </div>
 
+            <!-- KHỐI ĐÃ ĐƯỢC TÁCH BIỆT HÀM XỬ LÝ THEO image_cf6c23.png -->
             <div class="account-form-box" style="margin-bottom: 25px;">
                 <h3>📝 Cấu hình thông tin Fanclub chung</h3><br>
                 <div class="inline-form" style="display: flex; flex-direction: column; gap: 15px;">
@@ -158,7 +159,7 @@ window.getPageContent = function(pageId, userRole) {
                         <label style="font-size: 13px; color: #475569;">Đường dẫn Fanpage chính thức (URL):</label>
                         <input type="text" id="sysClubLink" value="https://facebook.com/" style="width: 100%;">
                     </div>
-                    <button onclick="saveSysSetting()" class="btn-create" style="align-self: flex-start;">Cập nhật thông tin cấu hình</button>
+                    <button onclick="saveClubConfigOnly()" class="btn-create" style="align-self: flex-start;">Cập nhật thông tin cấu hình</button>
                 </div>
             </div>
 
@@ -402,7 +403,6 @@ window.loadProfileData = async function() {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (!currentUser) return;
     
-    // Đọc dữ liệu mới nhất từ Cloud về để điền vào ô Input nhằm tránh bị lệch đồng bộ
     try {
         const snapshot = await get(ref(db, `users/${currentUser.username}`));
         if (snapshot.exists()) {
@@ -411,18 +411,15 @@ window.loadProfileData = async function() {
             if (document.getElementById('profileName')) document.getElementById('profileName').value = newestData.name || '';
             if (document.getElementById('profileRole')) document.getElementById('profileRole').value = newestData.role;
             
-            // Cập nhật ngược lại localStorage để giữ trạng thái chuẩn
             localStorage.setItem('currentUser', JSON.stringify({ ...currentUser, ...newestData }));
         }
     } catch (err) {
-        // Fallback dùng tạm dữ liệu cũ nếu Cloud rớt mạng
         if (document.getElementById('profileUsername')) document.getElementById('profileUsername').value = currentUser.username;
         if (document.getElementById('profileName')) document.getElementById('profileName').value = currentUser.name || '';
         if (document.getElementById('profileRole')) document.getElementById('profileRole').value = currentUser.role;
     }
 }
 
-// HÀM TỰ CẬP NHẬT HỌ TÊN CỦA BẢN THÂN LÊN CLOUD (ĐÃ FIX LỖI ĐỒNG BỘ)
 window.updateProfileName = async function() {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (!currentUser) return;
@@ -431,16 +428,12 @@ window.updateProfileName = async function() {
     if (!newName) return alert('Họ và tên không được để trống!');
 
     try {
-        // 1. Đồng bộ lên Cloud node dữ liệu
         await update(ref(db, `users/${currentUser.username}`), { name: newName });
-        
-        // 2. Bảo toàn toàn bộ cấu hình cũ (gồm mật khẩu) và cập nhật trường tên mới vào localStorage
         currentUser.name = newName;
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
         
         alert('🟢 Đã cập nhật họ và tên cá nhân thành công lên Cloud!');
         
-        // 3. Ép cập nhật lại phần text hiển thị tên Admin trên thanh Header/Sidebar toàn cục (nếu có)
         const userDisplayEl = document.getElementById('userDisplayName') || document.querySelector('.user-info span');
         if (userDisplayEl) userDisplayEl.innerText = newName;
 
@@ -464,25 +457,39 @@ window.loadSystemSettings = async function() {
     }
 }
 
-window.saveSysSetting = async function() {
+// HÀM 1: CHỈ CẬP NHẬT RIÊNG TRẠNG THÁI BẢO TRÌ
+window.saveSysSettingOnly = async function() {
     const maintenance = document.getElementById('sysMaintenance')?.value;
+    try {
+        await update(ref(db, 'system_config'), {
+            maintenance: maintenance,
+            maintenanceLastUpdated: new Date().toLocaleString()
+        });
+        alert('🟢 Đã cập nhật trạng thái bảo trì hệ thống thành công lên Cloud!');
+    } catch (err) {
+        alert('🔴 Lỗi cập nhật trạng thái bảo trì: ' + err.message);
+    }
+}
+
+// HÀM 2: CHỈ CẬP NHẬT RIÊNG THÔNG TIN FANCLUB (ỨNG VỚI KHỐI TRONG ẢNH image_cf6c23.png)
+window.saveClubConfigOnly = async function() {
     const clubName = document.getElementById('sysClubName')?.value.trim();
     const clubLink = document.getElementById('sysClubLink')?.value.trim();
 
     if (!clubName || !clubLink) {
-        return alert('Vui lòng điền đầy đủ thông tin cấu hình!');
+        return alert('❌ Vui lòng điền đầy đủ Tên dự án và Đường dẫn Fanpage!');
     }
 
     try {
-        await set(ref(db, 'system_config'), {
-            maintenance: maintenance,
+        // Dùng update() để tránh ghi đè làm mất trường 'maintenance' bên trên
+        await update(ref(db, 'system_config'), {
             clubName: clubName,
             clubLink: clubLink,
-            lastUpdated: new Date().toLocaleString()
+            configLastUpdated: new Date().toLocaleString()
         });
-        alert('🟢 Đã đồng bộ và cập nhật cấu hình hệ thống thành công lên Cloud Firebase!');
+        alert('🟢 Đã cập nhật cấu hình thông tin Fanclub chung thành công!');
     } catch (err) {
-        alert('🔴 Lỗi cập nhật hệ thống: ' + err.message);
+        alert('🔴 Lỗi cập nhật cấu hình Fanclub: ' + err.message);
     }
 }
 
@@ -550,14 +557,32 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        onValue(ref(db, 'system_config/maintenance'), (snapshot) => {
-            const isMaintenance = snapshot.val();
+        // LẮNG NGHE REALTIME: Đổi trạng thái bảo trì VÀ tự động đồng bộ tên Thương hiệu ở Sidebar
+        onValue(ref(db, 'system_config'), (snapshot) => {
+            if (!snapshot.exists()) return;
+            const config = snapshot.val();
+            
+            // 1. Kiểm tra trạng thái bảo trì hệ thống
+            const isMaintenance = config.maintenance;
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
             
             if (isMaintenance === 'on' && currentUser && currentUser.role !== 'Ban Quản Trị') {
                 alert('🔴 Hệ thống đang trong chế độ bảo trì công cộng. Vui lòng quay lại sau!');
                 localStorage.removeItem('currentUser');
                 window.location.href = "index.html";
+                return;
+            }
+
+            // 2. TỰ ĐỘNG ĐỔI TIÊU ĐỀ THƯƠNG HIỆU SIDEBAR THEO TIME THỰC
+            // Tìm phần tử hiển thị chữ "DORAEMON ADMIN" ở Sidebar
+            const brandEl = document.getElementById('sidebarBrand') || document.querySelector('.sidebar h1') || document.querySelector('.sidebar h3') || document.querySelector('.sidebar div:first-child');
+            if (brandEl && config.clubName) {
+                brandEl.innerText = config.clubName.toUpperCase() + " ADMIN";
+            }
+
+            // 3. Đổi luôn tiêu đề tab trình duyệt cho đồng bộ
+            if (config.clubName) {
+                document.title = `${config.clubName} - Hệ thống quản trị`;
             }
         });
     }
