@@ -17,7 +17,7 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 /* ====================================================
-   2. KHỞI TẠO TÀI KHOẢN GỐC TRÊN CLOUD
+   2. KHỔI TẠO TÀI KHOẢN GỐC TRÊN CLOUD
    ==================================================== */
 async function initDatabase() {
     const dbRef = ref(db);
@@ -147,7 +147,6 @@ window.getPageContent = function(pageId, userRole) {
                 </div>
             </div>
 
-            <!-- KHỐI ĐÃ ĐƯỢC TÁCH BIỆT HÀM XỬ LÝ THEO image_cf6c23.png -->
             <div class="account-form-box" style="margin-bottom: 25px;">
                 <h3>📝 Cấu hình thông tin Fanclub chung</h3><br>
                 <div class="inline-form" style="display: flex; flex-direction: column; gap: 15px;">
@@ -457,7 +456,6 @@ window.loadSystemSettings = async function() {
     }
 }
 
-// HÀM 1: CHỈ CẬP NHẬT RIÊNG TRẠNG THÁI BẢO TRÌ
 window.saveSysSettingOnly = async function() {
     const maintenance = document.getElementById('sysMaintenance')?.value;
     try {
@@ -471,7 +469,6 @@ window.saveSysSettingOnly = async function() {
     }
 }
 
-// HÀM 2: CHỈ CẬP NHẬT RIÊNG THÔNG TIN FANCLUB (ỨNG VỚI KHỐI TRONG ẢNH image_cf6c23.png)
 window.saveClubConfigOnly = async function() {
     const clubName = document.getElementById('sysClubName')?.value.trim();
     const clubLink = document.getElementById('sysClubLink')?.value.trim();
@@ -481,7 +478,6 @@ window.saveClubConfigOnly = async function() {
     }
 
     try {
-        // Dùng update() để tránh ghi đè làm mất trường 'maintenance' bên trên
         await update(ref(db, 'system_config'), {
             clubName: clubName,
             clubLink: clubLink,
@@ -573,9 +569,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // 2. TỰ ĐỘNG ĐỔI TIÊU ĐỀ THƯƠNG HIỆU SIDEBAR THEO TIME THỰC
-            // Tìm phần tử hiển thị chữ "DORAEMON ADMIN" ở Sidebar
-            const brandEl = document.getElementById('sidebarBrand') || document.querySelector('.sidebar h1') || document.querySelector('.sidebar h3') || document.querySelector('.sidebar div:first-child');
+            // 2. TỰ ĐỘNG ĐỔI TIÊU ĐỀ THƯƠNG HIỆU SIDEBAR THEO TIME THỰC (Đã sửa Selector thông minh)
+            const brandEl = document.getElementById('sidebarBrand') || 
+                            document.querySelector('.sidebar .brand') || 
+                            document.querySelector('.sidebar h1') || 
+                            document.querySelector('.sidebar h3');
+            
             if (brandEl && config.clubName) {
                 brandEl.innerText = config.clubName.toUpperCase() + " ADMIN";
             }
