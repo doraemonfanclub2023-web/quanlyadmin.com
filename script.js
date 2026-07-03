@@ -169,9 +169,10 @@ window.showPage = function(pageId) {
     if (contentDiv) {
         contentDiv.innerHTML = getPageContent(pageId, currentUser.role);
         
-        if (pageId === 'home') listenToHomeData();
+       if (pageId === 'home') listenToHomeData();
         if (pageId === 'notice') listenToNoticeTable();
         if (pageId === 'members') listenToUserTable();
+        if (pageId === 'setting') loadSystemSettings(); // <-- Dòng mới được thêm ở đây
     }
 }
 
