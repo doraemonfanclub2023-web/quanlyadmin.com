@@ -191,7 +191,6 @@ window.showPage = function(pageId) {
 window.listenToHomeData = function() {
     onValue(ref(db, 'users'), (snapshot) => {
         const countMembersEl = document.getElementById('countMembers');
-        // Check kỹ phần tử tồn tại trước khi gán dữ liệu tránh báo đỏ
         if (countMembersEl) {
             countMembersEl.innerText = snapshot.exists() ? Object.keys(snapshot.val()).length : '0';
         }
@@ -397,14 +396,17 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // 1. TỰ ĐỘNG TẢI TRANG CHỦ NGAY KHI VÀO DASHBOARD (SỬA LỖI TRẮNG TRANG)
-        // Cho hiện giao diện Home ngay lập tức, không chờ đợi hay lồng vào hàm lắng nghe của Cloud nữa
-        const contentDiv = document.getElementById('pageContent');
-        if (contentDiv && contentDiv.innerHTML.trim() === '') {
-            window.showPage('home');
-        }
+        // --- CHỮA TRIỆT ĐỂ LỖI TRẮNG TRANG BẰNG CƠ CHẾ SỰ KIỆN HOÃN (EVENT LOOP) ---
+        // Hoãn 50ms giúp Layout HTML của Dashboard vẽ hoàn thiện trước khi gọi showPage('home')
+        setTimeout(() => {
+            const contentDiv = document.getElementById('pageContent');
+            if (contentDiv && contentDiv.innerHTML.trim() === '') {
+                window.showPage('home');
+            }
+        }, 50);
+        // --------------------------------------------------------------------------
         
-        // 2. KHẮC PHỤC LỖI CLICK MENU BẰNG ỦY QUYỀN SỰ KIỆN
+        // KHẮC PHỤC LỖI CLICK MENU BẰNG ỦY QUYỀN SỰ KIỆN
         const sidebar = document.querySelector('.sidebar');
         if (sidebar) {
             sidebar.addEventListener('click', (e) => {
@@ -420,7 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // 3. THEO DÕI TRẠNG THÁI BẢO TRÌ TỪ CLOUD (CHỈ CHẠY NGẦM ĐỂ KIỂM TRA QUYỀN TRUY CẬP)
+        // THEO DÕI TRẠNG THÁI BẢO TRÌ TỪ CLOUD (CHẠY NGẦM KHÔNG ẢNH HƯỞNG GIAO DIỆN)
         onValue(ref(db, 'system_config/maintenance'), (snapshot) => {
             const isMaintenance = snapshot.val();
             
