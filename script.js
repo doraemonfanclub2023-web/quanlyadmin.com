@@ -586,8 +586,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // 4. 🔥 CẬP NHẬT ĐỘNG FAVICON TRÊN TAB THEO REALTIME
-            // Bồ có thể thay link ảnh icon mặc định bên dưới bằng ảnh icon Doraemon/Fanclub của bồ nha
-            const defaultFavicon = "https://doraemonfanclub2023-web.github.io/quanlyadmin.com/favicon.ico";
+            // ĐÃ THAY BẰNG LINK ẢNH LOGO DORAEMON FANCLUB CỦA BỒ
+            const defaultFavicon = "https://i.postimg.cc/Z57X57Gp/Chua-co-ten-(Logo)-(1).png";
             
             let faviconEl = document.querySelector("link[rel*='icon']");
             if (!faviconEl) {
