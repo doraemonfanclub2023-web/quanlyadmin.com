@@ -46,10 +46,22 @@ window.login = async function() {
     if (snapshot.exists()) {
         const userData = snapshot.val();
         if (userData.password === passInp) {
-            // Thay sessionStorage bằng localStorage để duy trì đăng nhập lâu dài
+            
+            // KIỂM TRA BẢO TRÌ TRƯỚC KHI CHO ĐĂNG NHẬP
+            const configSnapshot = await get(ref(db, 'system_config/maintenance'));
+            const isMaintenance = configSnapshot.val();
+            
+            if (isMaintenance === 'on' && userData.role !== 'Ban Quản Trị') {
+                alert('🔴 Hệ thống đang bảo trì, tài khoản Admin tạm thời không thể truy cập!');
+                return;
+            }
+
             localStorage.setItem('currentUser', JSON.stringify(userData));
             window.location.href = "dashboard.html";
             return;
+        }
+    }
+    if (errorDiv) errorDiv.style.display = 'block';
         }
     }
     if (errorDiv) errorDiv.style.display = 'block';
@@ -372,15 +384,37 @@ window.backupSystemData = async function() {
 }
 
 /* ====================================================
-   7. KHỞI CHẠY KHI TẢI TRANG (ĐÃ THAY BẰNG LOCALSTORAGE CHUẨN)
+   7. KHỞI CHẠY KHI TẢI TRANG & KIỂM TRA BẢO TRÌ REALTIME
    ==================================================== */
 document.addEventListener('DOMContentLoaded', () => {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     const isLoginPage = document.getElementById('username') !== null;
 
     if (currentUser) {
-        if (isLoginPage) window.location.href = "dashboard.html";
-        else showPage('home');
+        if (isLoginPage) {
+            window.location.href = "dashboard.html";
+            return;
+        }
+        
+        // KÍCH HOẠT LẮNG NGHE TRẠNG THÁI BẢO TRÌ TỪ CLOUD
+        onValue(ref(db, 'system_config/maintenance'), (snapshot) => {
+            const isMaintenance = snapshot.val();
+            
+            // Nếu bật bảo trì VÀ tài khoản hiện tại KHÔNG PHẢI là Ban Quản Trị (ví dụ là Admin)
+            if (isMaintenance === 'on' && currentUser.role !== 'Ban Quản Trị') {
+                alert('🔴 Hệ thống đang trong chế độ bảo trì công cộng. Vui lòng quay lại sau!');
+                
+                // Xóa phiên đăng nhập của Admin và đưa về trang chủ/đăng nhập
+                localStorage.removeItem('currentUser');
+                window.location.href = "index.html";
+            } else {
+                // Nếu bình thường hoặc là BQT thì cho xem trang home như cũ
+                if (!document.getElementById('pageContent')?.innerHTML) {
+                    showPage('home');
+                }
+            }
+        });
+
     } else {
         if (!isLoginPage) window.location.href = "index.html";
     }
