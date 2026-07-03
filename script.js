@@ -308,10 +308,47 @@ window.deleteAccount = async function(username) {
 }
 
 /* ====================================================
-   6. CÁC HÀM XỬ LÝ RIÊNG CHO MỤC CÀI ĐẶT HỆ THỐNG
+   6. CÁC HÀM XỬ LÝ RIÊNG CHO MỤC CÀI ĐẶT HỆ THỐNG (ĐÃ KẾT NỐI REALTIME DB)
    ==================================================== */
-window.saveSysSetting = function() {
-    alert('💾 Đã lưu cấu hình thiết lập hệ thống thành công lên bộ nhớ tạm Cloud!');
+
+// Hàm tự động đổ dữ liệu cũ từ Cloud vào các ô nhập liệu khi Ban Quản Trị mở trang Cài đặt
+window.loadSystemSettings = async function() {
+    try {
+        const dbRef = ref(db);
+        const snapshot = await get(child(dbRef, 'system_config'));
+        if (snapshot.exists()) {
+            const config = snapshot.val();
+            if (document.getElementById('sysMaintenance')) document.getElementById('sysMaintenance').value = config.maintenance || 'off';
+            if (document.getElementById('sysClubName')) document.getElementById('sysClubName').value = config.clubName || 'Doraemon Fanclub';
+            if (document.getElementById('sysClubLink')) document.getElementById('sysClubLink').value = config.clubLink || 'https://facebook.com/';
+        }
+    } catch (err) {
+        console.error("Lỗi tải cấu hình hệ thống:", err);
+    }
+}
+
+// Thay thế hàm saveSysSetting cũ thành hàm lưu dữ liệu THẬT lên Cloud
+window.saveSysSetting = async function() {
+    const maintenance = document.getElementById('sysMaintenance')?.value;
+    const clubName = document.getElementById('sysClubName')?.value.trim();
+    const clubLink = document.getElementById('sysClubLink')?.value.trim();
+
+    if (!clubName || !clubLink) {
+        return alert('Vui lòng điền đầy đủ thông tin cấu hình!');
+    }
+
+    try {
+        // Ghi trực tiếp cấu hình mới lên nhánh system_config trên Firebase
+        await set(ref(db, 'system_config'), {
+            maintenance: maintenance,
+            clubName: clubName,
+            clubLink: clubLink,
+            lastUpdated: new Date().toLocaleString()
+        });
+        alert('🟢 Đã đồng bộ và cập nhật cấu hình hệ thống thành công lên Cloud Firebase!');
+    } catch (err) {
+        alert('🔴 Lỗi cập nhật hệ thống: ' + err.message);
+    }
 }
 
 window.backupSystemData = async function() {
