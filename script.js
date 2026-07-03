@@ -72,7 +72,7 @@ window.logout = function() {
 }
 
 /* ====================================================
-   4. SPA ROUTER & RENDER HTML GIAO DIỆN ĐỘNG
+   4. SPA ROUTER & RENDER HTML GIAO DIỆN ĐỘNG (ĐÃ SỬA LỖI)
    ==================================================== */
 window.getPageContent = function(pageId, userRole) {
     const pages = {
@@ -170,6 +170,7 @@ window.showPage = function(pageId) {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (!currentUser) return;
 
+    // GIỮ NGUYÊN PHÂN QUYỀN GỐC: Admin thông thường không được vào mục setting của Ban Quản Trị
     if (currentUser.role === 'Admin' && pageId === 'setting') {
         alert('⛔ Bạn không có quyền truy cập vào Cài đặt hệ thống!');
         return;
@@ -185,7 +186,6 @@ window.showPage = function(pageId) {
         if (pageId === 'setting') loadSystemSettings();
     }
 }
-
 /* ====================================================
    5. ĐỒNG BỘ REALTIME DỮ LIỆU TỰ ĐỘNG TỪ CLOUD
    ==================================================== */
