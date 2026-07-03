@@ -178,12 +178,17 @@ window.getPageContent = function(pageId, userRole) {
                         <input type="text" id="profileUsername" readonly style="background-color: #f1f5f9; cursor: not-allowed; width: 100%; font-weight: bold;">
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 5px;">
+                        <label style="font-size: 13px; color: #475569;">Họ và tên (Được phép chỉnh sửa):</label>
+                        <input type="text" id="profileName" placeholder="Nhập họ và tên cá nhân..." style="width: 100%;">
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 5px;">
                         <label style="font-size: 13px; color: #475569;">Chức vụ hệ thống:</label>
                         <input type="text" id="profileRole" readonly style="background-color: #f1f5f9; cursor: not-allowed; width: 100%;">
                     </div>
+                    <button onclick="updateProfileName()" class="btn-create" style="margin-top: 5px; align-self: flex-start;">Cập nhật họ tên</button>
                     <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 10px 0;">
                     <div style="padding: 10px; background-color: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; color: #b45309; font-size: 13px;">
-                        🔒 <strong>Lưu ý bảo mật:</strong> Để thay đổi thông tin mật khẩu hoặc chỉnh sửa tài khoản, vui lòng liên hệ trực tiếp với người quản lý cấp cao hoặc thực hiện thông qua trang quản trị Cloud.
+                        🔒 <strong>Lưu ý bảo mật:</strong> Để thay đổi thông tin mật khẩu hoặc chỉnh sửa phân quyền chức vụ, vui lòng liên hệ trực tiếp với người quản lý cấp cao.
                     </div>
                 </div>
             </div>
@@ -313,7 +318,7 @@ window.listenToUserTable = function() {
 
         snapshot.forEach((childSnapshot) => {
             const u = childSnapshot.val();
-            const displayName = u.name || ''; // Phòng hờ tài khoản cũ không có trường tên
+            const displayName = u.name || '';
             
             let actionHTML = '';
             
@@ -322,7 +327,6 @@ window.listenToUserTable = function() {
             } else if (u.username === 'BQT001' || u.username === 'BQT002') {
                 actionHTML = `<span style="color: #64748b;">Hệ thống</span>`;
             } else {
-                // Khớp chính xác thiết kế nút đổi mật khẩu (cam/vàng) và nút xóa (đỏ) như ảnh image_cef063.png
                 actionHTML = `
                     <div style="display: flex; gap: 6px;">
                         <button onclick="changeUserPassword('${u.username}')" class="btn-create" style="background: #f59e0b; padding: 4px 10px; font-size: 12px;">Đổi MK</button>
@@ -371,7 +375,6 @@ window.deleteAccount = async function(username) {
     }
 }
 
-// HÀM ĐỔI MẬT KHẨU CHO THÀNH VIÊN KHÁC (BẬT POPUP NHẬP)
 window.changeUserPassword = async function(username) {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (currentUser && currentUser.role === 'Admin') {
@@ -379,7 +382,7 @@ window.changeUserPassword = async function(username) {
     }
 
     const newPass = prompt(`Nhập mật khẩu mới cho tài khoản [ ${username} ]:`);
-    if (newPass === null) return; // Nhấn hủy bỏ
+    if (newPass === null) return;
     
     const cleanPass = newPass.trim();
     if (!cleanPass) return alert('Mật khẩu không được để trống!');
@@ -400,7 +403,30 @@ window.loadProfileData = function() {
     if (!currentUser) return;
     
     if (document.getElementById('profileUsername')) document.getElementById('profileUsername').value = currentUser.username;
+    if (document.getElementById('profileName')) document.getElementById('profileName').value = currentUser.name || '';
     if (document.getElementById('profileRole')) document.getElementById('profileRole').value = currentUser.role;
+}
+
+// HÀM TỰ CẬP NHẬT HỌ TÊN CỦA BẢN THÂN LÊN CLOUD (THEO ẢNH image_cef840.jpg)
+window.updateProfileName = async function() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser) return;
+
+    const newName = document.getElementById('profileName')?.value.trim();
+    if (!newName) return alert('Họ và tên không được để trống!');
+
+    try {
+        // Up dữ liệu trường name lên node tương ứng của user trên Cloud Firebase
+        await update(ref(db, `users/${currentUser.username}`), { name: newName });
+        
+        // Đồng bộ ngược lại dữ liệu bộ nhớ tạm localStorage của trình duyệt hiện tại
+        currentUser.name = newName;
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        
+        alert('🟢 Đã cập nhật họ và tên cá nhân thành công lên Cloud!');
+    } catch (err) {
+        alert('🔴 Lỗi cập nhật dữ liệu: ' + err.message);
+    }
 }
 
 window.loadSystemSettings = async function() {
