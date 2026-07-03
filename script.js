@@ -33,7 +33,7 @@ async function initDatabase() {
 initDatabase();
 
 /* ====================================================
-   3. XỬ LÝ ĐĂNG NHẬP / ĐĂNG XUẤT (ĐÃ CHUYỂN SANG LOCALSTORAGE ĐỂ GHI NHỚ)
+   3. XỬ LÝ ĐĂNG NHẬP / ĐĂNG XUẤT (ĐÃ SỬA LỖI CÚ PHÁP NGOẶC)
    ==================================================== */
 window.login = async function() {
     const userInp = document.getElementById('username')?.value.trim();
@@ -61,9 +61,7 @@ window.login = async function() {
             return;
         }
     }
-    if (errorDiv) errorDiv.style.display = 'block';
-        }
-    }
+    // Hiển thị thông báo lỗi nếu sai tài khoản/mật khẩu
     if (errorDiv) errorDiv.style.display = 'block';
 }
 
@@ -181,10 +179,10 @@ window.showPage = function(pageId) {
     if (contentDiv) {
         contentDiv.innerHTML = getPageContent(pageId, currentUser.role);
         
-       if (pageId === 'home') listenToHomeData();
+        if (pageId === 'home') listenToHomeData();
         if (pageId === 'notice') listenToNoticeTable();
         if (pageId === 'members') listenToUserTable();
-        if (pageId === 'setting') loadSystemSettings(); // <-- Dòng mới được thêm ở đây
+        if (pageId === 'setting') loadSystemSettings();
     }
 }
 
@@ -324,7 +322,6 @@ window.deleteAccount = async function(username) {
    6. CÁC HÀM XỬ LÝ RIÊNG CHO MỤC CÀI ĐẶT HỆ THỐNG (ĐÃ KẾT NỐI REALTIME DB)
    ==================================================== */
 
-// Hàm tự động đổ dữ liệu cũ từ Cloud vào các ô nhập liệu khi Ban Quản Trị mở trang Cài đặt
 window.loadSystemSettings = async function() {
     try {
         const dbRef = ref(db);
@@ -340,7 +337,6 @@ window.loadSystemSettings = async function() {
     }
 }
 
-// Thay thế hàm saveSysSetting cũ thành hàm lưu dữ liệu THẬT lên Cloud
 window.saveSysSetting = async function() {
     const maintenance = document.getElementById('sysMaintenance')?.value;
     const clubName = document.getElementById('sysClubName')?.value.trim();
@@ -351,7 +347,6 @@ window.saveSysSetting = async function() {
     }
 
     try {
-        // Ghi trực tiếp cấu hình mới lên nhánh system_config trên Firebase
         await set(ref(db, 'system_config'), {
             maintenance: maintenance,
             clubName: clubName,
