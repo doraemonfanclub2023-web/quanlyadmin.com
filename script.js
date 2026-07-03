@@ -168,7 +168,6 @@ window.showPage = function(pageId) {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (!currentUser) return;
 
-    // SỬA LỖI CHECK QUYỀN TRUY CẬP SETTING
     if (pageId === 'setting' && currentUser.role !== 'Ban Quản Trị') {
         alert('⛔ Bạn không có quyền truy cập vào Cài đặt hệ thống!');
         return;
@@ -386,10 +385,24 @@ window.backupSystemData = async function() {
 /* ====================================================
    7. KHỞI CHẠY KHI TẢI TRANG & ĐĂNG KÝ SỰ KIỆN CLICK MENU ĐỘNG
    ==================================================== */
+// HÀM ÉP BUỘC RENDER TRANG CHỦ KHÔNG QUA TRUNG GIAN WINDOW
+function forceRenderHomeDirectly() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    const contentDiv = document.getElementById('pageContent');
+    
+    if (currentUser && contentDiv) {
+        // Chỉ chèn nội dung nếu vùng này đang trống rỗng hoàn toàn
+        if (contentDiv.innerHTML.trim() === '' || contentDiv.innerHTML.includes('Đang kết nối Cloud...')) {
+            contentDiv.innerHTML = window.getPageContent('home', currentUser.role);
+            window.listenToHomeData(); // Kích hoạt lắng nghe dữ liệu Firebase
+            console.log("-> Đã kích hoạt cơ chế Ép Render Trang Chủ Thành Công!");
+        }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const isLoginPage = document.getElementById('username') !== null;
 
-    // KIỂM TRA ĐIỀU HƯỚNG SỚM NẾU ĐANG Ở TRANG LOGIN
     if (isLoginPage) {
         const currentUser = JSON.parse(localStorage.getItem('currentUser'));
         if (currentUser) {
@@ -397,31 +410,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
     } else {
-        // --- GIẢI PHÁP ĐẶC TRỊ TRẮNG TRANG: VÒNG LẶP KIỂM TRA (POLLING) ---
-        // Liên tục kiểm tra xem LocalStorage và DOM đã khớp lệnh chưa, giải quyết triệt để vấn đề bất đồng bộ khi chuyển trang.
-        let checkAttempts = 0;
-        const autoLoadHome = setInterval(() => {
-            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-            const contentDiv = document.getElementById('pageContent');
-
-            checkAttempts++;
-
-            if (currentUser && contentDiv) {
-                clearInterval(autoLoadHome); // Dừng vòng lặp khi mọi thứ đã sẵn sàng
-                if (contentDiv.innerHTML.trim() === '') {
-                    window.showPage('home'); // Render trang chủ lập tức
-                }
-            } 
-            
-            // Nếu kiểm tra quá 20 lần (tương đương 1 giây) mà vẫn không thấy User đăng nhập, đá về index.html
-            if (checkAttempts > 20) {
-                clearInterval(autoLoadHome);
-                if (!currentUser) {
-                    window.location.href = "index.html";
-                }
-            }
-        }, 50); // Cứ mỗi 50ms kiểm tra một lần
-        // ------------------------------------------------------------------
+        // CHẠY NGAY LẬP TỨC 2 NHỊP ĐỂ PHÒNG NGỪA TRÌNH DUYỆT ĐƠ TRONG LÚC TẢI MODULE
+        forceRenderHomeDirectly();
+        setTimeout(forceRenderHomeDirectly, 100);
+        setTimeout(forceRenderHomeDirectly, 400);
 
         // KHẮC PHỤC LỖI CLICK MENU BẰNG ỦY QUYỀN SỰ KIỆN
         const sidebar = document.querySelector('.sidebar');
@@ -439,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // THEO DÕI TRẠNG THÁI BẢO TRÌ TỪ CLOUD (CHẠY NGẦM)
+        // THEO DÕI TRẠNG THÁI BẢO TRÌ TỪ CLOUD
         onValue(ref(db, 'system_config/maintenance'), (snapshot) => {
             const isMaintenance = snapshot.val();
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
