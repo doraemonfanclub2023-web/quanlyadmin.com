@@ -168,11 +168,10 @@ window.showPage = function(pageId) {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (!currentUser) return;
 
-    if (currentUser.role === 'Admin' && pageId === 'setting') {
-        alert('⛔ Bạn không có quyền truy cập vào Cài đặt hệ thống!');
-        return;
-    }
-
+   if (currentUser.role !== 'Admin' && pageId === 'setting') {
+    alert('⛔ Bạn không có quyền truy cập vào Cài đặt hệ thống!');
+    return;
+}
     const contentDiv = document.getElementById('pageContent');
     if (contentDiv) {
         contentDiv.innerHTML = window.getPageContent(pageId, currentUser.role);
