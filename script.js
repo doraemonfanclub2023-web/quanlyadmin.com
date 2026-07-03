@@ -383,7 +383,7 @@ window.backupSystemData = async function() {
 }
 
 /* ====================================================
-   7. KHỞI CHẠY KHI TẢI TRANG & KIỂM TRA BẢO TRÌ REALTIME
+   7. KHỞI CHẠY KHI TẢI TRANG & ĐĂNG KÝ SỰ KIỆN CLICK MENU ĐỘNG
    ==================================================== */
 document.addEventListener('DOMContentLoaded', () => {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
@@ -395,6 +395,28 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
+        // --- ĐOẠN KHẮC PHỤC LỖI CLICK MENU (ỦY QUYỀN SỰ KIỆN) ---
+        // Tự động tìm menu sidebar và gán sự kiện click động mà không phụ thuộc vào onclick trong HTML
+        const sidebar = document.querySelector('.sidebar');
+        if (sidebar) {
+            sidebar.addEventListener('click', (e) => {
+                // Tìm xem phần tử được click (hoặc cha của nó) có gọi hàm showPage không
+                const target = e.target.closest('[onclick^="showPage"], [onclick^="window.showPage"]');
+                if (target) {
+                    e.preventDefault(); // Ngăn chặn hành vi mặc định
+                    
+                    // Trích xuất tên trang từ chuỗi showPage('xyz')
+                    const attr = target.getAttribute('onclick');
+                    const match = attr.match(/showPage\(['"]([^'"]+)['"]\)/);
+                    if (match && match[1]) {
+                        const pageId = match[1];
+                        window.showPage(pageId); // Kích hoạt chuyển trang
+                    }
+                }
+            });
+        }
+        // -------------------------------------------------------
+
         // KÍCH HOẠT LẮNG NGHE TRẠNG THÁI BẢO TRÌ TỪ CLOUD
         onValue(ref(db, 'system_config/maintenance'), (snapshot) => {
             const isMaintenance = snapshot.val();
