@@ -11,13 +11,13 @@ const firebaseConfig = {
 };
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getDatabase, ref, set, get, child, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { getDatabase, ref, set, get, child, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 /* ====================================================
-   2. KHỔI TẠO TÀI KHOẢN GỐC TRÊN CLOUD
+   2. KHỞI TẠO TÀI KHOẢN GỐC TRÊN CLOUD
    ==================================================== */
 async function initDatabase() {
     const dbRef = ref(db);
@@ -91,17 +91,25 @@ window.getPageContent = function(pageId, userRole) {
             ${userRole === 'Admin' ? '' : `
             <div class="account-form-box">
                 <h3>➕ Thêm tài khoản quản trị mới</h3>
-                <div class="inline-form">
-                    <input type="text" id="newUsername" placeholder="Mã tài khoản...">
-                    <input type="password" id="newPassword" placeholder="Mật khẩu...">
-                    <select id="newRole"><option value="Admin">Admin</option><option value="Ban Quản Trị">Ban Quản Trị</option></select>
+                <div class="inline-form" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="text" id="newUsername" placeholder="Mã tài khoản (VD: BQTFP-08-014)..." style="flex: 1; min-width: 180px;">
+                    <input type="text" id="newName" placeholder="Họ và tên..." style="flex: 1; min-width: 150px;">
+                    <input type="password" id="newPassword" placeholder="Mật khẩu..." style="flex: 1; min-width: 120px;">
+                    <select id="newRole" style="width: 120px;"><option value="Admin">Admin</option><option value="Ban Quản Trị">Ban Quản Trị</option></select>
                     <button onclick="addAccount()" class="btn-create">Tạo tài khoản</button>
                 </div>
             </div>
             `}
             <div class="table-container">
                 <table class="table">
-                    <thead><tr><th>Mã Tài Khoản</th><th>Chức vụ</th><th>Thao tác</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Mã Tài Khoản</th>
+                            <th>Tên</th>
+                            <th>Chức vụ</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
                     <tbody id="userTableBody"></tbody>
                 </table>
             </div>
@@ -305,15 +313,32 @@ window.listenToUserTable = function() {
 
         snapshot.forEach((childSnapshot) => {
             const u = childSnapshot.val();
+            const displayName = u.name || ''; // Phòng hờ tài khoản cũ không có trường tên
             
-            let actionHTML = `<button onclick="deleteAccount('${u.username}')" class="btn-delete">Xóa</button>`;
+            let actionHTML = '';
+            
             if (userRole === 'Admin') {
                 actionHTML = `<span class="badge-default" style="color: #94a3b8; font-style: italic;">Không có quyền</span>`;
             } else if (u.username === 'BQT001' || u.username === 'BQT002') {
-                actionHTML = `<span>Hệ thống</span>`;
+                actionHTML = `<span style="color: #64748b;">Hệ thống</span>`;
+            } else {
+                // Khớp chính xác thiết kế nút đổi mật khẩu (cam/vàng) và nút xóa (đỏ) như ảnh image_cef063.png
+                actionHTML = `
+                    <div style="display: flex; gap: 6px;">
+                        <button onclick="changeUserPassword('${u.username}')" class="btn-create" style="background: #f59e0b; padding: 4px 10px; font-size: 12px;">Đổi MK</button>
+                        <button onclick="deleteAccount('${u.username}')" class="btn-delete" style="padding: 4px 10px; font-size: 12px;">Xóa</button>
+                    </div>
+                `;
             }
 
-            tbody.innerHTML += `<tr><td><strong>${u.username}</strong></td><td>${u.role}</td><td>${actionHTML}</td></tr>`;
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${u.username}</strong></td>
+                    <td>${displayName}</td>
+                    <td>${u.role}</td>
+                    <td>${actionHTML}</td>
+                </tr>
+            `;
         });
     });
 }
@@ -325,11 +350,13 @@ window.addAccount = async function() {
     }
 
     const username = document.getElementById('newUsername')?.value.trim();
+    const name = document.getElementById('newName')?.value.trim();
     const password = document.getElementById('newPassword')?.value.trim();
     const role = document.getElementById('newRole')?.value;
+    
     if (!username || !password) return alert('Thiếu thông tin tạo tài khoản!');
 
-    await set(ref(db, `users/${username}`), { username, password, role });
+    await set(ref(db, `users/${username}`), { username, name: name || username, password, role });
     alert('Thêm tài khoản đồng bộ thành công!');
 }
 
@@ -341,6 +368,27 @@ window.deleteAccount = async function(username) {
 
     if (confirm('Xóa tài khoản này khỏi hệ thống đám mây?')) {
         await remove(ref(db, `users/${username}`));
+    }
+}
+
+// HÀM ĐỔI MẬT KHẨU CHO THÀNH VIÊN KHÁC (BẬT POPUP NHẬP)
+window.changeUserPassword = async function(username) {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (currentUser && currentUser.role === 'Admin') {
+        return alert('⛔ Bạn không có quyền chỉnh sửa tài khoản!');
+    }
+
+    const newPass = prompt(`Nhập mật khẩu mới cho tài khoản [ ${username} ]:`);
+    if (newPass === null) return; // Nhấn hủy bỏ
+    
+    const cleanPass = newPass.trim();
+    if (!cleanPass) return alert('Mật khẩu không được để trống!');
+
+    try {
+        await update(ref(db, `users/${username}`), { password: cleanPass });
+        alert(`🟢 Đã đổi mật khẩu cho tài khoản ${username} thành công trên Cloud!`);
+    } catch (err) {
+        alert('🔴 Lỗi đồng bộ mật khẩu: ' + err.message);
     }
 }
 
