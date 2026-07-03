@@ -547,6 +547,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const attr = target.getAttribute('onclick');
                     const match = attr.match(/showPage\(['"]([^'"]+)['"]\)/);
                     if (match && match[1]) {
+                        window.location.hash = match[1]; // Tận dụng băm URL nếu cần điều hướng nâng cao
                         window.showPage(match[1]);
                     }
                 }
@@ -579,10 +580,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 brandEl.innerText = config.clubName.toUpperCase() + " ADMIN";
             }
 
-            // 3. Đổi luôn tiêu đề tab trình duyệt cho đồng bộ
+            // 3. Đổi tiêu đề tab trình duyệt cho đồng bộ
             if (config.clubName) {
                 document.title = `${config.clubName} - Hệ thống quản trị`;
             }
+
+            // 4. 🔥 CẬP NHẬT ĐỘNG FAVICON TRÊN TAB THEO REALTIME
+            // Bồ có thể thay link ảnh icon mặc định bên dưới bằng ảnh icon Doraemon/Fanclub của bồ nha
+            const defaultFavicon = "https://doraemonfanclub2023-web.github.io/quanlyadmin.com/favicon.ico";
+            
+            let faviconEl = document.querySelector("link[rel*='icon']");
+            if (!faviconEl) {
+                faviconEl = document.createElement('link');
+                faviconEl.rel = 'shortcut icon';
+                faviconEl.type = 'image/x-icon';
+                document.head.appendChild(faviconEl);
+            }
+            
+            // Nếu trên Cloud Firebase có lưu trường link icon (clubIconUrl) thì lấy, không thì dùng default
+            faviconEl.href = config.clubIconUrl || defaultFavicon;
         });
     }
 });
