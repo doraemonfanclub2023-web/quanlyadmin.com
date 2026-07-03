@@ -398,16 +398,31 @@ window.changeUserPassword = async function(username) {
 /* ====================================================
    6. CÁC HÀM XỬ LÝ RIÊNG CHO MỤC CÀI ĐẶT HỆ THỐNG & PROFILE
    ==================================================== */
-window.loadProfileData = function() {
+window.loadProfileData = async function() {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (!currentUser) return;
     
-    if (document.getElementById('profileUsername')) document.getElementById('profileUsername').value = currentUser.username;
-    if (document.getElementById('profileName')) document.getElementById('profileName').value = currentUser.name || '';
-    if (document.getElementById('profileRole')) document.getElementById('profileRole').value = currentUser.role;
+    // Đọc dữ liệu mới nhất từ Cloud về để điền vào ô Input nhằm tránh bị lệch đồng bộ
+    try {
+        const snapshot = await get(ref(db, `users/${currentUser.username}`));
+        if (snapshot.exists()) {
+            const newestData = snapshot.val();
+            if (document.getElementById('profileUsername')) document.getElementById('profileUsername').value = newestData.username;
+            if (document.getElementById('profileName')) document.getElementById('profileName').value = newestData.name || '';
+            if (document.getElementById('profileRole')) document.getElementById('profileRole').value = newestData.role;
+            
+            // Cập nhật ngược lại localStorage để giữ trạng thái chuẩn
+            localStorage.setItem('currentUser', JSON.stringify({ ...currentUser, ...newestData }));
+        }
+    } catch (err) {
+        // Fallback dùng tạm dữ liệu cũ nếu Cloud rớt mạng
+        if (document.getElementById('profileUsername')) document.getElementById('profileUsername').value = currentUser.username;
+        if (document.getElementById('profileName')) document.getElementById('profileName').value = currentUser.name || '';
+        if (document.getElementById('profileRole')) document.getElementById('profileRole').value = currentUser.role;
+    }
 }
 
-// HÀM TỰ CẬP NHẬT HỌ TÊN CỦA BẢN THÂN LÊN CLOUD (THEO ẢNH image_cef840.jpg)
+// HÀM TỰ CẬP NHẬT HỌ TÊN CỦA BẢN THÂN LÊN CLOUD (ĐÃ FIX LỖI ĐỒNG BỘ)
 window.updateProfileName = async function() {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (!currentUser) return;
@@ -416,14 +431,19 @@ window.updateProfileName = async function() {
     if (!newName) return alert('Họ và tên không được để trống!');
 
     try {
-        // Up dữ liệu trường name lên node tương ứng của user trên Cloud Firebase
+        // 1. Đồng bộ lên Cloud node dữ liệu
         await update(ref(db, `users/${currentUser.username}`), { name: newName });
         
-        // Đồng bộ ngược lại dữ liệu bộ nhớ tạm localStorage của trình duyệt hiện tại
+        // 2. Bảo toàn toàn bộ cấu hình cũ (gồm mật khẩu) và cập nhật trường tên mới vào localStorage
         currentUser.name = newName;
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
         
         alert('🟢 Đã cập nhật họ và tên cá nhân thành công lên Cloud!');
+        
+        // 3. Ép cập nhật lại phần text hiển thị tên Admin trên thanh Header/Sidebar toàn cục (nếu có)
+        const userDisplayEl = document.getElementById('userDisplayName') || document.querySelector('.user-info span');
+        if (userDisplayEl) userDisplayEl.innerText = newName;
+
     } catch (err) {
         alert('🔴 Lỗi cập nhật dữ liệu: ' + err.message);
     }
