@@ -33,7 +33,7 @@ async function initDatabase() {
 initDatabase();
 
 /* ====================================================
-   3. XỬ LÝ ĐĂNG NHẬP / ĐĂNG XUẤT
+   3. XỬ LÝ ĐĂNG NHẬP / ĐĂNG XUẤT (ĐÃ CHUYỂN SANG LOCALSTORAGE ĐỂ GHI NHỚ)
    ==================================================== */
 window.login = async function() {
     const userInp = document.getElementById('username')?.value.trim();
@@ -46,7 +46,8 @@ window.login = async function() {
     if (snapshot.exists()) {
         const userData = snapshot.val();
         if (userData.password === passInp) {
-            sessionStorage.setItem('currentUser', JSON.stringify(userData));
+            // Thay sessionStorage bằng localStorage để duy trì đăng nhập lâu dài
+            localStorage.setItem('currentUser', JSON.stringify(userData));
             window.location.href = "dashboard.html";
             return;
         }
@@ -55,7 +56,8 @@ window.login = async function() {
 }
 
 window.logout = function() {
-    sessionStorage.removeItem('currentUser');
+    // Xóa dữ liệu trong localStorage khi người dùng chủ động bấm Đăng xuất
+    localStorage.removeItem('currentUser');
     window.location.href = "index.html";
 }
 
@@ -155,7 +157,7 @@ window.getPageContent = function(pageId, userRole) {
 }
 
 window.showPage = function(pageId) {
-    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (!currentUser) return;
 
     if (currentUser.role === 'Admin' && pageId === 'setting') {
@@ -202,7 +204,7 @@ function listenToHomeData() {
 }
 
 function listenToNoticeTable() {
-    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     const userRole = currentUser ? currentUser.role : '';
 
     onValue(ref(db, 'notices'), (snapshot) => {
@@ -245,7 +247,7 @@ window.addNotice = async function() {
 }
 
 window.deleteNotice = async function(key) {
-    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (currentUser && currentUser.role === 'Admin') {
         return alert('⛔ Bạn không có quyền xóa thông báo này!');
     }
@@ -256,7 +258,7 @@ window.deleteNotice = async function(key) {
 }
 
 function listenToUserTable() {
-    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     const userRole = currentUser ? currentUser.role : '';
 
     onValue(ref(db, 'users'), (snapshot) => {
@@ -280,7 +282,7 @@ function listenToUserTable() {
 }
 
 window.addAccount = async function() {
-    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (currentUser && currentUser.role === 'Admin') {
         return alert('⛔ Bạn không có quyền thêm thành viên mới!');
     }
@@ -295,7 +297,7 @@ window.addAccount = async function() {
 }
 
 window.deleteAccount = async function(username) {
-    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (currentUser && currentUser.role === 'Admin') {
         return alert('⛔ Bạn không có quyền xóa thành viên này!');
     }
@@ -332,10 +334,10 @@ window.backupSystemData = async function() {
 }
 
 /* ====================================================
-   7. KHỞI CHẠY KHI TẢI TRANG
+   7. KHỞI CHẠY KHI TẢI TRANG (ĐÃ THAY BẰNG LOCALSTORAGE CHUẨN)
    ==================================================== */
 document.addEventListener('DOMContentLoaded', () => {
-    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     const isLoginPage = document.getElementById('username') !== null;
 
     if (currentUser) {
