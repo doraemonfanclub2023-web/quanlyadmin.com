@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { 
     getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, onSnapshot 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // ==========================================
 // 1. CẤU HÌNH FIREBASE
@@ -26,10 +26,10 @@ let unsubscribeDocs = null;
 let unsubscribeTests = null;
 
 // ==========================================
-// 2. KIỂM TRA TRẠNG THÁI ĐĂNG NHẬP & PHÂN QUYỀN (ĐÃ FIX LỖI 404)
+// 2. KIỂM TRA TRẠNG THÁI ĐĂNG NHẬP & PHÂN QUYỀN
 // ==========================================
 onAuthStateChanged(auth, async (user) => {
-    // Kiểm tra xem người dùng hiện tại đang đứng ở trang nào
+    // Kiểm tra xem trang hiện tại có phải là trang index đăng nhập hay không
     const isLoginPage = window.location.pathname.endsWith("index.html") || window.location.pathname.endsWith("/");
 
     if (user) {
@@ -46,17 +46,16 @@ onAuthStateChanged(auth, async (user) => {
             window.currentUser = { uid: user.uid, email: user.email, role: "user", name: "Thành viên" };
         }
 
-        // Nếu đã đăng nhập mà vẫn đứng ở trang Đăng nhập (index.html), tự động đẩy vào Dashboard
+        // Nếu đã đăng nhập thành công mà vẫn đứng ở trang index.html, đá qua trang hệ thống quản trị
         if (isLoginPage) {
             window.location.href = "dashboard.html";
         } else {
-            // Theo dõi hash URL để hiển thị trang tương ứng trong Dashboard, mặc định là 'home'
+            // Theo dõi hash URL để hiển thị trang tương ứng, mặc định là 'home'
             const defaultPage = window.location.hash.replace('#', '') || 'home';
             window.showPage(defaultPage);
         }
     } else {
-        // NẾU CHƯA ĐĂNG NHẬP:
-        // Chỉ đẩy về trang index.html nếu người dùng đang cố tình truy cập vào dashboard.html trái phép
+        // Nếu chưa đăng nhập và cố tình truy cập vào các trang nội bộ (như dashboard.html), mới đá về trang index.html
         if (!isLoginPage) {
             window.location.href = "index.html";
         }
@@ -166,6 +165,7 @@ window.showPage = function(page) {
                     </table>
                 </div>
 
+                <!-- KHU VỰC LÀM BÀI TRỰC TIẾP TRÊN WEB -->
                 <div id="examWorkspace" class="account-form-box" style="display: none; margin-top: 35px; border-top: 4px solid #3b82f6;">
                     <h3 id="workspaceTitle" style="color: #2563eb; margin-bottom: 10px;">Đang làm bài</h3>
                     <div style="font-weight: 600; color: #475569; margin-bottom: 5px;"> Đề bài:</div>
@@ -354,9 +354,6 @@ window.handleSubmitAnswer = async function(event) {
     }
 };
 
-// ==========================================
-// 6. HÀM XÓA DỮ LIỆU CHUNG (DÀNH CHO DEV)
-// ==========================================
 window.handleDeleteData = async function(collectionName, id) {
     if (!confirm("Bồ có chắc chắn muốn xóa vĩnh viễn mục này không?")) return;
     try {
@@ -364,5 +361,30 @@ window.handleDeleteData = async function(collectionName, id) {
         alert("Đã xóa thành công!");
     } catch (e) {
         alert("Lỗi khi xóa dữ liệu: " + e.message);
+    }
+};
+
+// ==========================================
+// 7. XỬ LÝ ĐĂNG NHẬP HỆ THỐNG (MỚI BỔ SUNG)
+// ==========================================
+window.handleLogin = async function(event) {
+    event.preventDefault();
+    
+    const email = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const errorDiv = document.getElementById('error');
+    
+    if (errorDiv) errorDiv.style.display = 'none';
+
+    try {
+        // Thực hiện đăng nhập Firebase Auth qua Email/Password đám mây
+        await signInWithEmailAndPassword(auth, email, password);
+        alert("🎉 Đăng nhập thành công!");
+    } catch (error) {
+        console.error("Lỗi đăng nhập:", error.message);
+        if (errorDiv) {
+            errorDiv.innerText = "❌ Sai tài khoản hoặc mật khẩu đám mây!";
+            errorDiv.style.display = 'block';
+        }
     }
 };
