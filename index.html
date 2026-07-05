@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đăng nhập - Hệ thống Quản trị Doraemon Fanclub</title>
-    <!-- Nhúng file CSS của bồ ở đây -->
+    <!-- Giữ nguyên tên file style.css -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="login-body">
@@ -23,17 +23,16 @@
         <input type="password" id="password" placeholder="Nhập mật khẩu...">
     </div>
     
-    <!-- Thông báo lỗi -->
     <div id="error" class="error-msg" style="display: none;"></div>
     
-    <!-- Nút đăng nhập gọi đúng hàm window.handleLogin đã được đồng bộ trong app.js -->
+    <!-- Gọi đúng hàm window.handleLogin trong script.js của bồ -->
     <button onclick="window.handleLogin(event)" class="btn-login">ĐĂNG NHẬP HỆ THỐNG</button>
     
     <p class="footer-text">© 2026 Doraemon Fanclub Vietnam</p>
 </div>
 
-<!-- Đảm bảo file app.js được khai báo là type="module" -->
-<script type="module" src="app.js"></script>
+<!-- ĐÚNG TÊN FILE SCRIPT.JS CỦA BỒ -->
+<script type="module" src="script.js"></script>
 
 </body>
 </html>
