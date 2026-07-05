@@ -55,7 +55,7 @@ onAuthStateChanged(auth, async (user) => {
 // Hàm đăng xuất
 window.logout = function() {
     signOut(auth).then(() => {
-        window.location.href = "login.html";
+        window.location.href = "index.html";
     }).catch((error) => {
         alert("Đăng xuất thất bại: " + error.message);
     });
