@@ -28,10 +28,22 @@
         const u = document.getElementById('username').value.trim();
         const p = document.getElementById('password').value.trim();
         
-        // Tui lấy thẳng từ nhánh BQT002/Mã_tài_khoản
-        const snap = await get(ref(db, 'BQT002/' + u));
+        // Tự quét toàn bộ dữ liệu gốc
+        const snap = await get(ref(db));
+        let found = false;
         
-        if (snap.exists() && snap.val().password == p) {
+        if (snap.exists()) {
+            const data = snap.val();
+            // Lặp qua các nhánh chính (BQT001, BQT002...)
+            for (let branch in data) {
+                if (data[branch][u] && data[branch][u].password == p) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        if (found) {
             sessionStorage.setItem("auth", "true");
             window.location.href = "dashboard.html";
         } else {
