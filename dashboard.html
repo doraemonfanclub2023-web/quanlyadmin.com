@@ -2,16 +2,183 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>DASHBOARD - DORAEMON ADMIN</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doraemon Fanclub Admin</title>
+    
+    <!-- KHẮC PHỤC: Thêm icon cho Tab trình duyệt (Favicon) -->
+    <link rel="icon" type="image/png" href="https://img.icons8.com/color/48/doraemon.png">
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { display: flex; height: 100vh; background: #f8fafc; color: #1e293b; overflow: hidden; }
+        
+        /* Nút 3 gạch (Ẩn mặc định trên PC) */
+        .menu-toggle {
+            display: none;
+            font-size: 24px;
+            background: none;
+            border: none;
+            color: #1e293b;
+            cursor: pointer;
+            margin-right: 15px;
+        }
+
+        /* Sidebar mặc định trên Desktop */
+        .sidebar { 
+            width: 260px; 
+            background: #1e293b; 
+            color: #fff; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            flex-shrink: 0; /* Giữ cố định kích thước sidebar */
+        }
+        .sidebar-brand { padding: 24px 20px; font-size: 18px; font-weight: 700; border-bottom: 1px solid #334155; background: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* Nút đóng menu (X) trong sidebar (Ẩn trên PC) */
+        .close-sidebar { display: none; background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; }
+
+        .sidebar-menu { list-style: none; padding: 15px 0; }
+        .sidebar-menu li { padding: 14px 24px; cursor: pointer; transition: 0.2s; font-size: 15px; display: flex; align-items: center; gap: 10px; color: #cbd5e1; }
+        .sidebar-menu li:hover { background: #334155; color: #fff; }
+        .btn-logout { padding: 20px 24px; cursor: pointer; background: #0f172a; border-top: 1px solid #334155; color: #f87171; font-weight: 600; text-align: left; }
+        .btn-logout:hover { background: #dc2626; color: #fff; }
+
+        /* Main Content */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; width: 100%; background: #f8fafc; }
+        .header { background: #fff; padding: 18px 40px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+        .content-body { padding: 40px; flex: 1; }
+
+        /* Dashboard UI Đã tối ưu grid phản hồi */
+        h2 { color: #1e3a8a; font-size: 24px; margin-bottom: 25px; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 35px; }
+        .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; border-top: 4px solid #3b82f6; }
+        .card h3 { font-size: 13px; color: #64748b; text-transform: uppercase; margin-bottom: 10px; }
+        .card h1 { font-size: 32px; color: #1e293b; }
+        
+        .activity { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .activity h3 { margin-bottom: 20px; font-size: 16px; color: #334155; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
+        .activity ul { list-style: none; }
+        .activity li { padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; line-height: 1.6; }
+        .activity li:last-child { border-bottom: none; }
+
+        /* Tables & Forms */
+        .account-form-box { background: #fff; padding: 25px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 30px; }
+        .inline-form { display: flex; gap: 15px; flex-wrap: wrap; }
+        .inline-form input, .inline-form select, .inline-form textarea { padding: 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px; }
+        .inline-form input { flex: 1; min-width: 200px; }
+        .btn-create { background: #10b981; color: #fff; border: none; padding: 10px 20px; border-radius: 4px; font-weight: 600; cursor: pointer; }
+        .btn-create:hover { background: #059669; }
+        
+        .table-container { background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; margin-top: 15px; }
+        .table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+        .table th { background: #f8fafc; padding: 14px 20px; font-weight: 600; color: #475569; border-bottom: 2px solid #e2e8f0; }
+        .table td { padding: 14px 20px; border-bottom: 1px solid #f1f5f9; }
+        .btn-delete { background: #ef4444; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .btn-delete:hover { background: #dc2626; }
+        .badge-default { color: #94a3b8; font-style: italic; }
+
+        /* Lớp phủ mờ khi mở menu trên mobile */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 999;
+        }
+
+        /* ====================================================
+           MÃ CSS TỐI ƯU HÓA MENU 3 GẠCH (HAMBURGER) CHO MOBILE
+           ==================================================== */
+        @media screen and (max-width: 768px) {
+            .menu-toggle { display: block !important; }
+            .close-sidebar { display: block !important; }
+
+            .sidebar {
+                position: fixed !important;
+                top: 0; bottom: 0; left: 0;
+                width: 280px !important;
+                transform: translateX(-100%); 
+                box-shadow: 5px 0 15px rgba(0,0,0,0.1);
+            }
+
+            .sidebar.active {
+                transform: translateX(0) !important;
+            }
+
+            .sidebar.active ~ .sidebar-overlay {
+                display: block;
+            }
+
+            .header { padding: 15px 20px !important; justify-content: flex-start !important; }
+            .header-title { margin-left: auto; } 
+            .content-body { padding: 20px 15px !important; }
+            .inline-form { flex-direction: column !important; }
+            .inline-form input, .inline-form select, .inline-form textarea, .btn-create { width: 100% !important; }
+            .table-container { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+            .table { min-width: 550px; }
+        }
+    </style>
 </head>
 <body>
-    <h1>Chào mừng bồ đến với trang quản trị!</h1>
-    
+
+    <!-- LỚP PHỦ MỜ KHI MỞ MENU -->
+    <div class="sidebar-overlay" onclick="toggleMenu()"></div>
+
+    <!-- SIDEBAR ĐIỀU HƯỚNG SPA (Đã đóng thẻ chuẩn xác) -->
+    <div class="sidebar" id="sidebarMenu">
+        <div>
+            <div class="sidebar-brand" id="sidebarBrand">
+                <span>Doraemon Admin</span>
+                <button class="close-sidebar" onclick="toggleMenu()">✕</button>
+            </div>
+            <ul class="sidebar-menu">
+                <li onclick="handleMenuClick('home')">🏠 Trang chủ</li>
+                <li onclick="handleMenuClick('members')">👥 Quản lý thành viên</li>
+                <li onclick="handleMenuClick('notice')">📢 Quản lý thông báo</li>
+                <li onclick="handleMenuClick('minigame')">🎁 Mini Game</li>
+                <li onclick="handleMenuClick('documents')">📄 Quản lý Công văn</li>
+                <li onclick="handleMenuClick('tests')">✏️ Kiểm tra định kỳ</li>
+                <li onclick="handleMenuClick('setting')">⚙️ Cài đặt hệ thống</li>
+                <li onclick="handleMenuClick('account')">👤 Thông tin cá nhân</li>
+            </ul>
+        </div>
+        <div class="btn-logout" onclick="logout()">Đăng xuất</div>
+    </div>
+
+    <!-- KHU VỰC HIỂN THỊ NỘI DUNG CHÍNH (Đứng song song với Sidebar) -->
+    <div class="main-content">
+        <div class="header">
+            <!-- Nút 3 gạch xuất hiện trên mobile -->
+            <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+            <span class="header-title" style="font-weight: 600; color: #475569;">Hệ thống Quản trị Đám mây 🌐</span>
+        </div>
+        <div class="content-body" id="pageContent">
+            <!-- Dữ liệu trang động được điền từ Firebase qua hàm showPage() -->
+        </div>
+    </div>
+
+    <!-- CHỨC NĂNG ĐÓNG MỞ HAMBURGER MENU -->
     <script>
-        if(sessionStorage.getItem("auth") !== "true") {
-            window.location.href = "index.html";
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebarMenu');
+            sidebar.classList.toggle('active');
+        }
+
+        function handleMenuClick(page) {
+            window.location.hash = page;
+            if (typeof showPage === 'function') {
+                showPage(page); 
+            }
+            if (window.innerWidth <= 768) {
+                toggleMenu();
+            }
         }
     </script>
-    
-    </body>
+
+    <!-- KHAI BÁO TYPE="MODULE" ĐỂ KẾT NỐI FIREBASE -->
+    <script type="module" src="script.js"></script>
+</body>
 </html>
