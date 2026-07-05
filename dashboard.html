@@ -127,7 +127,7 @@
     <!-- LỚP PHỦ MỜ KHI MỞ MENU -->
     <div class="sidebar-overlay" onclick="toggleMenu()"></div>
 
-    <!-- SIDEBAR ĐIỀU HƯỚNG SPA (Đã đóng thẻ chuẩn xác) -->
+    <!-- SIDEBAR ĐIỀU HƯỚNG SPA -->
     <div class="sidebar" id="sidebarMenu">
         <div>
             <div class="sidebar-brand" id="sidebarBrand">
@@ -145,10 +145,11 @@
                 <li onclick="handleMenuClick('account')">👤 Thông tin cá nhân</li>
             </ul>
         </div>
-        <div class="btn-logout" onclick="logout()">Đăng xuất</div>
+        <!-- KHẮC PHỤC: Đổi logout() thành window.logout() để nhận diện hàm từ module script.js -->
+        <div class="btn-logout" onclick="window.logout()">Đăng xuất</div>
     </div>
 
-    <!-- KHU VỰC HIỂN THỊ NỘI DUNG CHÍNH (Đứng song song với Sidebar) -->
+    <!-- KHU VỰC HIỂN THỊ NỘI DUNG CHÍNH -->
     <div class="main-content">
         <div class="header">
             <!-- Nút 3 gạch xuất hiện trên mobile -->
@@ -169,9 +170,15 @@
 
         function handleMenuClick(page) {
             window.location.hash = page;
-            if (typeof showPage === 'function') {
-                showPage(page); 
+            
+            /* KHẮC PHỤC: Kiểm tra và gọi trực tiếp hàm window.showPage từ script.js 
+               để tránh lỗi bị "cô lập" do scope của type="module" */
+            if (typeof window.showPage === 'function') {
+                window.showPage(page); 
+            } else {
+                console.warn("Hàm window.showPage chưa sẵn sàng hoặc chưa được khai báo công khai.");
             }
+
             if (window.innerWidth <= 768) {
                 toggleMenu();
             }
