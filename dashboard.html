@@ -4,13 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Doraemon Fanclub Admin</title>
-    
-    <!-- KHẮC PHỤC: Thêm icon cho Tab trình duyệt (Favicon) -->
+    <!-- Chèn vào đây nè bồ -->
     <link rel="icon" type="image/png" href="https://img.icons8.com/color/48/doraemon.png">
-
+    
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
-        body { display: flex; height: 100vh; background: #f8fafc; color: #1e293b; overflow: hidden; }
+        /* ... các đoạn CSS bên dưới giữ nguyên ... */
         
         /* Nút 3 gạch (Ẩn mặc định trên PC) */
         .menu-toggle {
@@ -33,7 +32,6 @@
             justify-content: space-between;
             transition: transform 0.3s ease;
             z-index: 1000;
-            flex-shrink: 0; /* Giữ cố định kích thước sidebar */
         }
         .sidebar-brand { padding: 24px 20px; font-size: 18px; font-weight: 700; border-bottom: 1px solid #334155; background: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; }
         
@@ -47,7 +45,7 @@
         .btn-logout:hover { background: #dc2626; color: #fff; }
 
         /* Main Content */
-        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; width: 100%; background: #f8fafc; }
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; width: 100%; }
         .header { background: #fff; padding: 18px 40px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
         .content-body { padding: 40px; flex: 1; }
 
@@ -127,7 +125,7 @@
     <!-- LỚP PHỦ MỜ KHI MỞ MENU -->
     <div class="sidebar-overlay" onclick="toggleMenu()"></div>
 
-    <!-- SIDEBAR ĐIỀU HƯỚNG SPA (Đã đóng thẻ chuẩn xác) -->
+    <!-- SIDEBAR ĐIỀU HƯỚNG SPA -->
     <div class="sidebar" id="sidebarMenu">
         <div>
             <div class="sidebar-brand" id="sidebarBrand">
@@ -148,7 +146,7 @@
         <div class="btn-logout" onclick="logout()">Đăng xuất</div>
     </div>
 
-    <!-- KHU VỰC HIỂN THỊ NỘI DUNG CHÍNH (Đứng song song với Sidebar) -->
+    <!-- KHU VỰC HIỂN THỊ NỘI DUNG CHÍNH -->
     <div class="main-content">
         <div class="header">
             <!-- Nút 3 gạch xuất hiện trên mobile -->
@@ -167,6 +165,7 @@
             sidebar.classList.toggle('active');
         }
 
+        // Đồng bộ hash URL, kích hoạt chuyển trang SPA và đóng sidebar trên di động
         function handleMenuClick(page) {
             window.location.hash = page;
             if (typeof showPage === 'function') {
