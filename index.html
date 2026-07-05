@@ -4,63 +4,40 @@
     <meta charset="UTF-8">
     <title>DORAEMON ADMIN</title>
     <style>
-        body { background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: 'Segoe UI', sans-serif; }
-        .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 350px; text-align: center; }
-        .logo { width: 60px; margin-bottom: 10px; }
-        h2 { color: #1e293b; margin-bottom: 5px; font-size: 22px; }
-        p { color: #64748b; font-size: 13px; margin-bottom: 25px; }
-        .input-group { text-align: left; margin-bottom: 15px; }
-        label { display: block; font-size: 12px; color: #475569; margin-bottom: 5px; font-weight: 600; }
-        input { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; box-sizing: border-box; background: #f8fafc; }
-        button { width: 100%; padding: 12px; background: #0082c9; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        body { background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: sans-serif; }
+        .box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 320px; text-align: center; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
-
-<div class="login-box">
-    <img src="https://i.postimg.cc/Z57X57Gp/Chua-co-ten-(Logo)-(1).png" class="logo">
+<div class="box">
     <h2>DORAEMON ADMIN</h2>
-    <p>Hệ thống Quản lý Nội bộ Fanclub</p>
-
-    <div class="input-group">
-        <label>Mã tài khoản</label>
-        <input type="text" id="username" placeholder="Nhập mã...">
-    </div>
-    <div class="input-group">
-        <label>Mật khẩu</label>
-        <input type="password" id="password" placeholder="Nhập mật khẩu...">
-    </div>
-    <button id="loginBtn">ĐĂNG NHẬP HỆ THỐNG</button>
+    <input type="text" id="username" placeholder="Mã tài khoản">
+    <input type="password" id="password" placeholder="Mật khẩu">
+    <button id="loginBtn">ĐĂNG NHẬP</button>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    const app = initializeApp({
-        databaseURL: "https://admin-27099-default-rtdb.firebaseio.com/"
-    });
+    const db = getDatabase(initializeApp({ databaseURL: "https://admin-27099-default-rtdb.firebaseio.com/" }));
 
-    const db = getDatabase(app);
-
-    document.getElementById('loginBtn').addEventListener('click', async () => {
-        const user = document.getElementById('username').value.trim();
-        const pass = document.getElementById('password').value.trim();
-
-        try {
-            const snapshot = await get(child(ref(db), `${user}`));
-console.log("Dữ liệu nhận được:", snapshot.val()); // Dòng này sẽ hiện trong F12 Console
-            
-            if (snapshot.exists() && snapshot.val().password === pass) {
-                sessionStorage.setItem("admin_logged_in", "true");
-                window.location.href = "dashboard.html";
-            } else {
-                alert("Sai mã hoặc mật khẩu!");
-            }
-        } catch (e) {
-            alert("Lỗi hệ thống!");
+    document.getElementById('loginBtn').onclick = async () => {
+        const u = document.getElementById('username').value.trim();
+        const p = document.getElementById('password').value.trim();
+        
+        // Tui lấy thẳng từ nhánh BQT002/Mã_tài_khoản
+        const snap = await get(ref(db, 'BQT002/' + u));
+        
+        if (snap.exists() && snap.val().password == p) {
+            sessionStorage.setItem("auth", "true");
+            window.location.href = "dashboard.html";
+        } else {
+            alert("Sai mã hoặc mật khẩu!");
         }
-    });
+    };
 </script>
 </body>
 </html>
