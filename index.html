@@ -49,6 +49,7 @@
 
         try {
             const snapshot = await get(child(ref(db), `accounts/${user}`));
+console.log("Dữ liệu nhận được:", snapshot.val()); // Dòng này sẽ hiện trong F12 Console
             
             if (snapshot.exists() && snapshot.val().password === pass) {
                 sessionStorage.setItem("admin_logged_in", "true");
