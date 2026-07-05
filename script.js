@@ -56,7 +56,8 @@ window.login = async function() {
         const snapshot = await get(ref(db, `users/${userInp}`));
         if (snapshot.exists()) {
             const userData = snapshot.val();
-            if (userData.password === passInp) {
+            // Đảm bảo so khớp chính xác chuỗi (bảo toàn tính đúng đắn dữ liệu)
+            if (String(userData.password) === String(passInp)) {
                 
                 const configSnapshot = await get(ref(db, 'system_config/maintenance'));
                 const isMaintenance = configSnapshot.val();
@@ -96,7 +97,7 @@ window.getPageContent = function(pageId, userRole) {
             <div class="cards">
                 <div class="card" onclick="window.location.hash='members'; window.showPage('members');" style="cursor:pointer;"><h3>👥 Thành viên quản trị</h3><h1 id="countMembers">...</h1></div>
                 <div class="card" onclick="window.location.hash='minigame'; window.showPage('minigame');" style="cursor:pointer;"><h3>🎁 Mini Game</h3><h1 id="countGames">...</h1></div>
-                <div class="card" onclick="window.location.hash='notice'; window.showPage('notice');" style="cursor:pointer;"><h3>📢 Thông báo</h3><h1 id="countNotices">...</h1></div>
+                <div class="card" onclick="window.location.hash='documents'; window.showPage('documents');" style="cursor:pointer;"><h3>📄 Công văn đã đăng</h3><h1 id="countDocs">...</h1></div>
             </div>
             <div class="activity">
                 <h3>📋 Hoạt động hệ thống gần đây</h3>
@@ -182,6 +183,41 @@ window.getPageContent = function(pageId, userRole) {
             </div>
             <div id="gameDetailContent">Đang cấu trúc dữ liệu...</div>
         `,
+        documents: `
+            <h2>📄 Quản lý và Phát hành Công văn</h2><br>
+            ${!hasWritePermission ? '' : `
+            <div class="account-form-box">
+                <h3>📤 Đăng tải Công văn / Quyết định mới</h3>
+                <div class="inline-form" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <input type="text" id="docId" placeholder="Số / Ký hiệu (VD: 01/QĐ-BQT)..." style="flex: 1; min-width: 150px;">
+                        <input type="text" id="docTitle" placeholder="Tên loại và trích yếu nội dung công văn..." style="flex: 2; min-width: 250px;">
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <input type="text" id="docSigner" placeholder="Cơ quan ban hành / Người ký (VD: Ban Quản Trị)..." style="flex: 1; min-width: 200px;">
+                        <input type="date" id="docDate" style="width: 150px;" title="Ngày ban hành văn bản">
+                    </div>
+                    <input type="url" id="docFileUrl" placeholder="Đường dẫn liên kết lưu trữ văn bản (Google Drive / PDF URL)...">
+                    <button onclick="addDocument()" class="btn-create" style="align-self: flex-start;">Phát hành Công văn</button>
+                </div>
+            </div>
+            `}
+            <div class="table-container" style="margin-top: 20px;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Số / Ký hiệu</th>
+                            <th>Ngày ban hành</th>
+                            <th>Trích yếu nội dung</th>
+                            <th>Nơi ban hành</th>
+                            <th>Tài liệu</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="docTableBody">Đang kết nối cơ sở dữ liệu...</tbody>
+                </table>
+            </div>
+        `,
         setting: `
             <h2>Cài đặt hệ thống (Quyền tối thượng Dev / Ban Quản Trị)</h2><br>
             <div class="account-form-box" style="margin-bottom: 25px;">
@@ -257,6 +293,7 @@ window.showPage = function(pageId) {
         if (pageId === 'notice') window.listenToNoticeTable();
         if (pageId === 'members') window.listenToUserTable();
         if (pageId === 'minigame') window.listenToMiniGames();
+        if (pageId === 'documents') window.listenToDocumentTable();
         if (pageId === 'setting') window.loadSystemSettings();
         if (pageId === 'account') window.loadProfileData(); 
     }
@@ -274,19 +311,20 @@ window.listenToHomeData = function() {
         const countGamesEl = document.getElementById('countGames');
         if (countGamesEl) countGamesEl.innerText = snapshot.exists() ? Object.keys(snapshot.val()).length : '0';
     });
+    onValue(ref(db, 'documents'), (snapshot) => {
+        const countDocsEl = document.getElementById('countDocs');
+        if (countDocsEl) countDocsEl.innerText = snapshot.exists() ? Object.keys(snapshot.val()).length : '0';
+    });
     onValue(ref(db, 'notices'), (snapshot) => {
         const homeNoticeUl = document.getElementById('homeNoticeList');
-        const countNoticesEl = document.getElementById('countNotices');
         if (!homeNoticeUl) return;
         homeNoticeUl.innerHTML = '';
         if (!snapshot.exists()) {
             homeNoticeUl.innerHTML = '<li>Chưa có thông báo nào trên hệ thống đám mây.</li>';
-            if (countNoticesEl) countNoticesEl.innerText = '0';
             return;
         }
         const notices = [];
         snapshot.forEach((childSnapshot) => { notices.unshift({ id: childSnapshot.key, ...childSnapshot.val() }); });
-        if (countNoticesEl) countNoticesEl.innerText = notices.length;
         notices.forEach(n => { homeNoticeUl.innerHTML += `<li><strong>[${n.date}] ${n.title}:</strong> ${n.content}</li>`; });
     });
 }
@@ -339,6 +377,68 @@ window.deleteNotice = async function(key) {
     if (currentUser && currentUser.role === 'Admin') return alert('⛔ Bạn không có quyền xóa thông báo này!');
     if (confirm('Xóa thông báo này trên Cloud?')) {
         await remove(ref(db, `notices/${key}`));
+    }
+}
+
+/* LOGIC QUẢN LÝ CÔNG VĂN / QUYẾT ĐỊNH */
+window.addDocument = async function() {
+    const docId = document.getElementById('docId')?.value.trim();
+    const title = document.getElementById('docTitle')?.value.trim();
+    const signer = document.getElementById('docSigner')?.value.trim();
+    const docDate = document.getElementById('docDate')?.value;
+    const fileUrl = document.getElementById('docFileUrl')?.value.trim();
+
+    if (!docId || !title || !docDate || !fileUrl) {
+        return alert('Vui lòng điền đầy đủ các thông tin: Số hiệu, Trích yếu, Ngày ban hành và Link file tài liệu!');
+    }
+
+    await push(ref(db, 'documents'), { docId, title, signer: signer || 'Ban Quản Trị', docDate, fileUrl });
+    alert('Phát hành Công văn lên hệ thống Cloud thành công!');
+    window.showPage('documents');
+}
+
+window.listenToDocumentTable = function() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    const userRole = currentUser ? currentUser.role : '';
+
+    onValue(ref(db, 'documents'), (snapshot) => {
+        const tbody = document.getElementById('docTableBody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        if (!snapshot.exists()) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Chưa lưu trữ công văn nào trên Cloud.</td></tr>';
+            return;
+        }
+
+        snapshot.forEach((childSnapshot) => {
+            const key = childSnapshot.key;
+            const d = childSnapshot.val();
+            const parts = d.docDate.split('-');
+            const formattedDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : d.docDate;
+
+            const canDelete = userRole === 'Dev' || userRole === 'Ban Quản Trị';
+            const actionHTML = canDelete 
+                ? `<button onclick="deleteDocument('${key}')" class="btn-delete" style="padding:4px 10px; font-size:12px;">Xóa</button>`
+                : `<span style="color:#94a3b8; font-style:italic; font-size:12px;">Không có quyền</span>`;
+
+            tbody.innerHTML = `
+                <tr>
+                    <td><span class="badge-default" style="background:#f1f5f9; color:#334155; padding:4px 6px; border-radius:4px; font-weight:bold;">${d.docId}</span></td>
+                    <td>${formattedDate}</td>
+                    <td style="text-align:left; max-width:300px; word-break:break-word;"><strong>${d.title}</strong></td>
+                    <td>${d.signer}</td>
+                    <td><a href="${d.fileUrl}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:none;">🔗 Xem văn bản</a></td>
+                    <td>${actionHTML}</td>
+                </tr>
+            ` + tbody.innerHTML;
+        });
+    });
+}
+
+window.deleteDocument = async function(key) {
+    if (confirm('Bạn có chắc chắn muốn gỡ bỏ hoàn toàn công văn này khỏi cơ sở dữ liệu đám mây?')) {
+        await remove(ref(db, `documents/${key}`));
     }
 }
 
@@ -643,7 +743,6 @@ function forceRenderHomeDirectly() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Nhận diện màn hình thông qua thẻ input username
     const isLoginPage = document.getElementById('username') !== null;
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
 
@@ -653,18 +752,15 @@ document.addEventListener('DOMContentLoaded', () => {
             return; 
         }
     } else {
-        // ĐANG Ở TRANG DASHBOARD
         if (!currentUser) {
             window.location.replace("index.html");
             return;
         }
 
-        // Ép render trang Home
         forceRenderHomeDirectly();
         setTimeout(forceRenderHomeDirectly, 100);
         setTimeout(forceRenderHomeDirectly, 400);
 
-        // Sidebar Router Click event listener
         const sidebar = document.querySelector('.sidebar');
         if (sidebar) {
             sidebar.addEventListener('click', (e) => {
@@ -681,7 +777,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Lắng nghe cấu hình hệ thống thời gian thực
         onValue(ref(db, 'system_config'), (snapshot) => {
             if (!snapshot.exists()) return;
             const config = snapshot.val();
