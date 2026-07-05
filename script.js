@@ -56,7 +56,6 @@ window.login = async function() {
         const snapshot = await get(ref(db, `users/${userInp}`));
         if (snapshot.exists()) {
             const userData = snapshot.val();
-            // Đảm bảo so khớp chính xác chuỗi (bảo toàn tính đúng đắn dữ liệu)
             if (String(userData.password) === String(passInp)) {
                 
                 const configSnapshot = await get(ref(db, 'system_config/maintenance'));
@@ -95,9 +94,10 @@ window.getPageContent = function(pageId, userRole) {
         home: `
             <h2>Tổng quan hệ thống</h2>
             <div class="cards">
-                <div class="card" onclick="window.location.hash='members'; window.showPage('members');" style="cursor:pointer;"><h3>👥 Thành viên quản trị</h3><h1 id="countMembers">...</h1></div>
+                <div class="card" onclick="window.location.hash='members'; window.showPage('members');" style="cursor:pointer;"><h3>👥 Thành viên</h3><h1 id="countMembers">...</h1></div>
                 <div class="card" onclick="window.location.hash='minigame'; window.showPage('minigame');" style="cursor:pointer;"><h3>🎁 Mini Game</h3><h1 id="countGames">...</h1></div>
-                <div class="card" onclick="window.location.hash='documents'; window.showPage('documents');" style="cursor:pointer;"><h3>📄 Công văn đã đăng</h3><h1 id="countDocs">...</h1></div>
+                <div class="card" onclick="window.location.hash='documents'; window.showPage('documents');" style="cursor:pointer;"><h3>📄 Công văn</h3><h1 id="countDocs">...</h1></div>
+                <div class="card" onclick="window.location.hash='tests'; window.showPage('tests');" style="cursor:pointer; border-top-color: #f59e0b;"><h3>✏️ Bài Kiểm Tra</h3><h1 id="countTests">...</h1></div>
             </div>
             <div class="activity">
                 <h3>📋 Hoạt động hệ thống gần đây</h3>
@@ -110,7 +110,7 @@ window.getPageContent = function(pageId, userRole) {
             <div class="account-form-box">
                 <h3>➕ Thêm tài khoản quản trị mới</h3>
                 <div class="inline-form" style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <input type="text" id="newUsername" placeholder="Mã tài khoản (VD: DEV-01, BQT-02)..." style="flex: 1; min-width: 180px;">
+                    <input type="text" id="newUsername" placeholder="Mã tài khoản (VD: DEV-01)..." style="flex: 1; min-width: 180px;">
                     <input type="text" id="newName" placeholder="Họ và tên..." style="flex: 1; min-width: 150px;">
                     <input type="password" id="newPassword" placeholder="Mật khẩu..." style="flex: 1; min-width: 120px;">
                     <select id="newRole" style="width: 130px;">
@@ -218,6 +218,41 @@ window.getPageContent = function(pageId, userRole) {
                 </table>
             </div>
         `,
+        tests: `
+            <h2>✏️ Quản lý Đề thi & Khảo sát định kỳ</h2><br>
+            ${!hasWritePermission ? '' : `
+            <div class="account-form-box">
+                <h3>📅 Tạo bài kiểm tra / Khảo sát mới</h3>
+                <div class="inline-form" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <input type="text" id="testTitle" placeholder="Tên bài kiểm tra (VD: Khảo sát chất lượng Tháng 7)..." style="flex: 2; min-width: 250px;">
+                        <input type="text" id="testSubject" placeholder="Môn thi / Lĩnh vực (VD: Tiếng Trung, Pháp luật)..." style="flex: 1; min-width: 150px;">
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <input type="date" id="testDate" style="width: 160px;" title="Ngày làm bài test">
+                        <input type="text" id="testDuration" placeholder="Thời gian làm bài (VD: 45 phút, 90 phút)..." style="flex: 1; min-width: 150px;">
+                    </div>
+                    <input type="url" id="testLink" placeholder="Đường dẫn form làm bài hoặc file đề thi (Google Form / Quiz Link)...">
+                    <button onclick="addTest()" class="btn-create" style="background: #f59e0b; align-self: flex-start;">Phát hành Bài thi</button>
+                </div>
+            </div>
+            `}
+            <div class="table-container" style="margin-top: 20px;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Môn học</th>
+                            <th>Tên bài kiểm tra</th>
+                            <th>Ngày diễn ra</th>
+                            <th>Thời gian làm</th>
+                            <th>Link Đề / Form</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="testTableBody">Đang kết nối Cloud đám mây...</tbody>
+                </table>
+            </div>
+        `,
         setting: `
             <h2>Cài đặt hệ thống (Quyền tối thượng Dev / Ban Quản Trị)</h2><br>
             <div class="account-form-box" style="margin-bottom: 25px;">
@@ -294,6 +329,7 @@ window.showPage = function(pageId) {
         if (pageId === 'members') window.listenToUserTable();
         if (pageId === 'minigame') window.listenToMiniGames();
         if (pageId === 'documents') window.listenToDocumentTable();
+        if (pageId === 'tests') window.listenToTestTable();
         if (pageId === 'setting') window.loadSystemSettings();
         if (pageId === 'account') window.loadProfileData(); 
     }
@@ -314,6 +350,10 @@ window.listenToHomeData = function() {
     onValue(ref(db, 'documents'), (snapshot) => {
         const countDocsEl = document.getElementById('countDocs');
         if (countDocsEl) countDocsEl.innerText = snapshot.exists() ? Object.keys(snapshot.val()).length : '0';
+    });
+    onValue(ref(db, 'tests'), (snapshot) => {
+        const countTestsEl = document.getElementById('countTests');
+        if (countTestsEl) countTestsEl.innerText = snapshot.exists() ? Object.keys(snapshot.val()).length : '0';
     });
     onValue(ref(db, 'notices'), (snapshot) => {
         const homeNoticeUl = document.getElementById('homeNoticeList');
@@ -346,7 +386,7 @@ window.listenToNoticeTable = function() {
             const canManage = userRole === 'Dev' || userRole === 'Ban Quản Trị';
             const actionHTML = canManage 
                 ? `<button onclick="deleteNotice('${key}')" class="btn-delete">Xóa</button>`
-                : `<span class="badge-default" style="color: #94a3b8; font-style: italic;">Không có quyền</span>`;
+                : `<span class="badge-default">Không có quyền</span>`;
 
             tbody.innerHTML = `
                 <tr>
@@ -380,7 +420,7 @@ window.deleteNotice = async function(key) {
     }
 }
 
-/* LOGIC QUẢN LÝ CÔNG VĂN / QUYẾT ĐỊNH */
+/* LOGIC QUẢN LÝ CÔNG VĂN */
 window.addDocument = async function() {
     const docId = document.getElementById('docId')?.value.trim();
     const title = document.getElementById('docTitle')?.value.trim();
@@ -389,11 +429,11 @@ window.addDocument = async function() {
     const fileUrl = document.getElementById('docFileUrl')?.value.trim();
 
     if (!docId || !title || !docDate || !fileUrl) {
-        return alert('Vui lòng điền đầy đủ các thông tin: Số hiệu, Trích yếu, Ngày ban hành và Link file tài liệu!');
+        return alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
     }
 
     await push(ref(db, 'documents'), { docId, title, signer: signer || 'Ban Quản Trị', docDate, fileUrl });
-    alert('Phát hành Công văn lên hệ thống Cloud thành công!');
+    alert('Phát hành Công văn thành công!');
     window.showPage('documents');
 }
 
@@ -403,11 +443,10 @@ window.listenToDocumentTable = function() {
 
     onValue(ref(db, 'documents'), (snapshot) => {
         const tbody = document.getElementById('docTableBody');
-        if (!tbody) return;
-        tbody.innerHTML = '';
+        if (!tbody) return; tbody.innerHTML = '';
 
         if (!snapshot.exists()) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Chưa lưu trữ công văn nào trên Cloud.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Chưa lưu trữ công văn nào.</td></tr>';
             return;
         }
 
@@ -418,15 +457,13 @@ window.listenToDocumentTable = function() {
             const formattedDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : d.docDate;
 
             const canDelete = userRole === 'Dev' || userRole === 'Ban Quản Trị';
-            const actionHTML = canDelete 
-                ? `<button onclick="deleteDocument('${key}')" class="btn-delete" style="padding:4px 10px; font-size:12px;">Xóa</button>`
-                : `<span style="color:#94a3b8; font-style:italic; font-size:12px;">Không có quyền</span>`;
+            const actionHTML = canDelete ? `<button onclick="deleteDocument('${key}')" class="btn-delete" style="padding:4px 10px; font-size:12px;">Xóa</button>` : `<i>Không có quyền</i>`;
 
             tbody.innerHTML = `
                 <tr>
                     <td><span class="badge-default" style="background:#f1f5f9; color:#334155; padding:4px 6px; border-radius:4px; font-weight:bold;">${d.docId}</span></td>
                     <td>${formattedDate}</td>
-                    <td style="text-align:left; max-width:300px; word-break:break-word;"><strong>${d.title}</strong></td>
+                    <td style="text-align:left;"><strong>${d.title}</strong></td>
                     <td>${d.signer}</td>
                     <td><a href="${d.fileUrl}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:none;">🔗 Xem văn bản</a></td>
                     <td>${actionHTML}</td>
@@ -437,11 +474,75 @@ window.listenToDocumentTable = function() {
 }
 
 window.deleteDocument = async function(key) {
-    if (confirm('Bạn có chắc chắn muốn gỡ bỏ hoàn toàn công văn này khỏi cơ sở dữ liệu đám mây?')) {
+    if (confirm('Bạn có chắc muốn xóa công văn này?')) {
         await remove(ref(db, `documents/${key}`));
     }
 }
 
+/* ====================================================
+   LOGIC QUẢN LÝ BÀI KIỂM TRA ĐỊNH KỲ (MỚI CẬP NHẬT)
+   ==================================================== */
+window.addTest = async function() {
+    const title = document.getElementById('testTitle')?.value.trim();
+    const subject = document.getElementById('testSubject')?.value.trim();
+    const testDate = document.getElementById('testDate')?.value;
+    const duration = document.getElementById('testDuration')?.value.trim();
+    const testLink = document.getElementById('testLink')?.value.trim();
+
+    if (!title || !subject || !testDate || !testLink) {
+        return alert('Vui lòng điền đủ các thông tin: Tên bài test, Môn học, Ngày diễn ra và Link đề thi!');
+    }
+
+    await push(ref(db, 'tests'), { title, subject, testDate, duration: duration || 'Chưa định lượng', testLink });
+    alert('🎉 Đã phát hành bài kiểm tra định kỳ lên Cloud thành công!');
+    window.showPage('tests');
+}
+
+window.listenToTestTable = function() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    const userRole = currentUser ? currentUser.role : '';
+
+    onValue(ref(db, 'tests'), (snapshot) => {
+        const tbody = document.getElementById('testTableBody');
+        if (!tbody) return; tbody.innerHTML = '';
+
+        if (!snapshot.exists()) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Chưa có bài kiểm tra định kỳ nào được tạo trên hệ thống.</td></tr>';
+            return;
+        }
+
+        snapshot.forEach((childSnapshot) => {
+            const key = childSnapshot.key;
+            const t = childSnapshot.val();
+            const parts = t.testDate.split('-');
+            const formattedDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : t.testDate;
+
+            const canDelete = userRole === 'Dev' || userRole === 'Ban Quản Trị';
+            const actionHTML = canDelete 
+                ? `<button onclick="deleteTest('${key}')" class="btn-delete" style="padding:4px 10px; font-size:12px;">Xóa</button>` 
+                : `<span style="color:#94a3b8; font-style:italic; font-size:12px;">Không có quyền</span>`;
+
+            tbody.innerHTML = `
+                <tr>
+                    <td><span style="background:#fff3e0; color:#e65100; padding:4px 8px; border-radius:4px; font-weight:600; font-size:12px;">📚 ${t.subject}</span></td>
+                    <td style="text-align:left;"><strong>${t.title}</strong></td>
+                    <td>📅 ${formattedDate}</td>
+                    <td>⏳ ${t.duration}</td>
+                    <td><a href="${t.testLink}" target="_blank" style="color:#f59e0b; font-weight:bold; text-decoration:none;">📝 Vào làm đề</a></td>
+                    <td>${actionHTML}</td>
+                </tr>
+            ` + tbody.innerHTML;
+        });
+    });
+}
+
+window.deleteTest = async function(key) {
+    if (confirm('Bạn có chắc chắn muốn hủy bỏ bài kiểm tra định kỳ này trên Cloud?')) {
+        await remove(ref(db, `tests/${key}`));
+    }
+}
+
+/* LOGIC MINI GAME */
 window.addMiniGame = async function() {
     const title = document.getElementById('gameTitle')?.value.trim();
     const startDate = document.getElementById('gameStartDate')?.value;
@@ -488,11 +589,11 @@ window.listenToMiniGames = function() {
                 : '';
 
             const cardHTML = `
-                <div class="account-form-box" onclick="window.viewGameDetail('${key}')" style="cursor: pointer; border-left: 4px solid ${g.startDate <= todayStr ? '#0284c7' : '#94a3b8'}; transition: 0.2s; background: #fff;">
+                <div class="account-form-box" onclick="window.viewGameDetail('${key}')" style="cursor: pointer; border-left: 4px solid ${g.startDate <= todayStr ? '#0284c7' : '#94a3b8'}; background: #fff;">
                     <div style="display: flex; justify-content: space-between; align-items: start;">
                         <div>
-                            <h4 style="color: #1e293b; font-size: 16px;">🎁 ${g.title}</h4>
-                            <p style="font-size: 12px; color: #64748b; margin-top: 4px;">📅 Ngày bắt đầu phát hành: ${formattedDate}</p>
+                            <h4>🎁 ${g.title}</h4>
+                            <p style="font-size: 12px; color: #64748b; margin-top: 4px;">📅 Ngày bắt đầu: ${formattedDate}</p>
                         </div>
                         ${deleteButton}
                     </div>
@@ -509,7 +610,7 @@ window.listenToMiniGames = function() {
 }
 
 window.deleteMiniGame = async function(key) {
-    if (confirm('Bạn có chắc chắn muốn xóa Mini Game này hoàn toàn trên Cloud đám mây?')) {
+    if (confirm('Xóa hoàn toàn game này?')) {
         await remove(ref(db, `minigames/${key}`));
     }
 }
@@ -523,47 +624,39 @@ window.viewGameDetail = async function(key) {
     const detailBox = document.getElementById('gameDetailContent');
 
     const snapshot = await get(ref(db, `minigames/${key}`));
-    if (!snapshot.exists()) {
-        if (detailBox) detailBox.innerHTML = '<p>Dữ liệu Mini Game không tồn tại hoặc đã bị gỡ bỏ.</p>';
-        return;
-    }
+    if (!snapshot.exists()) return;
 
     const g = snapshot.val();
     const parts = g.startDate.split('-');
     const formattedDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : g.startDate;
 
-    let btcHTML = '<p style="color: #94a3b8; font-style: italic;">Chưa cấu hình danh sách BTC</p>';
+    let btcHTML = '<p style="color: #94a3b8; font-style: italic;">Chưa có danh sách BTC</p>';
     if (g.btc) {
         const btcList = g.btc.split(/[\n,]+/).map(item => item.trim()).filter(item => item);
-        btcHTML = `<ul style="margin-left: 20px; color: #334155; line-height: 1.6;">` + btcList.map(name => `<li>👤 ${name}</li>`).join('') + `</ul>`;
+        btcHTML = `<ul style="margin-left: 20px; color: #334155;">` + btcList.map(name => `<li>👤 ${name}</li>`).join('') + `</ul>`;
     }
 
-    let docBtn = g.docUrl ? `<a href="${g.docUrl}" target="_blank" class="btn-create" style="background:#10b981; text-decoration:none; display:inline-block;">📋 Xem Công văn thành lập BTC</a>` : '';
-    let rulesBtn = g.rulesUrl ? `<a href="${g.rulesUrl}" target="_blank" class="btn-create" style="background:#3b82f6; text-decoration:none; display:inline-block;">📜 Xem Thể lệ chương trình</a>` : '';
+    let docBtn = g.docUrl ? `<a href="${g.docUrl}" target="_blank" class="btn-create" style="background:#10b981; text-decoration:none;">📋 Xem Công văn thành lập BTC</a>` : '';
+    let rulesBtn = g.rulesUrl ? `<a href="${g.rulesUrl}" target="_blank" class="btn-create" style="background:#3b82f6; text-decoration:none;">📜 Xem Thể lệ chương trình</a>` : '';
 
     if (detailBox) {
         detailBox.innerHTML = `
             <div class="account-form-box" style="margin-bottom: 20px;">
-                <span style="font-size: 12px; background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-weight: bold;">THÔNG TIN SỰ KIỆN</span>
-                <h3 style="margin-top: 10px; color: #1e293b; font-size: 20px;">🏆 ${g.title}</h3>
-                <p style="font-size: 13px; color: #64748b; margin: 6px 0 15px 0;">📅 Kế hoạch triển khai: ${formattedDate}</p>
-                <div style="color: #334155; white-space: pre-line; line-height: 1.6; background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0;">${g.content}</div>
+                <h3>🏆 ${g.title}</h3>
+                <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">📅 Phát hành: ${formattedDate}</p>
+                <div style="white-space: pre-line; background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0;">${g.content}</div>
             </div>
             <div class="account-form-box" style="margin-bottom: 20px;">
-                <span style="font-size: 12px; background: #fef3c7; color: #b45309; padding: 4px 8px; border-radius: 4px; font-weight: bold;">BAN TỔ CHỨC (BTC)</span>
-                <div style="margin-top: 15px;">${btcHTML}</div>
+                <h4>👥 BAN TỔ CHỨC</h4><br>${btcHTML}
             </div>
             ${(docBtn || rulesBtn) ? `<div class="account-form-box">
-                <span style="font-size: 12px; background: #dcfce7; color: #15803d; padding: 4px 8px; border-radius: 4px; font-weight: bold;">TÀI LIỆU ĐÍNH KÈM CHÍNH THỨC</span>
-                <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">${docBtn} ${rulesBtn}</div>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">${docBtn} ${rulesBtn}</div>
             </div>` : ''}
         `;
     }
 }
 
-/* ====================================================
-   6. QUẢN LÝ TÀI KHOẢN (LOGIC PHÂN QUYỀN DEV)
-   ==================================================== */
+/* TÀI KHOẢN & PHÂN QUYỀN */
 window.listenToUserTable = function() {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     const userRole = currentUser ? currentUser.role : '';
@@ -574,18 +667,13 @@ window.listenToUserTable = function() {
 
         snapshot.forEach((childSnapshot) => {
             const u = childSnapshot.val();
-            const displayName = u.name || '';
             let actionHTML = '';
             
             if (userRole === 'Admin') {
-                actionHTML = `<span class="badge-default" style="color: #94a3b8; font-style: italic;">Không có quyền</span>`;
+                actionHTML = `<span class="badge-default">Không có quyền</span>`;
             } else if (u.username === 'BQT001' || u.username === 'BQT002' || u.username === 'DEV001') {
                 if (userRole === 'Dev' && u.username !== currentUser.username) {
-                    actionHTML = `
-                        <div style="display: flex; gap: 6px;">
-                            <button onclick="changeUserPassword('${u.username}')" class="btn-create" style="background: #f59e0b; padding: 4px 10px; font-size: 12px;">Đổi MK</button>
-                        </div>
-                    `;
+                    actionHTML = `<button onclick="changeUserPassword('${u.username}')" class="btn-create" style="background: #f59e0b; padding: 4px 10px; font-size: 12px;">Đổi MK</button>`;
                 } else {
                     actionHTML = `<span style="color: #64748b;">Hệ thống</span>`;
                 }
@@ -601,7 +689,7 @@ window.listenToUserTable = function() {
             tbody.innerHTML += `
                 <tr>
                     <td><strong>${u.username}</strong></td>
-                    <td>${displayName}</td>
+                    <td>${u.name || ''}</td>
                     <td><span style="color: ${u.role === 'Dev' ? '#ef4444; font-weight: bold;' : 'inherit'}">${u.role}</span></td>
                     <td>${actionHTML}</td>
                 </tr>
@@ -612,7 +700,7 @@ window.listenToUserTable = function() {
 
 window.addAccount = async function() {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    if (currentUser && currentUser.role === 'Admin') return alert('⛔ Bạn không có quyền thêm thành viên mới!');
+    if (currentUser && currentUser.role === 'Admin') return alert('⛔ Bạn không có quyền thêm thành viên!');
     
     const username = document.getElementById('newUsername')?.value.trim();
     const name = document.getElementById('newName')?.value.trim();
@@ -620,117 +708,79 @@ window.addAccount = async function() {
     const role = document.getElementById('newRole')?.value;
 
     if (!username || !password) return alert('Thiếu thông tin tạo tài khoản!');
-    
-    if (role === 'Dev' && currentUser.role !== 'Dev') {
-        return alert('⛔ Chỉ có tài khoản Dev mới có quyền chỉ định thêm một tài khoản Dev khác!');
-    }
+    if (role === 'Dev' && currentUser.role !== 'Dev') return alert('⛔ Chỉ Dev mới được tạo tài khoản Dev khác!');
 
     await set(ref(db, `users/${username}`), { username, name: name || username, password, role });
-    alert('Thêm tài khoản đồng bộ thành công!');
+    alert('Thêm tài khoản thành công!');
 }
 
 window.deleteAccount = async function(username) {
-    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    if (currentUser && currentUser.role === 'Admin') return alert('⛔ Bạn không có quyền xóa thành viên này!');
-    if (confirm('Xóa tài khoản này khỏi hệ thống đám mây?')) {
+    if (confirm('Xóa tài khoản này?')) {
         await remove(ref(db, `users/${username}`));
     }
 }
 
 window.changeUserPassword = async function(username) {
-    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    if (currentUser && currentUser.role === 'Admin') return alert('⛔ Bạn không có quyền chỉnh sửa tài khoản!');
-    const newPass = prompt(`Nhập mật khẩu mới cho tài khoản [ ${username} ] :`);
-    if (newPass === null) return;
-    const cleanPass = newPass.trim();
-    if (!cleanPass) return alert('Mật khẩu không được để trống!');
-    try {
-        await update(ref(db, `users/${username}`), { password: cleanPass });
-        alert(`🟢 Đã đổi mật khẩu cho tài khoản ${username} thành công trên Cloud!`);
-    } catch (err) { alert('🔴 Lỗi đồng bộ mật khẩu: ' + err.message); }
+    const newPass = prompt(`Nhập mật khẩu mới cho [ ${username} ] :`);
+    if (!newPass || !newPass.trim()) return;
+    await update(ref(db, `users/${username}`), { password: newPass.trim() });
+    alert('🟢 Đổi mật khẩu thành công!');
 }
 
 window.loadProfileData = async function() {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (!currentUser) return;
-    try {
-        const snapshot = await get(ref(db, `users/${currentUser.username}`));
-        if (snapshot.exists()) {
-            const newestData = snapshot.val();
-            if (document.getElementById('profileUsername')) document.getElementById('profileUsername').value = newestData.username;
-            if (document.getElementById('profileName')) document.getElementById('profileName').value = newestData.name || '';
-            if (document.getElementById('profileRole')) document.getElementById('profileRole').value = newestData.role;
-            localStorage.setItem('currentUser', JSON.stringify({ ...currentUser, ...newestData }));
-        }
-    } catch (err) {
-        if (document.getElementById('profileUsername')) document.getElementById('profileUsername').value = currentUser.username;
-        if (document.getElementById('profileName')) document.getElementById('profileName').value = currentUser.name || '';
-        if (document.getElementById('profileRole')) document.getElementById('profileRole').value = currentUser.role;
+    const snapshot = await get(ref(db, `users/${currentUser.username}`));
+    if (snapshot.exists()) {
+        const newestData = snapshot.val();
+        if (document.getElementById('profileUsername')) document.getElementById('profileUsername').value = newestData.username;
+        if (document.getElementById('profileName')) document.getElementById('profileName').value = newestData.name || '';
+        if (document.getElementById('profileRole')) document.getElementById('profileRole').value = newestData.role;
     }
 }
 
 window.updateProfileName = async function() {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    if (!currentUser) return;
     const newName = document.getElementById('profileName')?.value.trim();
-    if (!newName) return alert('Họ và tên không được để trống!');
-    try {
-        await update(ref(db, `users/${currentUser.username}`), { name: newName });
-        currentUser.name = newName;
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        alert('🟢 Đã cập nhật họ và tên thành công!');
-        const userDisplayEl = document.getElementById('userDisplayName') || document.querySelector('.user-info span');
-        if (userDisplayEl) userDisplayEl.innerText = newName;
-    } catch (err) { alert('🔴 Lỗi cập nhật: ' + err.message); }
+    if (!newName) return alert('Họ tên không được để trống!');
+    await update(ref(db, `users/${currentUser.username}`), { name: newName });
+    alert('🟢 Cập nhật thành công!');
 }
 
 window.loadSystemSettings = async function() {
-    try {
-        const dbRef = ref(db);
-        const snapshot = await get(child(dbRef, 'system_config'));
-        if (snapshot.exists()) {
-            const config = snapshot.val();
-            if (document.getElementById('sysMaintenance')) document.getElementById('sysMaintenance').value = config.maintenance || 'off';
-            if (document.getElementById('sysClubName')) document.getElementById('sysClubName').value = config.clubName || 'Doraemon Fanclub';
-            if (document.getElementById('sysClubLink')) document.getElementById('sysClubLink').value = config.clubLink || 'https://facebook.com/';
-        }
-    } catch (err) { console.error("Lỗi tải cấu hình:", err); }
+    const snapshot = await get(ref(db, 'system_config'));
+    if (snapshot.exists()) {
+        const config = snapshot.val();
+        if (document.getElementById('sysMaintenance')) document.getElementById('sysMaintenance').value = config.maintenance || 'off';
+        if (document.getElementById('sysClubName')) document.getElementById('sysClubName').value = config.clubName || 'Doraemon Fanclub';
+        if (document.getElementById('sysClubLink')) document.getElementById('sysClubLink').value = config.clubLink || 'https://facebook.com/';
+    }
 }
 
 window.saveSysSettingOnly = async function() {
     const maintenance = document.getElementById('sysMaintenance')?.value;
-    try {
-        await update(ref(db, 'system_config'), { maintenance: maintenance, maintenanceLastUpdated: new Date().toLocaleString() });
-        alert('🟢 Đã cập nhật trạng thái hệ thống thành công lên Cloud!');
-    } catch (err) { alert('🔴 Lỗi: ' + err.message); }
+    await update(ref(db, 'system_config'), { maintenance: maintenance, maintenanceLastUpdated: new Date().toLocaleString() });
+    alert('🟢 Cập nhật trạng thái thành công!');
 }
 
 window.saveClubConfigOnly = async function() {
     const clubName = document.getElementById('sysClubName')?.value.trim();
     const clubLink = document.getElementById('sysClubLink')?.value.trim();
-    if (!clubName || !clubLink) return alert('❌ Vui lòng điền đầy đủ thông tin!');
-    try {
-        await update(ref(db, 'system_config'), { clubName: clubName, clubLink: clubLink, configLastUpdated: new Date().toLocaleString() });
-        alert('🟢 Đã cập nhật cấu hình thành công!');
-    } catch (err) { alert('🔴 Lỗi: ' + err.message); }
+    await update(ref(db, 'system_config'), { clubName, clubLink, configLastUpdated: new Date().toLocaleString() });
+    alert('🟢 Cập nhật cấu hình thành công!');
 }
 
 window.backupSystemData = async function() {
-    try {
-        const snapshot = await get(ref(db));
-        if (snapshot.exists()) {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(snapshot.val(), null, 4));
-            const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", "doraemon_fanclub_backup.json");
-            document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove();
-        } else { alert('Không có dữ liệu!'); }
-    } catch (err) { alert('Lỗi: ' + err.message); }
+    const snapshot = await get(ref(db));
+    if (snapshot.exists()) {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(snapshot.val(), null, 4));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "doraemon_fanclub_backup.json");
+        document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove();
+    }
 }
 
-/* ====================================================
-   7. KHỞI CHẠY VÀ KIỂM TRA TRẠNG THÁI REALTIME
-   ==================================================== */
 function forceRenderHomeDirectly() {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     const contentDiv = document.getElementById('pageContent');
@@ -747,62 +797,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
 
     if (isLoginPage) {
-        if (currentUser) { 
-            window.location.replace("dashboard.html"); 
-            return; 
-        }
+        if (currentUser) window.location.replace("dashboard.html");
     } else {
-        if (!currentUser) {
-            window.location.replace("index.html");
-            return;
-        }
+        if (!currentUser) { window.location.replace("index.html"); return; }
 
         forceRenderHomeDirectly();
-        setTimeout(forceRenderHomeDirectly, 100);
-        setTimeout(forceRenderHomeDirectly, 400);
-
-        const sidebar = document.querySelector('.sidebar');
-        if (sidebar) {
-            sidebar.addEventListener('click', (e) => {
-                const target = e.target.closest('[onclick*="showPage"]');
-                if (target) {
-                    e.preventDefault();
-                    const attr = target.getAttribute('onclick');
-                    const match = attr.match(/showPage\(['"]([^'"]+)['"]\)/);
-                    if (match && match[1]) {
-                        window.location.hash = match[1]; 
-                        window.showPage(match[1]);
-                    }
-                }
-            });
-        }
+        setTimeout(forceRenderHomeDirectly, 200);
 
         onValue(ref(db, 'system_config'), (snapshot) => {
             if (!snapshot.exists()) return;
             const config = snapshot.val();
-            const isMaintenance = config.maintenance;
-            const checkUser = JSON.parse(localStorage.getItem('currentUser'));
-            
-            if (isMaintenance === 'on' && checkUser && checkUser.role !== 'Dev') {
-                alert('🔴 Lệnh bảo trì khẩn cấp được kích hoạt bởi Developer! Toàn bộ người dùng không phải Dev sẽ tự động đăng xuất.');
+            if (config.maintenance === 'on' && currentUser.role !== 'Dev') {
+                alert('🔴 Hệ thống bảo trì! Tự động đăng xuất.');
                 localStorage.removeItem('currentUser');
                 window.location.replace("index.html");
                 return;
             }
-
-            const brandEl = document.getElementById('sidebarBrand') || document.querySelector('.sidebar .brand') || document.querySelector('.sidebar h1') || document.querySelector('.sidebar h3');
-            if (brandEl && config.clubName) brandEl.innerText = config.clubName.toUpperCase() + " ADMIN";
-            if (config.clubName) document.title = `${config.clubName} - Hệ thống quản trị`;
-
-            const defaultFavicon = "https://i.postimg.cc/Z57X57Gp/Chua-co-ten-(Logo)-(1).png";
-            let faviconEl = document.querySelector("link[rel*='icon']");
-            if (!faviconEl) { 
-                faviconEl = document.createElement('link'); 
-                faviconEl.rel = 'shortcut icon'; 
-                faviconEl.type = 'image/x-icon'; 
-                document.head.appendChild(faviconEl); 
-            }
-            faviconEl.href = config.clubIconUrl || defaultFavicon;
+            const brandEl = document.getElementById('sidebarBrand');
+            if (brandEl && config.clubName) brandEl.querySelector('span').innerText = config.clubName.toUpperCase() + " ADMIN";
         });
     }
 });
