@@ -43,31 +43,283 @@ body {
 .card { flex: 1; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border-top: 4px solid #1976d2; }
 .card h3 { font-size: 14px; color: #64748b; margin-bottom: 10px; }
 .activity { background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+.activity h3 { margin-bottom: 15px; }
+.activity ul { padding-left: 20px; }
+.activity ul li { margin-bottom: 10px; line-height: 1.6; }
 
-/* --- FORM & BẢNG --- */
-.account-form-box { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-.inline-form { display: flex; flex-wrap: wrap; gap: 12px; }
-.inline-form input { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 4px; flex: 1; }
-.btn-create { background-color: #16a34a; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; }
-.table-container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-.table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-.table th, .table td { padding: 12px 15px; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
-.btn-delete { background-color: #ef4444; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; }
+/* --- VIẾT THÊM: FORM & BẢNG QUẢN LÝ THÀNH VIÊN --- */
+.account-form-box {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+}
+.account-form-box h3 {
+    margin-bottom: 15px;
+    color: #334155;
+    font-size: 16px;
+}
+.inline-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.inline-form input, .inline-form select {
+    padding: 8px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 14px;
+    flex: 1;
+    min-width: 150px;
+}
+.btn-create {
+    background-color: #16a34a;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+}
+.btn-create:hover { background-color: #15803d; }
 
-/* --- TRANG ĐĂNG NHẬP --- */
-body.login-body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #0d47a1 0%, #1e3a8a 100%); }
-.login-container { background: #ffffff; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2); width: 100%; max-width: 420px; text-align: center; }
-.btn-login { width: 100%; background-color: #0d47a1; color: #ffffff; border: none; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+/* Định dạng cấu trúc bảng danh sách */
+.table-container {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+}
+.table-container h3 {
+    margin-bottom: 15px;
+    color: #334155;
+}
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    margin-top: 10px;
+}
+.table th, .table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 14px;
+}
+.table th {
+    background-color: #f8fafc;
+    color: #64748b;
+    font-weight: 600;
+}
+.btn-delete {
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.btn-delete:hover { background-color: #dc2626; }
+.badge-default {
+    background-color: #e2e8f0;
+    color: #475569;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+/* --- ĐỊNH DẠNG HỆ THỐNG TRANG ĐĂNG NHẬP (Dựa trên index.html mới) --- */
+body.login-body {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0d47a1 0%, #1e3a8a 100%);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
 
-/* --- TỐI ƯU HÓA MOBILE --- */
+.login-container {
+    background: #ffffff;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+}
+
+.login-container h1 {
+    color: #0d47a1;
+    font-size: 22px;
+    margin-bottom: 6px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.login-container .subtitle {
+    color: #64748b;
+    font-size: 14px;
+    margin-bottom: 25px;
+}
+
+.form-group {
+    text-align: left;
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 13px;
+    color: #475569;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.form-group input:focus {
+    border-color: #0d47a1;
+    box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.15);
+}
+
+.btn-login {
+    width: 100%;
+    background-color: #0d47a1;
+    color: #ffffff;
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background 0.2s ease;
+}
+
+.btn-login:hover {
+    background-color: #1565c0;
+}
+
+.error-msg {
+    color: #ef4444;
+    font-size: 13px;
+    text-align: left;
+    margin-bottom: 15px;
+    background: #fef2f2;
+    padding: 10px 14px;
+    border-radius: 6px;
+    border-left: 4px solid #ef4444;
+    font-weight: 500;
+}
+
+.footer-text {
+    margin-top: 25px;
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+/* ====================================================
+   MÃ CSS TỐI ƯU HÓA MOBILE (ĐÃ SỬA LỖI THEO IMAGE_CC398A.PNG)
+   ==================================================== */
 @media screen and (max-width: 1024px) {
-    .container { display: block !important; margin-top: 60px; }
-    .sidebar { width: 100% !important; height: 60px !important; position: fixed !important; bottom: 0 !important; top: auto !important; padding-top: 0 !important; z-index: 9999 !important; box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.15); display: flex !important; }
-    .sidebar ul { display: flex !important; flex-direction: row !important; justify-content: space-around !important; align-items: center !important; width: 100% !important; }
-    .sidebar ul li { flex: 1 !important; text-align: center !important; }
-    .sidebar ul li a { padding: 0 !important; height: 60px !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 11px !important; }
-    .content { margin-left: 0 !important; width: 100% !important; padding: 20px 15px 80px 15px !important; }
-    .cards { flex-direction: column !important; }
-    .table-container { overflow-x: auto !important; }
-    .table { min-width: 500px; }
+    /* 1. Reset cấu trúc Container chính */
+    .container {
+        display: block !important;
+        margin-top: 60px;
+    }
+
+    /* 2. ÉP BUỘC SIDEBAR CHUYỂN THÀNH BOTTOM NAVIGATION */
+    .sidebar {
+        width: 100% !important;
+        height: 60px !important;
+        position: fixed !important;
+        top: auto !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        padding-top: 0 !important;
+        z-index: 9999 !important;
+        box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Ép cấu trúc danh sách ul, li dàn hàng ngang */
+    .sidebar ul {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-around !important;
+        align-items: center !important;
+        height: 100% !important;
+        width: 100% !important;
+    }
+
+    .sidebar ul li {
+        flex: 1 !important;
+        text-align: center !important;
+        height: 100% !important;
+    }
+
+    /* Định dạng lại các liên kết menu */
+    .sidebar ul li a {
+        padding: 0 !important;
+        height: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 12px !important;
+        font-weight: 500;
+        text-align: center;
+    }
+
+    /* Tối ưu hóa nút Đăng xuất đứng chung hàng, bỏ gạch trên */
+    .sidebar ul li a.logout {
+        margin-top: 0 !important;
+        border-top: none !important;
+    }
+
+    /* 3. GIẢI PHÓNG KHÔNG GIAN TOÀN DIỆN CHO NỘI DUNG CHÍNH */
+    .content {
+        margin-left: 0 !important; /* Hủy bỏ phần lùi lề của sidebar cũ */
+        width: 100% !important;   /* Cho phép nội dung bung hết chiều rộng màn hình */
+        padding: 20px 15px 80px 15px !important; /* Dưới đáy chừa 80px để tránh bị thanh menu đè */
+        box-sizing: border-box !important;
+    }
+
+    /* 4. TỐI ƯU KHỐI THẺ TỔNG QUAN XẾP DỌC TRÊN ĐIỆN THOẠI */
+    .cards {
+        flex-direction: column !important;
+        gap: 15px !important;
+    }
+    .card {
+        width: 100% !important;
+    }
+
+    /* 5. ĐƯA FORM ĐĂNG KÝ VỀ DẠNG HÀNG DỌC */
+    .inline-form {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+    .inline-form input, .inline-form select, .btn-create {
+        width: 100% !important;
+    }
+
+    /* 6. CHỐNG TRÀN VÀ CHO PHÉP VUỐT NGANG BẢNG */
+    .table-container {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        padding: 10px !important;
+    }
+    .table {
+        min-width: 500px; /* Không để bảng bị bóp quá nhỏ */
+    }
 }
