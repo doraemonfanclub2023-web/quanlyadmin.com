@@ -20,7 +20,6 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Biến toàn cục lưu trữ thông tin user hiện tại và các listener hủy theo dõi dữ liệu (realtime)
 window.currentUser = null;
 let unsubscribeDocs = null;
 let unsubscribeTests = null;
@@ -29,33 +28,27 @@ let unsubscribeTests = null;
 // 2. KIỂM TRA TRẠNG THÁI ĐĂNG NHẬP & PHÂN QUYỀN
 // ==========================================
 onAuthStateChanged(auth, async (user) => {
-    // Kiểm tra xem trang hiện tại có phải là trang index đăng nhập hay không
     const isLoginPage = window.location.pathname.endsWith("index.html") || window.location.pathname.endsWith("/");
 
     if (user) {
-        // Lấy thông tin role từ bộ sưu tập 'users' dựa trên UID
         try {
             const userDoc = await getDocs(doc(db, "users", user.uid));
             if (userDoc.exists()) {
                 window.currentUser = { uid: user.uid, ...userDoc.data() };
             } else {
-                // Nếu chưa phân role trên DB, mặc định tài khoản thường
                 window.currentUser = { uid: user.uid, email: user.email, role: "user", name: user.displayName || "Thành viên" };
             }
         } catch (e) {
             window.currentUser = { uid: user.uid, email: user.email, role: "user", name: "Thành viên" };
         }
 
-        // Nếu đã đăng nhập thành công mà vẫn đứng ở trang index.html, đá qua trang hệ thống quản trị
         if (isLoginPage) {
             window.location.href = "dashboard.html";
         } else {
-            // Theo dõi hash URL để hiển thị trang tương ứng, mặc định là 'home'
             const defaultPage = window.location.hash.replace('#', '') || 'home';
             window.showPage(defaultPage);
         }
     } else {
-        // Nếu chưa đăng nhập và cố tình truy cập vào các trang nội bộ (như dashboard.html), mới đá về trang index.html
         if (!isLoginPage) {
             window.location.href = "index.html";
         }
@@ -78,7 +71,6 @@ window.showPage = function(page) {
     const container = document.getElementById('pageContent');
     if (!container) return;
 
-    // Hủy các listener chạy ngầm của trang cũ để tránh tràn bộ nhớ
     if (unsubscribeDocs) { unsubscribeDocs(); unsubscribeDocs = null; }
     if (unsubscribeTests) { unsubscribeTests(); unsubscribeTests = null; }
 
@@ -165,7 +157,6 @@ window.showPage = function(page) {
                     </table>
                 </div>
 
-                <!-- KHU VỰC LÀM BÀI TRỰC TIẾP TRÊN WEB -->
                 <div id="examWorkspace" class="account-form-box" style="display: none; margin-top: 35px; border-top: 4px solid #3b82f6;">
                     <h3 id="workspaceTitle" style="color: #2563eb; margin-bottom: 10px;">Đang làm bài</h3>
                     <div style="font-weight: 600; color: #475569; margin-bottom: 5px;"> Đề bài:</div>
@@ -191,7 +182,6 @@ window.showPage = function(page) {
     }
 };
 
-// Theo dõi thay đổi hash URL để chuyển trang (SPA)
 window.addEventListener('hashchange', () => {
     const page = window.location.hash.replace('#', '') || 'home';
     window.showPage(page);
@@ -357,7 +347,7 @@ window.handleSubmitAnswer = async function(event) {
 window.handleDeleteData = async function(collectionName, id) {
     if (!confirm("Bồ có chắc chắn muốn xóa vĩnh viễn mục này không?")) return;
     try {
-        await deleteDoc(doc(db, collectionName, id));
+        await deleteDoc(doc(doc(db, collectionName, id)));
         alert("Đã xóa thành công!");
     } catch (e) {
         alert("Lỗi khi xóa dữ liệu: " + e.message);
@@ -365,25 +355,27 @@ window.handleDeleteData = async function(collectionName, id) {
 };
 
 // ==========================================
-// 7. XỬ LÝ ĐĂNG NHẬP HỆ THỐNG (MỚI BỔ SUNG)
+// 7. XỬ LÝ ĐĂNG NHẬP BẰNG MÃ TÀI KHOẢN NỘI BỘ (ĐÃ FIX THEO Ý BỒ)
 // ==========================================
 window.handleLogin = async function(event) {
     event.preventDefault();
     
-    const email = document.getElementById('username').value.trim();
+    const inputCode = document.getElementById('username').value.trim().toLowerCase(); // Tự động chuyển chữ thường cho chuẩn
     const password = document.getElementById('password').value.trim();
     const errorDiv = document.getElementById('error');
     
     if (errorDiv) errorDiv.style.display = 'none';
 
+    // TỰ ĐỘNG THÊM ĐUÔI ẢO ĐỂ LỪA FIREBASE AUTH
+    const fakeEmail = `${inputCode}@doraadmin.com`;
+
     try {
-        // Thực hiện đăng nhập Firebase Auth qua Email/Password đám mây
-        await signInWithEmailAndPassword(auth, email, password);
-        alert("🎉 Đăng nhập thành công!");
+        await signInWithEmailAndPassword(auth, fakeEmail, password);
+        alert("🎉 Đăng nhập hệ thống thành công!");
     } catch (error) {
         console.error("Lỗi đăng nhập:", error.message);
         if (errorDiv) {
-            errorDiv.innerText = "❌ Sai tài khoản hoặc mật khẩu đám mây!";
+            errorDiv.innerText = "❌ Mã tài khoản hoặc mật khẩu không chính xác!";
             errorDiv.style.display = 'block';
         }
     }
