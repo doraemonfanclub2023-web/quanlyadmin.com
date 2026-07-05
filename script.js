@@ -8,12 +8,12 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 // 1. CẤU HÌNH FIREBASE (Bồ giữ nguyên cấu hình của bồ nhé)
 // ==========================================
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyC-U9L1plaQ6pcP7Iecg4RO0GirBjunISM",
+    authDomain: "admin-27099.firebaseapp.com",
+    projectId: "admin-27099",
+    storageBucket: "admin-27099.firebasestorage.app",
+    messagingSenderId: "510976750235",
+    appId: "1:510976750235:web:78d3e138d302235a788c3e"
 };
 
 const app = initializeApp(firebaseConfig);
