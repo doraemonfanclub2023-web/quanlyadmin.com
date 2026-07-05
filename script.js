@@ -48,7 +48,7 @@ onAuthStateChanged(auth, async (user) => {
         window.showPage(defaultPage);
     } else {
         // Nếu chưa đăng nhập, đá về trang login
-        window.location.href = "login.html";
+        window.location.href = "index.";
     }
 });
 
