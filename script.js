@@ -344,10 +344,13 @@ window.handleSubmitAnswer = async function(event) {
     }
 };
 
+// ==========================================
+// 6. XỬ LÝ XÓA DỮ LIỆU (ĐÃ FIX LỖI TYPO CHÍ MẠNG Ở ĐÂY)
+// ==========================================
 window.handleDeleteData = async function(collectionName, id) {
     if (!confirm("Bồ có chắc chắn muốn xóa vĩnh viễn mục này không?")) return;
     try {
-        await deleteDoc(doc(doc(db, collectionName, id)));
+        await deleteDoc(doc(db, collectionName, id));
         alert("Đã xóa thành công!");
     } catch (e) {
         alert("Lỗi khi xóa dữ liệu: " + e.message);
@@ -355,19 +358,19 @@ window.handleDeleteData = async function(collectionName, id) {
 };
 
 // ==========================================
-// 7. XỬ LÝ ĐĂNG NHẬP BẰNG MÃ TÀI KHOẢN NỘI BỘ (ĐÃ FIX THEO Ý BỒ)
+// 7. XỬ LÝ ĐĂNG NHẬP BẰNG MÃ TÀI KHOẢN NỘI BỘ 
 // ==========================================
 window.handleLogin = async function(event) {
     event.preventDefault();
     
-    const inputCode = document.getElementById('username').value.trim().toLowerCase(); // Tự động chuyển chữ thường cho chuẩn
+    const inputCode = document.getElementById('username').value.trim().toLowerCase(); 
     const password = document.getElementById('password').value.trim();
     const errorDiv = document.getElementById('error');
     
     if (errorDiv) errorDiv.style.display = 'none';
 
-    // TỰ ĐỘNG THÊM ĐUÔI ẢO ĐỂ LỪA FIREBASE AUTH
-    const fakeEmail = `${inputCode}@doraadmin.com`;
+    // Tự động gán đuôi ảo để gửi xác thực lên Firebase
+    const fakeEmail = `${inputCode}@doraadmin.com`;[cite: 1]
 
     try {
         await signInWithEmailAndPassword(auth, fakeEmail, password);
