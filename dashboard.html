@@ -88,31 +88,27 @@
            MÃ CSS TỐI ƯU HÓA MENU 3 GẠCH (HAMBURGER) CHO MOBILE
            ==================================================== */
         @media screen and (max-width: 768px) {
-            /* Hiện nút 3 gạch */
             .menu-toggle { display: block !important; }
             .close-sidebar { display: block !important; }
 
-            /* Giấu Sidebar sang rìa trái màn hình */
             .sidebar {
                 position: fixed !important;
                 top: 0; bottom: 0; left: 0;
                 width: 280px !important;
-                transform: translateX(-100%); /* Giấu đi */
+                transform: translateX(-100%); 
                 box-shadow: 5px 0 15px rgba(0,0,0,0.1);
             }
 
-            /* Khi thêm class .active bằng JS thì đẩy Sidebar lộ diện */
             .sidebar.active {
                 transform: translateX(0) !important;
             }
 
-            /* Khi mở menu, hiện lớp nền mờ phía sau */
             .sidebar.active ~ .sidebar-overlay {
                 display: block;
             }
 
             .header { padding: 15px 20px !important; justify-content: flex-start !important; }
-            .header-title { margin-left: auto; } /* Đẩy chữ "Hệ thống..." sang phải */
+            .header-title { margin-left: auto; } 
             .content-body { padding: 20px 15px !important; }
             .inline-form { flex-direction: column !important; }
             .inline-form input, .inline-form select, .inline-form textarea, .btn-create { width: 100% !important; }
@@ -129,19 +125,19 @@
     <!-- SIDEBAR ĐIỀU HƯỚNG SPA -->
     <div class="sidebar" id="sidebarMenu">
         <div>
-            <div class="sidebar-brand">
+            <div class="sidebar-brand" id="sidebarBrand">
                 <span>Doraemon Admin</span>
                 <button class="close-sidebar" onclick="toggleMenu()">✕</button>
             </div>
             <ul class="sidebar-menu">
-    <li onclick="handleMenuClick('home')">Trang chủ</li>
-    <li onclick="handleMenuClick('members')">Quản lý thành viên</li>
-    <li onclick="handleMenuClick('notice')">Quản lý thông báo</li>
-    <li onclick="handleMenuClick('setting')">Cài đặt hệ thống</li>
-    <li onclick="showPage('minigame')">Mini Game</li>
-    <!-- Mục thông tin cá nhân đã được chuẩn hóa UI -->
-    <li onclick="handleMenuClick('account')">Thông tin cá nhân</li>
-</ul>
+                <li onclick="handleMenuClick('home')">🏠 Trang chủ</li>
+                <li onclick="handleMenuClick('members')">👥 Quản lý thành viên</li>
+                <li onclick="handleMenuClick('notice')">📢 Quản lý thông báo</li>
+                <li onclick="handleMenuClick('minigame')">🎁 Mini Game</li>
+                <li onclick="handleMenuClick('documents')">📄 Quản lý Công văn</li>
+                <li onclick="handleMenuClick('setting')">⚙️ Cài đặt hệ thống</li>
+                <li onclick="handleMenuClick('account')">👤 Thông tin cá nhân</li>
+            </ul>
         </div>
         <div class="btn-logout" onclick="logout()">Đăng xuất</div>
     </div>
@@ -165,12 +161,12 @@
             sidebar.classList.toggle('active');
         }
 
-        // Khi bấm chọn menu trên mobile, tự động chuyển trang và ẩn menu luôn cho gọn
+        // Khi bấm chọn menu, đồng bộ hash URL, tự chuyển trang SPA và đóng menu mobile
         function handleMenuClick(page) {
+            window.location.hash = page;
             if (typeof showPage === 'function') {
-                showPage(page); // Gọi hàm chuyển trang SPA của cậu trong script.js
+                showPage(page); 
             }
-            // Nếu đang ở màn hình mobile thì đóng menu lại
             if (window.innerWidth <= 768) {
                 toggleMenu();
             }
