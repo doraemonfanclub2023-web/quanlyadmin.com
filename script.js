@@ -1,4 +1,4 @@
-// 1. CẤU HÌNH CLOUD FIREBASE CỦA BẠN
+// 1. CẤU HÌNH CLOUD FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyC-U9L1plaQ6pcP7Iecg4RO0GirBjunISM",
   authDomain: "admin-27099.firebaseapp.com",
@@ -17,7 +17,7 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 /* ====================================================
-   2. KHỞI TẠO TÀI KHOẢN GỐC TRÊN CLOUD (THÊM ĐẠI DIỆN DEV)
+   2. KHỞI TẠO TÀI KHOẢN GỐC TRÊN CLOUD
    ==================================================== */
 async function initDatabase() {
     try {
@@ -38,7 +38,7 @@ async function initDatabase() {
 initDatabase();
 
 /* ====================================================
-   3. XỬ LÝ ĐĂNG NHẬP / ĐĂNG XUẤT (LOGIC BẢO TRÌ MỚI)
+   3. XỬ LÝ ĐĂNG NHẬP / ĐĂNG XUẤT
    ==================================================== */
 window.login = async function() {
     const userInp = document.getElementById('username')?.value.trim();
@@ -61,14 +61,13 @@ window.login = async function() {
                 const configSnapshot = await get(ref(db, 'system_config/maintenance'));
                 const isMaintenance = configSnapshot.val();
                 
-                // LOGIC QUYỀN TỐI THƯỢNG: Nếu đang bảo trì, CHỈ CÓ DEV được vào
                 if (isMaintenance === 'on' && userData.role !== 'Dev') {
                     alert('🔴 Hệ thống đang bảo trì nghiêm ngặt bởi Developer! Hiện tại chỉ tài khoản Dev mới có quyền truy cập.');
                     return;
                 }
 
                 localStorage.setItem('currentUser', JSON.stringify(userData));
-                window.location.href = "dashboard.html";
+                window.location.replace("dashboard.html");
                 return;
             }
         }
@@ -80,7 +79,7 @@ window.login = async function() {
 
 window.logout = function() {
     localStorage.removeItem('currentUser');
-    window.location.href = "index.html";
+    window.location.replace("index.html");
 }
 
 /* ====================================================
@@ -264,7 +263,7 @@ window.showPage = function(pageId) {
 }
 
 /* ====================================================
-   5. REALTIME SYNC (ĐỒNG BỘ DỮ LIỆU)
+   5. REALTIME SYNC (ĐỒNG BỘ DỮ LIỆU CLOUD)
    ==================================================== */
 window.listenToHomeData = function() {
     onValue(ref(db, 'users'), (snapshot) => {
@@ -644,21 +643,28 @@ function forceRenderHomeDirectly() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Nhận diện xem đang ở màn hình login hay màn hình dashboard
+    // Nhận diện màn hình thông qua thẻ input username
     const isLoginPage = document.getElementById('username') !== null;
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
 
     if (isLoginPage) {
-        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
         if (currentUser) { 
-            window.location.href = "dashboard.html"; 
+            window.location.replace("dashboard.html"); 
             return; 
         }
     } else {
-        // ĐANG Ở TRANG DASHBOARD - MỚI CHẠY ROUTER VÀ REALTIME LISTENER
+        // ĐANG Ở TRANG DASHBOARD
+        if (!currentUser) {
+            window.location.replace("index.html");
+            return;
+        }
+
+        // Ép render trang Home
         forceRenderHomeDirectly();
         setTimeout(forceRenderHomeDirectly, 100);
         setTimeout(forceRenderHomeDirectly, 400);
 
+        // Sidebar Router Click event listener
         const sidebar = document.querySelector('.sidebar');
         if (sidebar) {
             sidebar.addEventListener('click', (e) => {
@@ -668,22 +674,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     const attr = target.getAttribute('onclick');
                     const match = attr.match(/showPage\(['"]([^'"]+)['"]\)/);
                     if (match && match[1]) {
-                        window.location.hash = match[1]; window.showPage(match[1]);
+                        window.location.hash = match[1]; 
+                        window.showPage(match[1]);
                     }
                 }
             });
         }
 
+        // Lắng nghe cấu hình hệ thống thời gian thực
         onValue(ref(db, 'system_config'), (snapshot) => {
             if (!snapshot.exists()) return;
             const config = snapshot.val();
             const isMaintenance = config.maintenance;
-            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const checkUser = JSON.parse(localStorage.getItem('currentUser'));
             
-            if (isMaintenance === 'on' && currentUser && currentUser.role !== 'Dev') {
+            if (isMaintenance === 'on' && checkUser && checkUser.role !== 'Dev') {
                 alert('🔴 Lệnh bảo trì khẩn cấp được kích hoạt bởi Developer! Toàn bộ người dùng không phải Dev sẽ tự động đăng xuất.');
                 localStorage.removeItem('currentUser');
-                window.location.href = "index.html";
+                window.location.replace("index.html");
                 return;
             }
 
@@ -693,7 +701,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const defaultFavicon = "https://i.postimg.cc/Z57X57Gp/Chua-co-ten-(Logo)-(1).png";
             let faviconEl = document.querySelector("link[rel*='icon']");
-            if (!faviconEl) { faviconEl = document.createElement('link'); faviconEl.rel = 'shortcut icon'; faviconEl.type = 'image/x-icon'; document.head.appendChild(faviconEl); }
+            if (!faviconEl) { 
+                faviconEl = document.createElement('link'); 
+                faviconEl.rel = 'shortcut icon'; 
+                faviconEl.type = 'image/x-icon'; 
+                document.head.appendChild(faviconEl); 
+            }
             faviconEl.href = config.clubIconUrl || defaultFavicon;
         });
     }
