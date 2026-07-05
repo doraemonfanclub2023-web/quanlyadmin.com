@@ -48,18 +48,16 @@
         const pass = document.getElementById('password').value.trim();
 
         try {
-            // Chỉ check duy nhất ID và Password trong Database, không dính dáng tới Email
             const snapshot = await get(child(ref(db), `accounts/${user}`));
             
             if (snapshot.exists() && snapshot.val().password === pass) {
-                // Lưu trạng thái đăng nhập
                 sessionStorage.setItem("admin_logged_in", "true");
                 window.location.href = "dashboard.html";
             } else {
                 alert("Sai mã hoặc mật khẩu!");
             }
         } catch (e) {
-            alert("Lỗi hệ thống, thử lại sau!");
+            alert("Lỗi hệ thống!");
         }
     });
 </script>
