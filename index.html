@@ -2,54 +2,49 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>DORAEMON ADMIN</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập - Hệ thống Quản trị Doraemon Fanclub</title>
     <style>
-        body { background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: sans-serif; }
-        .box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 320px; text-align: center; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .login-container { background: #ffffff; padding: 40px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        .brand-logo { width: 80px; height: 80px; margin-bottom: 15px; }
+        h2 { color: #1e293b; margin-bottom: 8px; font-size: 24px; }
+        p { color: #64748b; font-size: 14px; margin-bottom: 25px; }
+        .form-group { text-align: left; margin-bottom: 20px; }
+        label { display: block; font-size: 13px; color: #475569; margin-bottom: 6px; font-weight: 600; }
+        input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px; outline: none; transition: 0.2s; }
+        input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        .btn-login { width: 100%; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 10px; }
+        .btn-login:hover { background: #0369a1; }
+        #error { color: #ef4444; font-size: 14px; margin-top: 15px; display: none; background: #fef2f2; padding: 10px; border-radius: 6px; border: 1px solid #fee2e2; }
     </style>
 </head>
 <body>
-<div class="box">
+
+<div class="login-container">
+    <!-- Logo mặc định của Doraemon Admin -->
+    <img class="brand-logo" src="https://i.postimg.cc/Z57X57Gp/Chua-co-ten-(Logo)-(1).png" alt="Logo">
     <h2>DORAEMON ADMIN</h2>
-    <input type="text" id="username" placeholder="Mã tài khoản">
-    <input type="password" id="password" placeholder="Mật khẩu">
-    <button id="loginBtn">ĐĂNG NHẬP</button>
+    <p>Hệ thống Quản lý Nội bộ Fanclub</p>
+    
+    <div class="form-group">
+        <label for="username">Mã tài khoản</label>
+        <input type="text" id="username" placeholder="Nhập mã tài khoản của bạn...">
+    </div>
+    
+    <div class="form-group">
+        <label for="password">Mật khẩu</label>
+        <input type="password" id="password" placeholder="Nhập mật khẩu...">
+    </div>
+    
+    <button onclick="login()" class="btn-login">ĐĂNG NHẬP HỆ THỐNG</button>
+    
+    <div id="error">❌ Sai mã tài khoản hoặc mật khẩu đám mây!</div>
 </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+<!-- NHÚNG FILE LOGIC JAVASCRIPT CỦA BỒ VÀO ĐÂY -->
+<script type="module" src="app.js"></script>
 
-    const db = getDatabase(initializeApp({ databaseURL: "https://admin-27099-default-rtdb.firebaseio.com/" }));
-
-    document.getElementById('loginBtn').onclick = async () => {
-        const u = document.getElementById('username').value.trim();
-        const p = document.getElementById('password').value.trim();
-        
-        // Tự quét toàn bộ dữ liệu gốc
-        const snap = await get(ref(db));
-        let found = false;
-        
-        if (snap.exists()) {
-            const data = snap.val();
-            // Lặp qua các nhánh chính (BQT001, BQT002...)
-            for (let branch in data) {
-                if (data[branch][u] && data[branch][u].password == p) {
-                    found = true;
-                    break;
-                }
-            }
-        }
-
-        if (found) {
-            sessionStorage.setItem("auth", "true");
-            window.location.href = "dashboard.html";
-        } else {
-            alert("Sai mã hoặc mật khẩu!");
-        }
-    };
-</script>
 </body>
 </html>
