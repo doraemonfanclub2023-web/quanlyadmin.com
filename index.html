@@ -27,11 +27,11 @@
     <h2>DORAEMON ADMIN</h2>
     <p>Hệ thống Quản lý Nội bộ Fanclub</p>
     
-    <!-- Sử dụng thẻ form để bắt sự kiện submit và cho phép nhấn Enter để đăng nhập -->
-    <form id="loginForm" onsubmit="window.handleLogin(event)">
-    <!-- các ô nhập username, password -->
-    <button type="submit" class="btn-login">ĐĂNG NHẬP HỆ THỐNG</button>
-</form>
+    <form id="loginForm">
+        <div class="form-group">
+            <label for="username">Mã tài khoản (Ví dụ: DEV001, BQTFP01)</label>
+            <input type="text" id="username" placeholder="Nhập mã tài khoản của bồ..." required>
+        </div>
         
         <div class="form-group">
             <label for="password">Mật khẩu</label>
@@ -41,11 +41,48 @@
         <button type="submit" class="btn-login">ĐĂNG NHẬP HỆ THỐNG</button>
     </form>
     
-    <div id="error">❌ Sai mã tài khoản hoặc mật khẩu đám mây!</div>
+    <div id="error">❌ Mã tài khoản hoặc mật khẩu không chính xác!</div>
 </div>
 
-<!-- NHÚNG FILE LOGIC JAVASCRIPT CỦA BỒ VÀO ĐÂY -->
-<script type="module" src="script.js"></script>
+<!-- NHÚNG TRỰC TIẾP FIREBASE VÀ LOGIC ĐĂNG NHẬP VÀO HTML ĐỂ TRÁNH LỖI KẾT NỐI -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyC-U9L1plaQ6pcP7Iecg4RO0GirBjunISM",
+        authDomain: "admin-27099.firebaseapp.com",
+        projectId: "admin-27099",
+        storageBucket: "admin-27099.firebasestorage.app",
+        messagingSenderId: "510976750235",
+        appId: "1:510976750235:web:78d3e138d302235a788c3e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    document.getElementById('loginForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        
+        const inputCode = document.getElementById('username').value.trim().toLowerCase(); 
+        const password = document.getElementById('password').value.trim();
+        const errorDiv = document.getElementById('error');
+        
+        errorDiv.style.display = 'none';
+
+        // Tự động gán đuôi ảo @doraadmin.com ra sau mã tài khoản nội bộ
+        const fakeEmail = `${inputCode}@doraadmin.com`;[cite: 1]
+
+        try {
+            await signInWithEmailAndPassword(auth, fakeEmail, password);
+            alert("🎉 Đăng nhập hệ thống thành công!");
+            window.location.href = "dashboard.html";
+        } catch (error) {
+            console.error("Lỗi:", error.message);
+            errorDiv.style.display = 'block';
+        }
+    });
+</script>
 
 </body>
 </html>
