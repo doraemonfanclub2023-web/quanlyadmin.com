@@ -24,13 +24,13 @@
 
     <div class="input-group">
         <label>Mã tài khoản</label>
-        <input type="text" id="username" placeholder="DEV001">
+        <input type="text" id="username" placeholder="Ví dụ: test">
     </div>
     <div class="input-group">
         <label>Mật khẩu</label>
         <input type="password" id="password" placeholder="***">
     </div>
-    <button onclick="login()">ĐĂNG NHẬP HỆ THỐNG</button>
+    <button id="loginBtn">ĐĂNG NHẬP HỆ THỐNG</button>
 </div>
 
 <script type="module">
@@ -48,21 +48,16 @@
 
     const auth = getAuth(app);
 
-    // Bắt sự kiện trực tiếp vào nút bấm
-    document.querySelector('button').addEventListener('click', async () => {
+    document.getElementById('loginBtn').addEventListener('click', async () => {
         const user = document.getElementById('username').value.trim().toLowerCase();
         const pass = document.getElementById('password').value.trim();
         
-        if(!user || !pass) {
-            alert("Bồ chưa nhập đủ thông tin kìa!");
-            return;
-        }
-
         try {
+            // Hệ thống tự gắn đuôi, bồ chỉ cần nhập đúng mã (ví dụ: test)
             await signInWithEmailAndPassword(auth, `${user}@doraadmin.com`, pass);
             window.location.href = "dashboard.html";
         } catch (e) {
-            alert("Sai mã tài khoản hoặc mật khẩu rồi bồ ơi!");
+            alert("Sai mã tài khoản hoặc mật khẩu!");
         }
     });
 </script>
