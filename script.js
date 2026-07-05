@@ -63,7 +63,19 @@ window.logout = function() {
         alert("Đăng xuất thất bại: " + error.message);
     });
 };
+// Đảm bảo không ai vào được Dashboard nếu chưa login
+onAuthStateChanged(auth, (user) => {
+    if (!user && !window.location.pathname.endsWith("index.html")) {
+        window.location.href = "index.html";
+    }
+});
 
+// Hàm đăng xuất an toàn
+window.logout = function() {
+    signOut(auth).then(() => {
+        window.location.href = "index.html";
+    });
+};
 // ==========================================
 // 3. ĐIỀU HƯỚNG SPA & RENDER GIAO DIỆN CHÍNH
 // ==========================================
