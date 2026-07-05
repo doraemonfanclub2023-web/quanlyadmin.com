@@ -24,40 +24,42 @@
 
     <div class="input-group">
         <label>Mã tài khoản</label>
-        <input type="text" id="username" placeholder="Ví dụ: test">
+        <input type="text" id="username" placeholder="Nhập mã...">
     </div>
     <div class="input-group">
         <label>Mật khẩu</label>
-        <input type="password" id="password" placeholder="***">
+        <input type="password" id="password" placeholder="Nhập mật khẩu...">
     </div>
     <button id="loginBtn">ĐĂNG NHẬP HỆ THỐNG</button>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const app = initializeApp({
-        apiKey: "AIzaSyC-U9L1plaQ6pcP7Iecg4RO0GirBjunISM",
-        authDomain: "admin-27099.firebaseapp.com",
-        projectId: "admin-27099",
-        storageBucket: "admin-27099.firebasestorage.app",
-        messagingSenderId: "510976750235",
-        appId: "1:510976750235:web:78d3e138d302235a788c3e"
+        databaseURL: "https://admin-27099-default-rtdb.firebaseio.com/",
+        projectId: "admin-27099"
     });
 
-    const auth = getAuth(app);
+    const db = getDatabase(app);
 
     document.getElementById('loginBtn').addEventListener('click', async () => {
-        const user = document.getElementById('username').value.trim().toLowerCase();
+        const user = document.getElementById('username').value.trim();
         const pass = document.getElementById('password').value.trim();
-        
+
         try {
-            // Hệ thống tự gắn đuôi, bồ chỉ cần nhập đúng mã (ví dụ: test)
-            await signInWithEmailAndPassword(auth, `${user}@doraadmin.com`, pass);
-            window.location.href = "dashboard.html";
+            const snapshot = await get(child(ref(db), `accounts/${user}`));
+            
+            if (snapshot.exists() && snapshot.val().password === pass) {
+                // Đăng nhập thành công, lưu trạng thái vào LocalStorage
+                localStorage.setItem("isLoggedIn", "true");
+                window.location.href = "dashboard.html";
+            } else {
+                alert("Sai mã tài khoản hoặc mật khẩu!");
+            }
         } catch (e) {
-            alert("Sai mã tài khoản hoặc mật khẩu!");
+            alert("Lỗi hệ thống, bồ thử lại sau nhé!");
         }
     });
 </script>
