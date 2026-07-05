@@ -20,15 +20,19 @@ const db = getDatabase(app);
    2. KHỞI TẠO TÀI KHOẢN GỐC TRÊN CLOUD (THÊM ĐẠI DIỆN DEV)
    ==================================================== */
 async function initDatabase() {
-    const dbRef = ref(db);
-    const snapshot = await get(child(dbRef, 'users'));
-    if (!snapshot.exists()) {
-        const defaultUsers = {
-            "DEV001": { username: 'DEV001', password: '123', name: 'Developer Tối Thượng', role: 'Dev' },
-            "BQT001": { username: 'BQT001', password: '123', name: 'Nguyễn Tuấn Khải', role: 'Ban Quản Trị' },
-            "BQT002": { username: 'BQT002', password: '123', name: 'Cao Ngọc Duyên', role: 'Admin' }
-        };
-        await set(ref(db, 'users'), defaultUsers);
+    try {
+        const dbRef = ref(db);
+        const snapshot = await get(child(dbRef, 'users'));
+        if (!snapshot.exists()) {
+            const defaultUsers = {
+                "DEV001": { username: 'DEV001', password: '123', name: 'Developer Tối Thượng', role: 'Dev' },
+                "BQT001": { username: 'BQT001', password: '123', name: 'Nguyễn Tuấn Khải', role: 'Ban Quản Trị' },
+                "BQT002": { username: 'BQT002', password: '123', name: 'Cao Ngọc Duyên', role: 'Admin' }
+            };
+            await set(ref(db, 'users'), defaultUsers);
+        }
+    } catch (err) {
+        console.error("Lỗi khởi tạo DB:", err);
     }
 }
 initDatabase();
@@ -41,28 +45,37 @@ window.login = async function() {
     const passInp = document.getElementById('password')?.value.trim();
     const errorDiv = document.getElementById('error');
 
-    if (!userInp || !passInp) return;
+    if (!userInp || !passInp) {
+        alert('Vui lòng nhập đầy đủ tài khoản và mật khẩu!');
+        return;
+    }
 
-    const snapshot = await get(ref(db, `users/${userInp}`));
-    if (snapshot.exists()) {
-        const userData = snapshot.val();
-        if (userData.password === passInp) {
-            
-            const configSnapshot = await get(ref(db, 'system_config/maintenance'));
-            const isMaintenance = configSnapshot.val();
-            
-            // LOGIC QUYỀN TỐI THƯỢNG: Nếu đang bảo trì, CHỈ CÓ DEV được vào, chặn luôn cả Ban Quản Trị & Admin
-            if (isMaintenance === 'on' && userData.role !== 'Dev') {
-                alert('🔴 Hệ thống đang bảo trì nghiêm ngặt bởi Developer! Hiện tại chỉ tài khoản Dev mới có quyền truy cập vào hệ thống.');
+    if (errorDiv) errorDiv.style.display = 'none';
+
+    try {
+        const snapshot = await get(ref(db, `users/${userInp}`));
+        if (snapshot.exists()) {
+            const userData = snapshot.val();
+            if (userData.password === passInp) {
+                
+                const configSnapshot = await get(ref(db, 'system_config/maintenance'));
+                const isMaintenance = configSnapshot.val();
+                
+                // LOGIC QUYỀN TỐI THƯỢNG: Nếu đang bảo trì, CHỈ CÓ DEV được vào
+                if (isMaintenance === 'on' && userData.role !== 'Dev') {
+                    alert('🔴 Hệ thống đang bảo trì nghiêm ngặt bởi Developer! Hiện tại chỉ tài khoản Dev mới có quyền truy cập.');
+                    return;
+                }
+
+                localStorage.setItem('currentUser', JSON.stringify(userData));
+                window.location.href = "dashboard.html";
                 return;
             }
-
-            localStorage.setItem('currentUser', JSON.stringify(userData));
-            window.location.href = "dashboard.html";
-            return;
         }
+        if (errorDiv) errorDiv.style.display = 'block';
+    } catch (err) {
+        alert('🔴 Lỗi kết nối máy chủ Cloud: ' + err.message);
     }
-    if (errorDiv) errorDiv.style.display = 'block';
 }
 
 window.logout = function() {
@@ -74,10 +87,9 @@ window.logout = function() {
    4. SPA ROUTER & RENDER HTML GIAO DIỆN ĐỘNG
    ==================================================== */
 window.getPageContent = function(pageId, userRole) {
-    // Định nghĩa quyền thao tác nhanh
     const isDev = userRole === 'Dev';
     const isBqt = userRole === 'Ban Quản Trị';
-    const hasWritePermission = isDev || isBqt; // Chỉ Dev và BQT mới được tạo/đăng dữ liệu
+    const hasWritePermission = isDev || isBqt; 
 
     const pages = {
         home: `
@@ -156,7 +168,6 @@ window.getPageContent = function(pageId, userRole) {
                 </div>
             </div>
             `}
-            
             <div class="game-status-container">
                 <h3 style="color: #0284c7; margin-bottom: 10px;">🔥 ĐANG DIỄN RA</h3>
                 <div id="activeGamesList" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px;">Đang tải dữ liệu...</div>
@@ -234,7 +245,6 @@ window.showPage = function(pageId) {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (!currentUser) return;
 
-    // Chỉ Dev và Ban Quản Trị mới được vào cài đặt hệ thống
     if (pageId === 'setting' && currentUser.role !== 'Dev' && currentUser.role !== 'Ban Quản Trị') {
         alert('⛔ Bạn không có quyền truy cập vào Cài đặt hệ thống!');
         return;
@@ -254,7 +264,7 @@ window.showPage = function(pageId) {
 }
 
 /* ====================================================
-   5. REALTIME SYNC (CHỈNH SỬA PHÂN QUYỀN TRÊN NÚT BẤM XÓA/SỬA)
+   5. REALTIME SYNC (ĐỒNG BỘ DỮ LIỆU)
    ==================================================== */
 window.listenToHomeData = function() {
     onValue(ref(db, 'users'), (snapshot) => {
@@ -296,7 +306,6 @@ window.listenToNoticeTable = function() {
             const key = childSnapshot.key;
             const n = childSnapshot.val();
             
-            // Chỉ Dev và BQT mới được quyền xóa thông báo
             const canManage = userRole === 'Dev' || userRole === 'Ban Quản Trị';
             const actionHTML = canManage 
                 ? `<button onclick="deleteNotice('${key}')" class="btn-delete">Xóa</button>`
@@ -374,7 +383,6 @@ window.listenToMiniGames = function() {
             const parts = g.startDate.split('-');
             const formattedDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : g.startDate;
 
-            // Quyền gỡ game cho Dev và BQT
             const canDelete = userRole === 'Dev' || userRole === 'Ban Quản Trị';
             const deleteButton = canDelete 
                 ? `<button onclick="event.stopPropagation(); deleteMiniGame('${key}')" class="btn-delete" style="padding: 4px 10px; font-size: 11px; background: #ef4444;">Gỡ game</button>` 
@@ -455,7 +463,7 @@ window.viewGameDetail = async function(key) {
 }
 
 /* ====================================================
-   6. QUẢN LÝ TÀI KHOẢN (LOGIC PHÂN QUYỀN TỐI THƯỢNG CỦA DEV)
+   6. QUẢN LÝ TÀI KHOẢN (LOGIC PHÂN QUYỀN DEV)
    ==================================================== */
 window.listenToUserTable = function() {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
@@ -473,7 +481,6 @@ window.listenToUserTable = function() {
             if (userRole === 'Admin') {
                 actionHTML = `<span class="badge-default" style="color: #94a3b8; font-style: italic;">Không có quyền</span>`;
             } else if (u.username === 'BQT001' || u.username === 'BQT002' || u.username === 'DEV001') {
-                // Tận cùng bảo vệ tài khoản hệ thống gốc, chỉ duy nhất Dev tối thượng được tác động tài khoản hệ thống khác
                 if (userRole === 'Dev' && u.username !== currentUser.username) {
                     actionHTML = `
                         <div style="display: flex; gap: 6px;">
@@ -484,7 +491,6 @@ window.listenToUserTable = function() {
                     actionHTML = `<span style="color: #64748b;">Hệ thống</span>`;
                 }
             } else {
-                // Đối với tài khoản thông thường do user tạo ra
                 actionHTML = `
                     <div style="display: flex; gap: 6px;">
                         <button onclick="changeUserPassword('${u.username}')" class="btn-create" style="background: #f59e0b; padding: 4px 10px; font-size: 12px;">Đổi MK</button>
@@ -516,9 +522,8 @@ window.addAccount = async function() {
 
     if (!username || !password) return alert('Thiếu thông tin tạo tài khoản!');
     
-    // Bảo vệ chặn không cho Ban Quản Trị tạo tài khoản Dev hack quyền
     if (role === 'Dev' && currentUser.role !== 'Dev') {
-        return alert('⛔ Chỉ có tài khoản Dev hiện tại mới có quyền chỉ định thêm một tài khoản Dev khác!');
+        return alert('⛔ Chỉ có tài khoản Dev mới có quyền chỉ định thêm một tài khoản Dev khác!');
     }
 
     await set(ref(db, `users/${username}`), { username, name: name || username, password, role });
@@ -625,7 +630,7 @@ window.backupSystemData = async function() {
 }
 
 /* ====================================================
-   7. KHỞI CHẠY VÀ CHECK ĐỒNG BỘ TRẠNG THÁI REALTIME KHI BẢO TRÌ
+   7. KHỞI CHẠY VÀ KIỂM TRA TRẠNG THÁI REALTIME
    ==================================================== */
 function forceRenderHomeDirectly() {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
@@ -639,12 +644,17 @@ function forceRenderHomeDirectly() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Nhận diện xem đang ở màn hình login hay màn hình dashboard
     const isLoginPage = document.getElementById('username') !== null;
 
     if (isLoginPage) {
         const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-        if (currentUser) { window.location.href = "dashboard.html"; return; }
+        if (currentUser) { 
+            window.location.href = "dashboard.html"; 
+            return; 
+        }
     } else {
+        // ĐANG Ở TRANG DASHBOARD - MỚI CHẠY ROUTER VÀ REALTIME LISTENER
         forceRenderHomeDirectly();
         setTimeout(forceRenderHomeDirectly, 100);
         setTimeout(forceRenderHomeDirectly, 400);
@@ -664,14 +674,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // KIỂM TRA CHẾ ĐỘ BẢO TRÌ REALTIME KHI ĐANG TRONG DASHBOARD
         onValue(ref(db, 'system_config'), (snapshot) => {
             if (!snapshot.exists()) return;
             const config = snapshot.val();
             const isMaintenance = config.maintenance;
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
             
-            // Nếu Dev từ xa bật "on" bảo trì, lập tức đá văng các role khác (Admin, Ban Quản Trị) đang online ra ngoài screen đăng nhập
             if (isMaintenance === 'on' && currentUser && currentUser.role !== 'Dev') {
                 alert('🔴 Lệnh bảo trì khẩn cấp được kích hoạt bởi Developer! Toàn bộ người dùng không phải Dev sẽ tự động đăng xuất.');
                 localStorage.removeItem('currentUser');
