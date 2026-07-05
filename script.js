@@ -5,7 +5,7 @@ import {
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // ==========================================
-// 1. CẤU HÌNH FIREBASE (Bồ giữ nguyên cấu hình của bồ nhé)
+// 1. CẤU HÌNH FIREBASE
 // ==========================================
 const firebaseConfig = {
     apiKey: "AIzaSyC-U9L1plaQ6pcP7Iecg4RO0GirBjunISM",
@@ -26,9 +26,12 @@ let unsubscribeDocs = null;
 let unsubscribeTests = null;
 
 // ==========================================
-// 2. KIỂM TRA TRẠNG THÁI ĐĂNG NHẬP & PHÂN QUYỀN
+// 2. KIỂM TRA TRẠNG THÁI ĐĂNG NHẬP & PHÂN QUYỀN (ĐÃ FIX LỖI 404)
 // ==========================================
 onAuthStateChanged(auth, async (user) => {
+    // Kiểm tra xem người dùng hiện tại đang đứng ở trang nào
+    const isLoginPage = window.location.pathname.endsWith("index.html") || window.location.pathname.endsWith("/");
+
     if (user) {
         // Lấy thông tin role từ bộ sưu tập 'users' dựa trên UID
         try {
@@ -43,12 +46,20 @@ onAuthStateChanged(auth, async (user) => {
             window.currentUser = { uid: user.uid, email: user.email, role: "user", name: "Thành viên" };
         }
 
-        // Theo dõi hash URL để hiển thị trang tương ứng, mặc định là 'home'
-        const defaultPage = window.location.hash.replace('#', '') || 'home';
-        window.showPage(defaultPage);
+        // Nếu đã đăng nhập mà vẫn đứng ở trang Đăng nhập (index.html), tự động đẩy vào Dashboard
+        if (isLoginPage) {
+            window.location.href = "dashboard.html";
+        } else {
+            // Theo dõi hash URL để hiển thị trang tương ứng trong Dashboard, mặc định là 'home'
+            const defaultPage = window.location.hash.replace('#', '') || 'home';
+            window.showPage(defaultPage);
+        }
     } else {
-        // Nếu chưa đăng nhập, đá về trang login
-        window.location.href = "index.html";
+        // NẾU CHƯA ĐĂNG NHẬP:
+        // Chỉ đẩy về trang index.html nếu người dùng đang cố tình truy cập vào dashboard.html trái phép
+        if (!isLoginPage) {
+            window.location.href = "index.html";
+        }
     }
 });
 
@@ -91,7 +102,6 @@ window.showPage = function(page) {
                     </ul>
                 </div>
             `;
-            // Bồ có thể viết thêm hàm đếm dashboard ở đây nếu cần
             break;
 
         case 'documents':
@@ -156,10 +166,9 @@ window.showPage = function(page) {
                     </table>
                 </div>
 
-                <!-- KHU VỰC LÀM BÀI TRỰC TIẾP TRÊN WEB -->
                 <div id="examWorkspace" class="account-form-box" style="display: none; margin-top: 35px; border-top: 4px solid #3b82f6;">
                     <h3 id="workspaceTitle" style="color: #2563eb; margin-bottom: 10px;">Đang làm bài</h3>
-                    <div style="font-weight: 600; color: #475569; margin-bottom: 5px;"> đề bài:</div>
+                    <div style="font-weight: 600; color: #475569; margin-bottom: 5px;"> Đề bài:</div>
                     <div id="workspaceContent" style="background: #f1f5f9; padding: 15px; border-radius: 6px; margin-bottom: 20px; white-space: pre-wrap; line-height: 1.6; border: 1px solid #e2e8f0;"></div>
                     
                     <form id="submitAnswerForm" onsubmit="window.handleSubmitAnswer(event)">
@@ -279,7 +288,6 @@ window.loadTests = function() {
             const data = docSnap.data();
             const dateStr = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString('vi-VN') : "-";
             
-            // Mã hóa chuỗi nội dung đề phòng ký tự đặc biệt (Dấu nháy đơn, nháy kép) phá vỡ chuỗi hàm JS
             const safeContent = encodeURIComponent(data.content);
             const safeTitle = encodeURIComponent(data.title);
 
@@ -303,7 +311,6 @@ window.loadTests = function() {
     });
 };
 
-// Hàm kích hoạt Workspace làm bài kiểm tra trực tiếp
 window.startTakingTest = function(testId, encodedTitle, encodedContent) {
     const workspace = document.getElementById('examWorkspace');
     if (!workspace) return;
@@ -315,13 +322,11 @@ window.startTakingTest = function(testId, encodedTitle, encodedContent) {
     document.getElementById('workspaceTitle').innerText = `✍️ Đang làm bài: ${title}`;
     document.getElementById('workspaceContent').innerText = content;
     document.getElementById('activeTestId').value = testId;
-    document.getElementById('userAnswer').value = ''; // Xóa bài cũ
+    document.getElementById('userAnswer').value = ''; 
     
-    // Cuộn mượt màn hình xuống form làm bài
     workspace.scrollIntoView({ behavior: 'smooth' });
 };
 
-// Hàm xử lý nộp bài thi lên Firestore
 window.handleSubmitAnswer = async function(event) {
     event.preventDefault();
     const testId = document.getElementById('activeTestId').value;
@@ -333,7 +338,6 @@ window.handleSubmitAnswer = async function(event) {
     }
 
     try {
-        // Lưu trữ bài nộp vào collection 'test_submissions'
         await addDoc(collection(db, "test_submissions"), {
             testId: testId,
             userId: window.currentUser.uid,
