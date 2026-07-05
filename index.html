@@ -48,7 +48,7 @@
         const pass = document.getElementById('password').value.trim();
 
         try {
-            const snapshot = await get(child(ref(db), `accounts/${user}`));
+            const snapshot = await get(child(ref(db), `${user}`));
 console.log("Dữ liệu nhận được:", snapshot.val()); // Dòng này sẽ hiện trong F12 Console
             
             if (snapshot.exists() && snapshot.val().password === pass) {
