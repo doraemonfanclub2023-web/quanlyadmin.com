@@ -38,8 +38,7 @@
     import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const app = initializeApp({
-        databaseURL: "https://admin-27099-default-rtdb.firebaseio.com/",
-        projectId: "admin-27099"
+        databaseURL: "https://admin-27099-default-rtdb.firebaseio.com/"
     });
 
     const db = getDatabase(app);
@@ -49,17 +48,18 @@
         const pass = document.getElementById('password').value.trim();
 
         try {
+            // Chỉ check duy nhất ID và Password trong Database, không dính dáng tới Email
             const snapshot = await get(child(ref(db), `accounts/${user}`));
             
             if (snapshot.exists() && snapshot.val().password === pass) {
-                // Đăng nhập thành công, lưu trạng thái vào LocalStorage
-                localStorage.setItem("isLoggedIn", "true");
+                // Lưu trạng thái đăng nhập
+                sessionStorage.setItem("admin_logged_in", "true");
                 window.location.href = "dashboard.html";
             } else {
-                alert("Sai mã tài khoản hoặc mật khẩu!");
+                alert("Sai mã hoặc mật khẩu!");
             }
         } catch (e) {
-            alert("Lỗi hệ thống, bồ thử lại sau nhé!");
+            alert("Lỗi hệ thống, thử lại sau!");
         }
     });
 </script>
