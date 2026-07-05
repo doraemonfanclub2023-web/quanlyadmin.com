@@ -48,10 +48,10 @@
 
         /* Dashboard UI Đã tối ưu grid phản hồi */
         h2 { color: #1e3a8a; font-size: 24px; margin-bottom: 25px; }
-        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 25px; margin-bottom: 35px; }
-        .card { background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; border-top: 4px solid #3b82f6; }
-        .card h3 { font-size: 14px; color: #64748b; text-transform: uppercase; margin-bottom: 10px; }
-        .card h1 { font-size: 36px; color: #1e293b; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 35px; }
+        .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; border-top: 4px solid #3b82f6; }
+        .card h3 { font-size: 13px; color: #64748b; text-transform: uppercase; margin-bottom: 10px; }
+        .card h1 { font-size: 32px; color: #1e293b; }
         
         .activity { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
         .activity h3 { margin-bottom: 20px; font-size: 16px; color: #334155; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
@@ -135,6 +135,7 @@
                 <li onclick="handleMenuClick('notice')">📢 Quản lý thông báo</li>
                 <li onclick="handleMenuClick('minigame')">🎁 Mini Game</li>
                 <li onclick="handleMenuClick('documents')">📄 Quản lý Công văn</li>
+                <li onclick="handleMenuClick('tests')">✏️ Kiểm tra định kỳ</li>
                 <li onclick="handleMenuClick('setting')">⚙️ Cài đặt hệ thống</li>
                 <li onclick="handleMenuClick('account')">👤 Thông tin cá nhân</li>
             </ul>
@@ -145,7 +146,6 @@
     <!-- KHU VỰC HIỂN THỊ NỘI DUNG CHÍNH -->
     <div class="main-content">
         <div class="header">
-            <!-- Nút 3 gạch xuất hiện trên mobile -->
             <button class="menu-toggle" onclick="toggleMenu()">☰</button>
             <span class="header-title" style="font-weight: 600; color: #475569;">Hệ thống Quản trị Đám mây 🌐</span>
         </div>
@@ -161,7 +161,6 @@
             sidebar.classList.toggle('active');
         }
 
-        // Khi bấm chọn menu, đồng bộ hash URL, tự chuyển trang SPA và đóng menu mobile
         function handleMenuClick(page) {
             window.location.hash = page;
             if (typeof showPage === 'function') {
