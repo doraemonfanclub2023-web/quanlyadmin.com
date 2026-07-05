@@ -146,6 +146,7 @@
     <!-- KHU VỰC HIỂN THỊ NỘI DUNG CHÍNH -->
     <div class="main-content">
         <div class="header">
+            <!-- Nút 3 gạch xuất hiện trên mobile -->
             <button class="menu-toggle" onclick="toggleMenu()">☰</button>
             <span class="header-title" style="font-weight: 600; color: #475569;">Hệ thống Quản trị Đám mây 🌐</span>
         </div>
@@ -161,6 +162,7 @@
             sidebar.classList.toggle('active');
         }
 
+        // Đồng bộ hash URL, kích hoạt chuyển trang SPA và đóng sidebar trên di động
         function handleMenuClick(page) {
             window.location.hash = page;
             if (typeof showPage === 'function') {
