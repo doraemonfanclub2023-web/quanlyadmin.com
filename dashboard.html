@@ -1163,10 +1163,10 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
         }
 
         // ==========================================
-        // GAME DORAEMON RUN
+        // GAME DORAEMON RUN (SPACE = START + JUMP)
         // ==========================================
 
-        // Biến game toàn cục
+        // Biến game
         var gameRunning = false;
         var gameScore = 0;
         var gameHighScore = parseInt(localStorage.getItem('doraemonHighScore')) || 0;
@@ -1185,25 +1185,21 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
 
         // Vẽ Doraemon
         function drawDoraemon(ctx, x, y, w, h) {
-            // Thân
             ctx.fillStyle = '#2196F3';
             ctx.beginPath();
             ctx.arc(x + w/2, y + h/2 - 5, w/2, 0, Math.PI * 2);
             ctx.fill();
             
-            // Bụng
             ctx.fillStyle = '#FFFFFF';
             ctx.beginPath();
             ctx.arc(x + w/2, y + h/2 + 5, w/3, 0, Math.PI * 2);
             ctx.fill();
             
-            // Đầu
             ctx.fillStyle = '#2196F3';
             ctx.beginPath();
             ctx.arc(x + w/2, y + 5, w/2.5, 0, Math.PI * 2);
             ctx.fill();
             
-            // Mặt
             ctx.fillStyle = '#FFFFFF';
             ctx.beginPath();
             ctx.arc(x + w/2 - 5, y + 8, 8, 0, Math.PI * 2);
@@ -1212,7 +1208,6 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
             ctx.arc(x + w/2 + 5, y + 8, 8, 0, Math.PI * 2);
             ctx.fill();
             
-            // Mắt
             ctx.fillStyle = '#000000';
             ctx.beginPath();
             ctx.arc(x + w/2 - 7, y + 8, 3, 0, Math.PI * 2);
@@ -1221,20 +1216,17 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
             ctx.arc(x + w/2 + 3, y + 8, 3, 0, Math.PI * 2);
             ctx.fill();
             
-            // Mũi
             ctx.fillStyle = '#FF1744';
             ctx.beginPath();
             ctx.arc(x + w/2 - 2, y + 14, 3, 0, Math.PI * 2);
             ctx.fill();
             
-            // Miệng
             ctx.strokeStyle = '#000000';
             ctx.lineWidth = 1.5;
             ctx.beginPath();
             ctx.arc(x + w/2 - 2, y + 18, 5, 0.1, Math.PI - 0.1);
             ctx.stroke();
             
-            // Râu
             ctx.strokeStyle = '#000000';
             ctx.lineWidth = 1;
             for (var i = -1; i <= 1; i += 2) {
@@ -1248,7 +1240,6 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
                 ctx.stroke();
             }
             
-            // Chuông
             ctx.fillStyle = '#FFD700';
             ctx.beginPath();
             ctx.arc(x + w/2, y + h - 2, 6, 0, Math.PI * 2);
@@ -1270,7 +1261,6 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
             ctx.fillRect(0, groundY, 800, 3);
             drawDoraemon(ctx, playerX, playerY, playerWidth, playerHeight);
             
-            // Cập nhật high score
             var highEl = document.getElementById('gameHighScore');
             if (highEl) highEl.textContent = gameHighScore;
         }
@@ -1279,7 +1269,7 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
         window.startGame = function() {
             var canvas = document.getElementById('gameCanvas');
             if (!canvas) {
-                alert('⚠️ Không tìm thấy canvas! Vui lòng tải lại trang.');
+                alert('⚠️ Không tìm thấy canvas!');
                 return;
             }
             
@@ -1296,7 +1286,7 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
             var ctx = canvas.getContext('2d');
             var scoreEl = document.getElementById('gameScore');
             var startBtn = document.getElementById('gameStartBtn');
-            if (startBtn) startBtn.textContent = '▶️ Đang chơi...';
+            if (startBtn) startBtn.textContent = '⏹️ Đang chơi...';
             
             function createObstacle() {
                 var types = ['cactus', 'bird', 'rock'];
@@ -1342,11 +1332,9 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
                 
                 ctx.clearRect(0, 0, 800, 350);
                 
-                // Nền
                 ctx.fillStyle = '#1a1a2e';
                 ctx.fillRect(0, 0, 800, 350);
                 
-                // Mặt đất
                 ctx.fillStyle = '#2d2d44';
                 ctx.fillRect(0, groundY, 800, 50);
                 ctx.fillStyle = '#3d3d5c';
@@ -1355,10 +1343,8 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
                     ctx.fillRect(i - offset, groundY, 20, 3);
                 }
                 
-                // Vẽ Doraemon
                 drawDoraemon(ctx, playerX, playerY, playerWidth, playerHeight);
                 
-                // Nhảy
                 if (isJumping) {
                     playerY += jumpVelocity;
                     jumpVelocity += gravity;
@@ -1369,12 +1355,10 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
                     }
                 }
                 
-                // Tạo chướng ngại vật
                 if (Math.random() < 0.02 + gameSpeed / 400) {
                     createObstacle();
                 }
                 
-                // Cập nhật chướng ngại vật
                 for (var i = obstacles.length - 1; i >= 0; i--) {
                     var obs = obstacles[i];
                     obs.x -= gameSpeed;
@@ -1385,7 +1369,6 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
                         if (scoreEl) scoreEl.textContent = gameScore;
                     }
                     
-                    // Va chạm
                     if (obs.x < playerX + playerWidth - 10 &&
                         obs.x + obs.width > playerX + 10 &&
                         obs.y < playerY + playerHeight - 5 &&
@@ -1398,7 +1381,6 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
                             localStorage.setItem('doraemonHighScore', gameHighScore);
                             var highScoreEl = document.getElementById('gameHighScore');
                             if (highScoreEl) highScoreEl.textContent = gameHighScore;
-                            
                             saveScore(gameScore);
                             alert('🎉 KỶ LỤC MỚI! ' + gameScore + ' điểm!');
                         } else {
@@ -1542,7 +1524,6 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
             var canManage = user.role === "Ban Quản Trị";
             var html = '<h2>🎮 Game nội bộ</h2>';
 
-            // Canvas game
             html += `
                 <div style="background:#1a1a2e; border-radius:12px; padding:20px; margin-bottom:20px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
@@ -1556,10 +1537,10 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
                     </div>
                     <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
                         <button onclick="window.startGame()" class="btn-create" style="background:#10b981;" id="gameStartBtn">▶️ Bắt đầu</button>
-                        <button onclick="window.jumpGame()" class="btn-create" style="background:#f59e0b;" id="gameJumpBtn">⬆️ Nhảy (Space)</button>
+                        <button onclick="window.jumpGame()" class="btn-create" style="background:#f59e0b;">⬆️ Nhảy (Space)</button>
                         <button onclick="window.resetGame()" class="btn-delete" style="background:#64748b;">🔄 Chơi lại</button>
                     </div>
-                    <p style="color:#94a3b8; font-size:12px; margin-top:8px;">⌨️ Phím Space hoặc Click chuột vào màn hình để nhảy</p>
+                    <p style="color:#94a3b8; font-size:12px; margin-top:8px;">⌨️ <strong>Phím Space</strong> để Bắt đầu / Nhảy | Click chuột vào màn hình để nhảy</p>
                 </div>
             `;
 
@@ -1597,7 +1578,6 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
                 </div>
             `;
 
-            // Khởi tạo canvas sau khi render
             setTimeout(function() {
                 initGameCanvas();
             }, 100);
@@ -1879,18 +1859,31 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
             window.location.href = "index.html";
         };
 
-        // ===== KEYBOARD EVENT =====
+        // ==========================================
+        // ĐIỀU KHIỂN PHÍM SPACE (START + JUMP)
+        // ==========================================
         document.addEventListener('keydown', function(e) {
             if (e.key === ' ' || e.key === 'Space') {
                 e.preventDefault();
-                window.jumpGame();
+                
+                // Nếu game chưa chạy -> BẮT ĐẦU
+                if (!gameRunning) {
+                    window.startGame();
+                } else {
+                    // Nếu đang chạy -> NHẢY
+                    window.jumpGame();
+                }
             }
         });
 
-        // ===== CLICK CANVAS =====
+        // ===== CLICK CANVAS ĐỂ NHẢY =====
         document.addEventListener('click', function(e) {
             if (e.target.id === 'gameCanvas') {
-                window.jumpGame();
+                if (!gameRunning) {
+                    window.startGame();
+                } else {
+                    window.jumpGame();
+                }
             }
         });
 
@@ -1898,6 +1891,7 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
         console.log("🔍 window.showPage:", typeof window.showPage);
         console.log("🔍 window.startGame:", typeof window.startGame);
         console.log("🔍 window.jumpGame:", typeof window.jumpGame);
+        console.log("🎮 Chơi game: Nhấn SPACE để bắt đầu và nhảy!");
     </script>
 
 </body>
