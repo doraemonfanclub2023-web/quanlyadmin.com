@@ -699,10 +699,10 @@
         };
 
         // ==========================================
-        // QUẢN LÝ TEST KỸ NĂNG
+        // QUẢN LÝ TEST KỸ NĂNG (ĐẦY ĐỦ CHỨC NĂNG)
         // ==========================================
         function getTestsPage(user) {
-            var canManage = user.role !== "Admin";
+            var canManage = user.role === "Ban Quản Trị";
             var html = '<h2>📝 Quản lý test kỹ năng</h2>';
 
             if (canManage) {
@@ -711,17 +711,42 @@
                         <h3>📝 Tạo bài test mới</h3>
                         <div style="display:flex; flex-direction:column; gap:12px;">
                             <input type="text" id="testTitle" placeholder="Tiêu đề bài test (VD: Test tháng 7/2026)" />
-                            <textarea id="testDesc" placeholder="Mô tả bài test..." style="min-height:80px;"></textarea>
+                            <textarea id="testDesc" placeholder="Mô tả bài test..." style="min-height:60px;"></textarea>
                             <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                                <input type="number" id="testQuestions" placeholder="Số câu hỏi" style="flex:1;" />
                                 <input type="number" id="testPassScore" placeholder="Điểm đạt (VD: 50)" style="flex:1;" />
                             </div>
+                            
+                            <div style="border:1px solid #e2e8f0; border-radius:8px; padding:16px; background:#f8fafc;">
+                                <h4 style="margin-bottom:10px; color:#0f172a;">📝 Nhập câu hỏi</h4>
+                                <p style="font-size:13px; color:#64748b; margin-bottom:10px;">
+                                    Mỗi câu hỏi gồm: nội dung + 4 đáp án (a, b, c, d).<br />
+                                    <strong>Dùng * trước đáp án đúng</strong> (ví dụ: *b. Đáp án đúng)
+                                </p>
+                                <textarea id="testQuestionsInput" placeholder='Ví dụ:
+Câu 1: Quy chế phát ngôn của Fanclub là gì?
+a. Tự do phát ngôn
+*b. Tuân thủ quy định chung
+c. Không cần quy định
+d. Phát ngôn theo cảm xúc
+
+Câu 2: Nội quy Fanpage gồm những gì?
+a. Spam thoải mái
+*b. Không spam, không quảng cáo
+c. Chia sẻ link lung tung
+d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:8px; font-family:monospace; font-size:14px;"></textarea>
+                                <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+                                    <button onclick="window.previewQuestions()" class="btn-edit" style="background:#8b5cf6;">👁️ Xem trước</button>
+                                    <span id="questionCount" style="color:#64748b; font-size:13px; align-self:center;">Số câu hỏi: 0</span>
+                                </div>
+                                <div id="questionPreview" style="margin-top:10px; background:white; padding:12px; border-radius:6px; border:1px solid #e2e8f0; display:none;"></div>
+                            </div>
+                            
                             <button onclick="window.addTest()" class="btn-create" style="align-self:flex-start;">📤 Tạo test</button>
                         </div>
                     </div>
                 `;
             } else {
-                html += '<p style="color:#94a3b8; margin-bottom:16px;">🔒 Chế độ chỉ xem.</p>';
+                html += '<p style="color:#94a3b8; margin-bottom:16px;">🔒 Chế độ chỉ xem. Chỉ Ban Quản Trị mới được tạo/sửa/xóa test.</p>';
             }
 
             html += `
@@ -736,75 +761,259 @@
             return html;
         }
 
-        // ===== HÀM TẢI DANH SÁCH TEST =====
-        function loadTests() {
-            var tbody = document.getElementById("testTableBody");
-            if (!tbody) return;
-            var currentUser = JSON.parse(localStorage.getItem("currentUser"));
-            var isAdmin = currentUser && currentUser.role === "Admin";
-
-            onValue(ref(db, "tests"), function(snapshot) {
-                tbody.innerHTML = "";
-                if (!snapshot.exists()) {
-                    tbody.innerHTML = '<tr><td colspan="6">Chưa có bài test nào</td></tr>';
-                    return;
+        // ===== PHÂN TÍCH CÂU HỎI TỪ VĂN BẢN =====
+        window.parseQuestions = function(text) {
+            var lines = text.split('\n');
+            var questions = [];
+            var currentQuestion = null;
+            var currentOptions = [];
+            
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i].trim();
+                if (!line) continue;
+                
+                var questionMatch = line.match(/^(Câu\s*)?(\d+)[:\.]\s*(.*)/i);
+                if (questionMatch) {
+                    if (currentQuestion && currentOptions.length > 0) {
+                        questions.push({
+                            question: currentQuestion,
+                            options: currentOptions
+                        });
+                    }
+                    currentQuestion = questionMatch[3] || line;
+                    currentOptions = [];
+                } else {
+                    var optionMatch = line.match(/^([a-d])[\.\)]\s*(.*)/i);
+                    if (optionMatch && currentQuestion !== null) {
+                        var optText = optionMatch[1] + '. ' + optionMatch[2];
+                        if (optionMatch[2].trim().startsWith('*')) {
+                            optText = '*' + optionMatch[1] + '. ' + optionMatch[2].trim().substring(1).trim();
+                        }
+                        currentOptions.push(optText);
+                    } else {
+                        if (currentQuestion !== null && currentOptions.length === 0) {
+                            currentQuestion += ' ' + line;
+                        }
+                    }
                 }
-                snapshot.forEach(function(child) {
-                    var test = child.val();
-                    var key = child.key;
-                    var actions = isAdmin ?
-                        '<span class="badge-default">Chỉ xem</span>' :
-                        '<button onclick="window.startTest(\'' + key + '\')" class="btn-create" style="background:#10b981;">Làm test</button>';
-
-                    tbody.innerHTML += `
-                        <tr>
-                            <td><strong>${test.title || "N/A"}</strong></td>
-                            <td>${test.desc || ""}</td>
-                            <td>${test.questions || "0"}</td>
-                            <td>${test.passScore || "50"}%</td>
-                            <td>${test.createdAt ? new Date(test.createdAt).toLocaleDateString() : "N/A"}</td>
-                            <td>${actions}</td>
-                        </tr>
-                    `;
+            }
+            
+            if (currentQuestion && currentOptions.length > 0) {
+                questions.push({
+                    question: currentQuestion,
+                    options: currentOptions
                 });
+            }
+            
+            return questions;
+        };
+
+        // ===== XEM TRƯỚC CÂU HỎI =====
+        window.previewQuestions = function() {
+            var input = document.getElementById("testQuestionsInput")?.value;
+            var previewDiv = document.getElementById("questionPreview");
+            var countSpan = document.getElementById("questionCount");
+            
+            if (!input || !input.trim()) {
+                previewDiv.style.display = "none";
+                countSpan.textContent = "Số câu hỏi: 0";
+                return;
+            }
+            
+            var questions = window.parseQuestions(input);
+            countSpan.textContent = "Số câu hỏi: " + questions.length;
+            
+            if (questions.length === 0) {
+                previewDiv.style.display = "block";
+                previewDiv.innerHTML = '<p style="color:#ef4444;">⚠️ Không tìm thấy câu hỏi hợp lệ. Kiểm tra định dạng!</p>';
+                return;
+            }
+            
+            var html = '<div style="max-height:300px; overflow-y:auto;">';
+            questions.forEach(function(q, idx) {
+                html += '<div style="padding:8px 0; border-bottom:1px solid #f1f5f9;">';
+                html += '<strong style="color:#0f172a;">Câu ' + (idx + 1) + ':</strong> ' + q.question;
+                html += '<div style="margin-left:20px; font-size:13px;">';
+                q.options.forEach(function(opt) {
+                    var isCorrect = opt.startsWith('*');
+                    var displayOpt = isCorrect ? opt.substring(1) : opt;
+                    html += '<div style="' + (isCorrect ? 'color:#10b981; font-weight:600;' : 'color:#475569;') + '">';
+                    html += (isCorrect ? '✅ ' : '○ ') + displayOpt;
+                    html += '</div>';
+                });
+                html += '</div></div>';
             });
-        }
+            html += '</div>';
+            
+            previewDiv.style.display = "block";
+            previewDiv.innerHTML = html;
+        };
 
         // ===== TẠO TEST MỚI =====
         window.addTest = async function() {
             var currentUser = JSON.parse(localStorage.getItem("currentUser"));
-            if (!currentUser || currentUser.role === "Admin") {
-                alert("⛔ Bạn không có quyền tạo test!");
+            if (!currentUser || currentUser.role !== "Ban Quản Trị") {
+                alert("⛔ Chỉ Ban Quản Trị mới có quyền tạo test!");
                 return;
             }
+            
             var title = document.getElementById("testTitle")?.value.trim();
             var desc = document.getElementById("testDesc")?.value.trim();
-            var questions = parseInt(document.getElementById("testQuestions")?.value) || 10;
             var passScore = parseInt(document.getElementById("testPassScore")?.value) || 50;
-
+            var questionsText = document.getElementById("testQuestionsInput")?.value;
+            
             if (!title || !desc) {
                 alert("⚠️ Vui lòng nhập tiêu đề và mô tả!");
                 return;
             }
-
+            
+            if (!questionsText || !questionsText.trim()) {
+                alert("⚠️ Vui lòng nhập câu hỏi!");
+                return;
+            }
+            
+            var parsedQuestions = window.parseQuestions(questionsText);
+            if (parsedQuestions.length === 0) {
+                alert("⚠️ Không tìm thấy câu hỏi hợp lệ. Vui lòng kiểm tra định dạng!\n\n" +
+                      "Định dạng:\n" +
+                      "Câu 1: Nội dung câu hỏi\n" +
+                      "a. Đáp án A\n" +
+                      "*b. Đáp án B (đúng)\n" +
+                      "c. Đáp án C\n" +
+                      "d. Đáp án D");
+                return;
+            }
+            
+            var hasError = false;
+            parsedQuestions.forEach(function(q, idx) {
+                if (q.options.length < 4) {
+                    alert("⚠️ Câu " + (idx + 1) + " thiếu đáp án! Cần có đủ a, b, c, d.");
+                    hasError = true;
+                }
+                var hasCorrect = q.options.some(function(opt) { return opt.startsWith('*'); });
+                if (!hasCorrect) {
+                    alert("⚠️ Câu " + (idx + 1) + " chưa có đáp án đúng! Dùng * trước đáp án (VD: *b. Đáp án B)");
+                    hasError = true;
+                }
+            });
+            
+            if (hasError) return;
+            
             try {
                 await push(ref(db, "tests"), {
                     title: title,
                     desc: desc,
-                    questions: questions,
+                    questions: parsedQuestions,
                     passScore: passScore,
+                    totalQuestions: parsedQuestions.length,
                     createdBy: currentUser.username,
                     createdAt: new Date().toISOString()
                 });
 
-                alert("✅ Tạo bài test thành công!");
+                alert("✅ Tạo bài test thành công! (" + parsedQuestions.length + " câu hỏi)");
                 document.getElementById("testTitle").value = "";
                 document.getElementById("testDesc").value = "";
-                document.getElementById("testQuestions").value = "";
                 document.getElementById("testPassScore").value = "";
+                document.getElementById("testQuestionsInput").value = "";
+                document.getElementById("questionPreview").style.display = "none";
+                document.getElementById("questionCount").textContent = "Số câu hỏi: 0";
+                
             } catch (err) {
                 console.error(err);
                 alert("⚠️ Lỗi khi tạo test!");
+            }
+        };
+
+        // ===== SỬA TEST =====
+        window.editTest = async function(key) {
+            var currentUser = JSON.parse(localStorage.getItem("currentUser"));
+            if (!currentUser || currentUser.role !== "Ban Quản Trị") {
+                alert("⛔ Chỉ Ban Quản Trị mới có quyền sửa test!");
+                return;
+            }
+
+            try {
+                var snapshot = await get(ref(db, 'tests/' + key));
+                if (!snapshot.exists()) {
+                    alert("Bài test không tồn tại!");
+                    return;
+                }
+                var test = snapshot.val();
+
+                var newTitle = prompt("✏️ Sửa tiêu đề test:", test.title);
+                if (newTitle === null) return;
+                var newDesc = prompt("✏️ Sửa mô tả:", test.desc);
+                if (newDesc === null) return;
+                var newPassScore = prompt("✏️ Sửa điểm đạt (%):", test.passScore);
+                if (newPassScore === null) return;
+                
+                var questionsText = "";
+                test.questions.forEach(function(q, idx) {
+                    questionsText += "Câu " + (idx + 1) + ": " + q.question + "\n";
+                    q.options.forEach(function(opt) {
+                        questionsText += opt + "\n";
+                    });
+                    questionsText += "\n";
+                });
+                
+                var newQuestions = prompt("✏️ Sửa câu hỏi (giữ nguyên định dạng):", questionsText);
+                if (newQuestions === null) return;
+
+                var parsedQuestions = window.parseQuestions(newQuestions);
+                if (parsedQuestions.length === 0) {
+                    alert("⚠️ Không tìm thấy câu hỏi hợp lệ!");
+                    return;
+                }
+
+                var hasError = false;
+                parsedQuestions.forEach(function(q, idx) {
+                    if (q.options.length < 4) {
+                        alert("⚠️ Câu " + (idx + 1) + " thiếu đáp án!");
+                        hasError = true;
+                    }
+                    var hasCorrect = q.options.some(function(opt) { return opt.startsWith('*'); });
+                    if (!hasCorrect) {
+                        alert("⚠️ Câu " + (idx + 1) + " chưa có đáp án đúng!");
+                        hasError = true;
+                    }
+                });
+                if (hasError) return;
+
+                await update(ref(db, 'tests/' + key), {
+                    title: newTitle.trim(),
+                    desc: newDesc.trim(),
+                    questions: parsedQuestions,
+                    passScore: parseInt(newPassScore) || 50,
+                    totalQuestions: parsedQuestions.length,
+                    updatedAt: new Date().toISOString(),
+                    updatedBy: currentUser.username
+                });
+
+                alert("✅ Cập nhật test thành công!");
+                window.showPage('tests');
+
+            } catch (err) {
+                console.error(err);
+                alert("⚠️ Lỗi khi sửa test!");
+            }
+        };
+
+        // ===== XÓA TEST =====
+        window.deleteTest = async function(key) {
+            var currentUser = JSON.parse(localStorage.getItem("currentUser"));
+            if (!currentUser || currentUser.role !== "Ban Quản Trị") {
+                alert("⛔ Chỉ Ban Quản Trị mới có quyền xóa test!");
+                return;
+            }
+            
+            if (!confirm("Bạn có chắc chắn muốn xóa bài test này?")) return;
+
+            try {
+                await remove(ref(db, 'tests/' + key));
+                alert("✅ Đã xóa test!");
+            } catch (err) {
+                console.error(err);
+                alert("⚠️ Lỗi khi xóa test!");
             }
         };
 
@@ -820,52 +1029,145 @@
                     return;
                 }
                 var test = snapshot.val();
+                
+                if (!test.questions || test.questions.length === 0) {
+                    alert("Bài test không có câu hỏi!");
+                    return;
+                }
 
-                var questions = [
-                    { q: "Câu 1: Quy chế phát ngôn của Fanclub?", a: "Tuân thủ quy định chung" },
-                    { q: "Câu 2: Nội quy Fanpage gồm những gì?", a: "Không spam, không quảng cáo" },
-                    { q: "Câu 3: Xử lý bình luận tiêu cực?", a: "Bình tĩnh, phản hồi chuyên nghiệp" }
-                ];
+                var confirmStart = confirm('📝 ' + test.title + '\n\n' + test.desc + '\n\nSố câu hỏi: ' + test.questions.length + '\nĐiểm đạt: ' + test.passScore + '%\n\nBắt đầu làm test?');
+                if (!confirmStart) return;
 
-                var answer = confirm('📝 ' + test.title + '\n\n' + test.desc + '\n\nSố câu hỏi: ' + test.questions + '\nĐiểm đạt: ' + test.passScore + '%\n\nBắt đầu làm test?');
-                if (answer) {
-                    var score = 0;
-                    var totalQ = Math.min(3, test.questions);
-                    for (var i = 0; i < totalQ; i++) {
-                        var userAnswer = prompt(questions[i].q + '\n\nĐáp án gợi ý: ' + questions[i].a);
-                        if (userAnswer && userAnswer.trim().length > 0) {
-                            score += Math.floor(100 / totalQ);
-                        }
+                var userAnswers = [];
+                var score = 0;
+                var totalQ = test.questions.length;
+
+                for (var i = 0; i < totalQ; i++) {
+                    var q = test.questions[i];
+                    var optionsText = q.options.map(function(opt, idx) {
+                        var displayOpt = opt.startsWith('*') ? opt.substring(1) : opt;
+                        return String.fromCharCode(65 + idx) + '. ' + displayOpt;
+                    }).join('\n');
+                    
+                    var userAnswer = prompt('📝 Câu ' + (i + 1) + '/' + totalQ + '\n\n' + q.question + '\n\n' + optionsText + '\n\nNhập đáp án (A, B, C, D):');
+                    
+                    if (userAnswer === null) break;
+                    
+                    userAnswer = userAnswer.trim().toUpperCase();
+                    var answerIndex = -1;
+                    
+                    if (userAnswer === 'A') answerIndex = 0;
+                    else if (userAnswer === 'B') answerIndex = 1;
+                    else if (userAnswer === 'C') answerIndex = 2;
+                    else if (userAnswer === 'D') answerIndex = 3;
+                    
+                    if (answerIndex === -1 || answerIndex >= q.options.length) {
+                        alert('⚠️ Đáp án không hợp lệ! Vui lòng nhập A, B, C hoặc D.');
+                        i--;
+                        continue;
                     }
-
-                    var result = score >= test.passScore ? "✅ Đạt" : "❌ Không đạt";
-                    var rank = score >= 90 ? "🏆 Xuất sắc" :
-                        score >= 75 ? "⭐ Giỏi" :
-                        score >= 50 ? "📖 Khá" :
-                        score >= 30 ? "📝 Trung bình" : "❌ Yếu";
-
-                    alert('📊 KẾT QUẢ\n\nĐiểm: ' + score + '/100\nXếp loại: ' + rank + '\nKết quả: ' + result);
-
-                    await push(ref(db, "testResults"), {
-                        testId: key,
-                        username: currentUser.username,
-                        score: score,
-                        rank: rank,
-                        result: result,
-                        createdAt: new Date().toISOString()
+                    
+                    var isCorrect = q.options[answerIndex].startsWith('*');
+                    if (isCorrect) score++;
+                    
+                    userAnswers.push({
+                        question: q.question,
+                        selected: q.options[answerIndex],
+                        correct: isCorrect
                     });
                 }
+
+                var finalScore = Math.round((score / totalQ) * 100);
+                var passed = finalScore >= test.passScore;
+                var result = passed ? "✅ Đạt" : "❌ Không đạt";
+                var rank = finalScore >= 90 ? "🏆 Xuất sắc" :
+                           finalScore >= 75 ? "⭐ Giỏi" :
+                           finalScore >= 50 ? "📖 Khá" :
+                           finalScore >= 30 ? "📝 Trung bình" : "❌ Yếu";
+
+                var resultMsg = '📊 KẾT QUẢ\n\n';
+                resultMsg += 'Điểm: ' + finalScore + '/100\n';
+                resultMsg += 'Xếp loại: ' + rank + '\n';
+                resultMsg += 'Kết quả: ' + result + '\n';
+                resultMsg += 'Trả lời đúng: ' + score + '/' + totalQ + ' câu\n\n';
+                
+                userAnswers.forEach(function(ans, idx) {
+                    resultMsg += 'Câu ' + (idx + 1) + ': ' + (ans.correct ? '✅ Đúng' : '❌ Sai') + '\n';
+                    resultMsg += '   Đáp án: ' + ans.selected + '\n';
+                });
+                
+                alert(resultMsg);
+
+                await push(ref(db, "testResults"), {
+                    testId: key,
+                    testTitle: test.title,
+                    username: currentUser.username,
+                    userName: currentUser.name || currentUser.username,
+                    score: finalScore,
+                    correctCount: score,
+                    totalQuestions: totalQ,
+                    rank: rank,
+                    result: result,
+                    answers: userAnswers,
+                    createdAt: new Date().toISOString()
+                });
+
             } catch (err) {
                 console.error(err);
                 alert("⚠️ Lỗi khi làm test!");
             }
         };
 
+        // ===== HÀM TẢI DANH SÁCH TEST =====
+        function loadTests() {
+            var tbody = document.getElementById("testTableBody");
+            if (!tbody) return;
+            var currentUser = JSON.parse(localStorage.getItem("currentUser"));
+            var isBQT = currentUser && currentUser.role === "Ban Quản Trị";
+            var isAdmin = currentUser && currentUser.role === "Admin";
+
+            onValue(ref(db, "tests"), function(snapshot) {
+                tbody.innerHTML = "";
+                if (!snapshot.exists()) {
+                    tbody.innerHTML = '<tr><td colspan="6">Chưa có bài test nào</td></tr>';
+                    return;
+                }
+                snapshot.forEach(function(child) {
+                    var test = child.val();
+                    var key = child.key;
+                    
+                    var actions = "";
+                    if (isAdmin) {
+                        actions = '<span class="badge-default">Chỉ xem</span>';
+                    } else if (isBQT) {
+                        actions = `
+                            <button onclick="window.editTest('${key}')" class="btn-edit" style="background:#8b5cf6;">✏️ Sửa</button>
+                            <button onclick="window.startTest('${key}')" class="btn-create" style="background:#10b981;">📝 Làm</button>
+                            <button onclick="window.deleteTest('${key}')" class="btn-delete">🗑️ Xóa</button>
+                        `;
+                    } else {
+                        actions = `<button onclick="window.startTest('${key}')" class="btn-create" style="background:#10b981;">📝 Làm test</button>`;
+                    }
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${test.title || "N/A"}</strong></td>
+                            <td>${test.desc || ""}</td>
+                            <td>${test.totalQuestions || test.questions?.length || "0"}</td>
+                            <td>${test.passScore || "50"}%</td>
+                            <td>${test.createdAt ? new Date(test.createdAt).toLocaleDateString() : "N/A"}</td>
+                            <td>${actions}</td>
+                        </tr>
+                    `;
+                });
+            });
+        }
+
         // ==========================================
         // GAME NỘI BỘ
         // ==========================================
         function getGamesPage(user) {
-            var canManage = user.role !== "Admin";
+            var canManage = user.role === "Ban Quản Trị";
             var html = '<h2>🎮 Game nội bộ</h2>';
 
             if (canManage) {
@@ -934,8 +1236,8 @@
 
         window.addGame = async function() {
             var currentUser = JSON.parse(localStorage.getItem("currentUser"));
-            if (!currentUser || currentUser.role === "Admin") {
-                alert("⛔ Bạn không có quyền tạo game!");
+            if (!currentUser || currentUser.role !== "Ban Quản Trị") {
+                alert("⛔ Chỉ Ban Quản Trị mới có quyền tạo game!");
                 return;
             }
             var title = document.getElementById("gameTitle")?.value.trim();
@@ -983,8 +1285,8 @@
                     { q: "Bảo bối yêu thích của Doraemon?", a: "Cánh cửa thần kỳ" }
                 ];
 
-                var answer = confirm('🎮 ' + game.title + '\n\n' + game.desc + '\n\nThể loại: ' + game.type + '\n\nBắt đầu chơi?');
-                if (answer) {
+                var confirmPlay = confirm('🎮 ' + game.title + '\n\n' + game.desc + '\n\nThể loại: ' + game.type + '\n\nBắt đầu chơi?');
+                if (confirmPlay) {
                     var score = 0;
                     for (var i = 0; i < Math.min(3, gameQuestions.length); i++) {
                         var userAnswer = prompt(gameQuestions[i].q + '\n\nĐáp án gợi ý: ' + gameQuestions[i].a);
