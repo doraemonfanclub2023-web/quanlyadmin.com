@@ -136,7 +136,15 @@
             if (pageId === "notices") loadNotices();
             if (pageId === "documents") loadDocuments();
             if (pageId === "tests") loadTests();
-            if (pageId === "games") loadGames();
+            if (pageId === "games") {
+                loadGames();
+                // Khởi tạo game nếu chưa có
+                setTimeout(function() {
+                    if (!document.getElementById('gameCanvas')) {
+                        initGameCanvas();
+                    }
+                }, 200);
+            }
             if (pageId === "settings") loadSettings();
             if (pageId === "profile") loadProfile();
         };
@@ -699,7 +707,7 @@
         };
 
         // ==========================================
-        // QUẢN LÝ TEST KỸ NĂNG (ĐẦY ĐỦ CHỨC NĂNG)
+        // QUẢN LÝ TEST KỸ NĂNG
         // ==========================================
         function getTestsPage(user) {
             var canManage = user.role === "Ban Quản Trị";
@@ -761,7 +769,6 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
             return html;
         }
 
-        // ===== PHÂN TÍCH CÂU HỎI TỪ VĂN BẢN =====
         window.parseQuestions = function(text) {
             var lines = text.split('\n');
             var questions = [];
@@ -808,7 +815,6 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
             return questions;
         };
 
-        // ===== XEM TRƯỚC CÂU HỎI =====
         window.previewQuestions = function() {
             var input = document.getElementById("testQuestionsInput")?.value;
             var previewDiv = document.getElementById("questionPreview");
@@ -849,7 +855,6 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
             previewDiv.innerHTML = html;
         };
 
-        // ===== TẠO TEST MỚI =====
         window.addTest = async function() {
             var currentUser = JSON.parse(localStorage.getItem("currentUser"));
             if (!currentUser || currentUser.role !== "Ban Quản Trị") {
@@ -924,7 +929,6 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
             }
         };
 
-        // ===== SỬA TEST =====
         window.editTest = async function(key) {
             var currentUser = JSON.parse(localStorage.getItem("currentUser"));
             if (!currentUser || currentUser.role !== "Ban Quản Trị") {
@@ -998,7 +1002,6 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
             }
         };
 
-        // ===== XÓA TEST =====
         window.deleteTest = async function(key) {
             var currentUser = JSON.parse(localStorage.getItem("currentUser"));
             if (!currentUser || currentUser.role !== "Ban Quản Trị") {
@@ -1017,7 +1020,6 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
             }
         };
 
-        // ===== LÀM TEST =====
         window.startTest = async function(key) {
             var currentUser = JSON.parse(localStorage.getItem("currentUser"));
             if (!currentUser) return;
@@ -1118,7 +1120,6 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
             }
         };
 
-        // ===== HÀM TẢI DANH SÁCH TEST =====
         function loadTests() {
             var tbody = document.getElementById("testTableBody");
             if (!tbody) return;
@@ -1164,49 +1165,583 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
         }
 
         // ==========================================
-        // GAME NỘI BỘ
+        // GAME DORAEMON CHẠY (DINO STYLE)
         // ==========================================
+
+        // ===== KHỞI TẠO GAME =====
+        function initGameCanvas() {
+            if (document.getElementById('gameCanvas')) return;
+            
+            window.gameRunning = false;
+            window.gameScore = 0;
+            window.highScore = parseInt(localStorage.getItem('doraemonHighScore')) || 0;
+            window.gameSpeed = 6;
+            window.obstacles = [];
+            window.frameId = null;
+            window.isJumping = false;
+            window.jumpVelocity = 0;
+            window.gravity = 0.6;
+            window.playerY = 250;
+            window.playerX = 80;
+            window.playerWidth = 40;
+            window.playerHeight = 50;
+            window.groundY = 300;
+            window.currentGameTitle = 'Doraemon Run';
+            
+            window.drawDoraemon = function(ctx, x, y, w, h) {
+                // Thân
+                ctx.fillStyle = '#2196F3';
+                ctx.beginPath();
+                ctx.arc(x + w/2, y + h/2 - 5, w/2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Bụng
+                ctx.fillStyle = '#FFFFFF';
+                ctx.beginPath();
+                ctx.arc(x + w/2, y + h/2 + 5, w/3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Đầu
+                ctx.fillStyle = '#2196F3';
+                ctx.beginPath();
+                ctx.arc(x + w/2, y + 5, w/2.5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Mặt
+                ctx.fillStyle = '#FFFFFF';
+                ctx.beginPath();
+                ctx.arc(x + w/2 - 5, y + 8, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x + w/2 + 5, y + 8, 8, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Mắt
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.arc(x + w/2 - 7, y + 8, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x + w/2 + 3, y + 8, 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Mũi
+                ctx.fillStyle = '#FF1744';
+                ctx.beginPath();
+                ctx.arc(x + w/2 - 2, y + 14, 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Miệng
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(x + w/2 - 2, y + 18, 5, 0.1, Math.PI - 0.1);
+                ctx.stroke();
+                
+                // Râu
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 1;
+                for (var i = -1; i <= 1; i += 2) {
+                    ctx.beginPath();
+                    ctx.moveTo(x + w/2 + i * 10, y + 10);
+                    ctx.lineTo(x + w/2 + i * 25, y + 5 + i * 5);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(x + w/2 + i * 10, y + 14);
+                    ctx.lineTo(x + w/2 + i * 25, y + 14 + i * 5);
+                    ctx.stroke();
+                }
+                
+                // Chuông
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(x + w/2, y + h - 2, 6, 0, Math.PI * 2);
+                ctx.fill();
+            };
+        }
+
+        // ===== BẮT ĐẦU GAME =====
+        window.startGame = function() {
+            var canvas = document.getElementById('gameCanvas');
+            if (!canvas) {
+                alert('⚠️ Không tìm thấy canvas! Vui lòng tải lại trang.');
+                return;
+            }
+            
+            if (window.gameRunning) return;
+            
+            window.gameRunning = true;
+            window.gameScore = 0;
+            window.obstacles = [];
+            window.gameSpeed = 6;
+            window.playerY = window.groundY - window.playerHeight;
+            window.isJumping = false;
+            window.jumpVelocity = 0;
+            
+            var ctx = canvas.getContext('2d');
+            var scoreEl = document.getElementById('gameScore');
+            var startBtn = document.getElementById('gameStartBtn');
+            if (startBtn) startBtn.textContent = '▶️ Đang chơi...';
+            
+            function createObstacle() {
+                var types = ['cactus', 'bird', 'rock'];
+                var type = types[Math.floor(Math.random() * types.length)];
+                var width = type === 'bird' ? 30 : type === 'cactus' ? 20 : 25;
+                var height = type === 'bird' ? 25 : type === 'cactus' ? 35 : 20;
+                var y = type === 'bird' ? window.groundY - 60 - Math.random() * 30 : window.groundY - height;
+                
+                window.obstacles.push({
+                    x: 800,
+                    y: y,
+                    width: width,
+                    height: height,
+                    type: type,
+                    scored: false
+                });
+            }
+            
+            function drawObstacle(ctx, obs) {
+                if (obs.type === 'cactus') {
+                    ctx.fillStyle = '#2E7D32';
+                    ctx.fillRect(obs.x + 5, obs.y + 10, 10, obs.height - 10);
+                    ctx.fillRect(obs.x - 5, obs.y + 15, 8, 15);
+                    ctx.fillRect(obs.x + 12, obs.y + 15, 8, 12);
+                } else if (obs.type === 'bird') {
+                    ctx.fillStyle = '#FF6F00';
+                    ctx.beginPath();
+                    ctx.arc(obs.x + obs.width/2, obs.y + obs.height/2, obs.width/2, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#E65100';
+                    ctx.fillRect(obs.x + 2, obs.y - 5, 10, 6);
+                    ctx.fillRect(obs.x + 15, obs.y - 5, 10, 6);
+                } else {
+                    ctx.fillStyle = '#78909C';
+                    ctx.beginPath();
+                    ctx.ellipse(obs.x + obs.width/2, obs.y + obs.height/2, obs.width/2, obs.height/2, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            function gameLoop() {
+                if (!window.gameRunning) return;
+                
+                ctx.clearRect(0, 0, 800, 350);
+                
+                // Nền
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(0, 0, 800, 350);
+                
+                // Mặt đất
+                ctx.fillStyle = '#2d2d44';
+                ctx.fillRect(0, window.groundY, 800, 50);
+                ctx.fillStyle = '#3d3d5c';
+                for (var i = 0; i < 800; i += 40) {
+                    var offset = (Date.now() / 100 * window.gameSpeed / 6) % 40;
+                    ctx.fillRect(i - offset, window.groundY, 20, 3);
+                }
+                
+                // Vẽ Doraemon
+                window.drawDoraemon(ctx, window.playerX, window.playerY, window.playerWidth, window.playerHeight);
+                
+                // Nhảy
+                if (window.isJumping) {
+                    window.playerY += window.jumpVelocity;
+                    window.jumpVelocity += window.gravity;
+                    if (window.playerY >= window.groundY - window.playerHeight) {
+                        window.playerY = window.groundY - window.playerHeight;
+                        window.isJumping = false;
+                        window.jumpVelocity = 0;
+                    }
+                }
+                
+                // Tạo chướng ngại vật
+                if (Math.random() < 0.02 + window.gameSpeed / 400) {
+                    createObstacle();
+                }
+                
+                // Cập nhật chướng ngại vật
+                for (var i = window.obstacles.length - 1; i >= 0; i--) {
+                    var obs = window.obstacles[i];
+                    obs.x -= window.gameSpeed;
+                    
+                    if (!obs.scored && obs.x + obs.width < window.playerX) {
+                        obs.scored = true;
+                        window.gameScore += 10;
+                        if (scoreEl) scoreEl.textContent = window.gameScore;
+                    }
+                    
+                    // Va chạm
+                    if (obs.x < window.playerX + window.playerWidth - 10 &&
+                        obs.x + obs.width > window.playerX + 10 &&
+                        obs.y < window.playerY + window.playerHeight - 5 &&
+                        obs.y + obs.height > window.playerY + 5) {
+                        window.gameRunning = false;
+                        if (startBtn) startBtn.textContent = '▶️ Bắt đầu';
+                        
+                        if (window.gameScore > window.highScore) {
+                            window.highScore = window.gameScore;
+                            localStorage.setItem('doraemonHighScore', window.highScore);
+                            var highScoreEl = document.getElementById('gameHighScore');
+                            if (highScoreEl) highScoreEl.textContent = window.highScore;
+                            
+                            saveScore(window.gameScore);
+                            alert('🎉 KỶ LỤC MỚI! ' + window.gameScore + ' điểm!');
+                        } else {
+                            alert('💀 Game Over! Điểm: ' + window.gameScore);
+                        }
+                        
+                        window.obstacles = [];
+                        return;
+                    }
+                    
+                    if (obs.x + obs.width < -50) {
+                        window.obstacles.splice(i, 1);
+                    }
+                    
+                    drawObstacle(ctx, obs);
+                }
+                
+                if (window.gameSpeed < 15) {
+                    window.gameSpeed += 0.002;
+                }
+                
+                if (scoreEl) scoreEl.textContent = window.gameScore;
+                
+                window.frameId = requestAnimationFrame(gameLoop);
+            }
+            
+            gameLoop();
+        };
+
+        // ===== NHẢY =====
+        window.jumpGame = function() {
+            if (!window.gameRunning) return;
+            if (window.isJumping) return;
+            
+            window.isJumping = true;
+            window.jumpVelocity = -12;
+        };
+
+        // ===== RESET GAME =====
+        window.resetGame = function() {
+            window.gameRunning = false;
+            if (window.frameId) {
+                cancelAnimationFrame(window.frameId);
+                window.frameId = null;
+            }
+            window.obstacles = [];
+            window.gameScore = 0;
+            window.gameSpeed = 6;
+            window.playerY = window.groundY - window.playerHeight;
+            window.isJumping = false;
+            window.jumpVelocity = 0;
+            
+            var scoreEl = document.getElementById('gameScore');
+            if (scoreEl) scoreEl.textContent = '0';
+            
+            var startBtn = document.getElementById('gameStartBtn');
+            if (startBtn) startBtn.textContent = '▶️ Bắt đầu';
+            
+            var canvas = document.getElementById('gameCanvas');
+            if (canvas) {
+                var ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, 800, 350);
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(0, 0, 800, 350);
+                ctx.fillStyle = '#3d3d5c';
+                ctx.fillRect(0, window.groundY, 800, 50);
+                ctx.fillStyle = '#4d4d6c';
+                ctx.fillRect(0, window.groundY, 800, 3);
+                window.drawDoraemon(ctx, window.playerX, window.playerY, window.playerWidth, window.playerHeight);
+            }
+        };
+
+        // ===== THOÁT GAME =====
+        window.exitGame = function() {
+            window.gameRunning = false;
+            if (window.frameId) {
+                cancelAnimationFrame(window.frameId);
+                window.frameId = null;
+            }
+            window.showPage('games');
+        };
+
+        // ===== LƯU ĐIỂM =====
+        async function saveScore(score) {
+            var currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (!currentUser) return;
+            
+            var gameTitle = document.getElementById('currentGameTitle')?.textContent || 'Doraemon Run';
+            
+            try {
+                await push(ref(db, "gameScores"), {
+                    gameTitle: gameTitle,
+                    username: currentUser.username,
+                    userName: currentUser.name || currentUser.username,
+                    score: score,
+                    createdAt: new Date().toISOString()
+                });
+                loadScores();
+            } catch (err) {
+                console.error('Lỗi lưu điểm:', err);
+            }
+        }
+
+        // ===== TẢI BẢNG XẾP HẠNG =====
+        function loadScores() {
+            var tbody = document.getElementById('scoreTableBody');
+            if (!tbody) return;
+            
+            onValue(ref(db, "gameScores"), function(snapshot) {
+                tbody.innerHTML = '';
+                if (!snapshot.exists()) {
+                    tbody.innerHTML = '<tr><td colspan="5">Chưa có điểm nào</td></tr>';
+                    return;
+                }
+                
+                var scores = [];
+                snapshot.forEach(function(child) {
+                    var data = child.val();
+                    scores.push(data);
+                });
+                
+                scores.sort(function(a, b) { return (b.score || 0) - (a.score || 0); });
+                var topScores = scores.slice(0, 20);
+                
+                topScores.forEach(function(s, idx) {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>#${idx + 1}</strong></td>
+                            <td>${s.userName || s.username || 'Unknown'}</td>
+                            <td><strong>${s.score || 0}</strong></td>
+                            <td>${s.gameTitle || 'Doraemon Run'}</td>
+                            <td>${s.createdAt ? new Date(s.createdAt).toLocaleDateString() : 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+            });
+        }
+
+        // ===== GIAO DIỆN TRANG GAME =====
         function getGamesPage(user) {
             var canManage = user.role === "Ban Quản Trị";
             var html = '<h2>🎮 Game nội bộ</h2>';
+
+            if (window.gameRunning || document.getElementById('gameCanvas')) {
+                html += `
+                    <div style="background:#1a1a2e; border-radius:12px; padding:20px; margin-bottom:20px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+                            <h3 style="color:#fff; margin:0;">🎮 Đang chơi: <span id="currentGameTitle">${window.currentGameTitle || 'Doraemon Run'}</span></h3>
+                            <button onclick="window.exitGame()" class="btn-delete" style="background:#ef4444;">❌ Thoát game</button>
+                        </div>
+                        <canvas id="gameCanvas" width="800" height="350" style="width:100%; max-width:800px; height:auto; border-radius:8px; background:#1a1a2e; display:block; margin:0 auto;"></canvas>
+                        <div style="display:flex; justify-content:space-between; color:#fff; margin-top:10px; font-size:16px; flex-wrap:wrap; gap:10px;">
+                            <span>🏆 Điểm: <strong id="gameScore">0</strong></span>
+                            <span>🥇 Cao nhất: <strong id="gameHighScore">${window.highScore || 0}</strong></span>
+                        </div>
+                        <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+                            <button onclick="window.startGame()" class="btn-create" style="background:#10b981;" id="gameStartBtn">▶️ Bắt đầu</button>
+                            <button onclick="window.jumpGame()" class="btn-create" style="background:#f59e0b;" id="gameJumpBtn">⬆️ Nhảy (Space)</button>
+                            <button onclick="window.resetGame()" class="btn-delete" style="background:#64748b;">🔄 Chơi lại</button>
+                        </div>
+                        <p style="color:#94a3b8; font-size:12px; margin-top:8px;">⌨️ Phím Space hoặc Click chuột vào màn hình để nhảy</p>
+                    </div>
+                `;
+            }
 
             if (canManage) {
                 html += `
                     <div class="account-form-box">
                         <h3>🎯 Tạo game mới</h3>
                         <div style="display:flex; flex-direction:column; gap:12px;">
-                            <input type="text" id="gameTitle" placeholder="Tên game (VD: Đố vui Doraemon)" />
-                            <textarea id="gameDesc" placeholder="Mô tả game..." style="min-height:80px;"></textarea>
-                            <select id="gameType" style="padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px;">
-                                <option value="Quiz">📝 Quiz</option>
-                                <option value="Đoán nhân vật">🎭 Đoán nhân vật</option>
-                                <option value="Vòng quay">🎡 Vòng quay</option>
-                            </select>
-                            <button onclick="window.addGame()" class="btn-create" style="align-self:flex-start;">🎮 Tạo game</button>
+                            <input type="text" id="gameTitle" placeholder="Tên game (VD: Doraemon Run)" value="Doraemon Run" />
+                            <textarea id="gameDesc" placeholder="Mô tả game..." style="min-height:60px;">Chạy cùng Doraemon, tránh chướng ngại vật!</textarea>
+                            <button onclick="window.addGame()" class="btn-create" style="align-self:flex-start;">🎮 Tạo game & Chơi</button>
                         </div>
                     </div>
                 `;
             } else {
-                html += '<p style="color:#94a3b8; margin-bottom:16px;">🔒 Chế độ chỉ xem.</p>';
+                html += '<p style="color:#94a3b8; margin-bottom:16px;">🔒 Chế độ chỉ xem. Chỉ Ban Quản Trị mới tạo được game.</p>';
             }
 
             html += `
                 <div class="table-container">
                     <table class="table">
-                        <thead><tr><th>Tên game</th><th>Mô tả</th><th>Thể loại</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead>
+                        <thead><tr><th>Tên game</th><th>Mô tả</th><th>Điểm cao nhất</th><th>Người giữ kỷ lục</th><th>Thao tác</th></tr></thead>
                         <tbody id="gameTableBody"><tr><td colspan="5">Đang tải...</td></tr></tbody>
                     </table>
                 </div>
+                
+                <div style="margin-top:24px;">
+                    <h3>🏆 Bảng xếp hạng game</h3>
+                    <div class="table-container">
+                        <table class="table">
+                            <thead><tr><th>#</th><th>Người chơi</th><th>Điểm</th><th>Game</th><th>Ngày</th></tr></thead>
+                            <tbody id="scoreTableBody"><tr><td colspan="5">Đang tải...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
             `;
+
+            setTimeout(function() {
+                if (!document.getElementById('gameCanvas')) {
+                    initGameCanvas();
+                }
+                // Vẽ Doraemon tĩnh
+                var canvas = document.getElementById('gameCanvas');
+                if (canvas && !window.gameRunning) {
+                    var ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, 800, 350);
+                    ctx.fillStyle = '#1a1a2e';
+                    ctx.fillRect(0, 0, 800, 350);
+                    ctx.fillStyle = '#3d3d5c';
+                    ctx.fillRect(0, window.groundY, 800, 50);
+                    ctx.fillStyle = '#4d4d6c';
+                    ctx.fillRect(0, window.groundY, 800, 3);
+                    window.drawDoraemon(ctx, window.playerX, window.playerY, window.playerWidth, window.playerHeight);
+                }
+                loadScores();
+            }, 100);
 
             return html;
         }
 
+        // ===== TẠO GAME MỚI =====
+        window.addGame = async function() {
+            var currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (!currentUser || currentUser.role !== "Ban Quản Trị") {
+                alert("⛔ Chỉ Ban Quản Trị mới có quyền tạo game!");
+                return;
+            }
+            
+            var title = document.getElementById("gameTitle")?.value.trim() || 'Doraemon Run';
+            var desc = document.getElementById("gameDesc")?.value.trim() || 'Chạy cùng Doraemon!';
+            
+            try {
+                await push(ref(db, "games"), {
+                    title: title,
+                    desc: desc,
+                    type: 'Doraemon Run',
+                    createdBy: currentUser.username,
+                    createdAt: new Date().toISOString()
+                });
+                
+                alert("✅ Tạo game thành công! Bắt đầu chơi ngay!");
+                
+                window.currentGameTitle = title;
+                window.gameRunning = false;
+                if (window.frameId) {
+                    cancelAnimationFrame(window.frameId);
+                    window.frameId = null;
+                }
+                window.obstacles = [];
+                window.gameScore = 0;
+                window.gameSpeed = 6;
+                window.playerY = window.groundY - window.playerHeight;
+                window.isJumping = false;
+                window.jumpVelocity = 0;
+                
+                window.showPage('games');
+                
+                setTimeout(function() {
+                    initGameCanvas();
+                    var canvas = document.getElementById('gameCanvas');
+                    if (canvas) {
+                        var ctx = canvas.getContext('2d');
+                        ctx.clearRect(0, 0, 800, 350);
+                        ctx.fillStyle = '#1a1a2e';
+                        ctx.fillRect(0, 0, 800, 350);
+                        ctx.fillStyle = '#3d3d5c';
+                        ctx.fillRect(0, window.groundY, 800, 50);
+                        ctx.fillStyle = '#4d4d6c';
+                        ctx.fillRect(0, window.groundY, 800, 3);
+                        window.drawDoraemon(ctx, window.playerX, window.playerY, window.playerWidth, window.playerHeight);
+                    }
+                    var titleEl = document.getElementById('currentGameTitle');
+                    if (titleEl) titleEl.textContent = title;
+                }, 200);
+                
+            } catch (err) {
+                console.error(err);
+                alert("⚠️ Lỗi khi tạo game!");
+            }
+        };
+
+        // ===== CHƠI GAME =====
+        window.playGame = async function(key) {
+            try {
+                var snapshot = await get(ref(db, 'games/' + key));
+                if (!snapshot.exists()) {
+                    alert("Game không tồn tại!");
+                    return;
+                }
+                var game = snapshot.val();
+                
+                window.currentGameTitle = game.title || 'Doraemon Run';
+                window.gameRunning = false;
+                if (window.frameId) {
+                    cancelAnimationFrame(window.frameId);
+                    window.frameId = null;
+                }
+                window.obstacles = [];
+                window.gameScore = 0;
+                window.gameSpeed = 6;
+                window.playerY = window.groundY - window.playerHeight;
+                window.isJumping = false;
+                window.jumpVelocity = 0;
+                
+                window.showPage('games');
+                
+                setTimeout(function() {
+                    initGameCanvas();
+                    var canvas = document.getElementById('gameCanvas');
+                    if (canvas) {
+                        var ctx = canvas.getContext('2d');
+                        ctx.clearRect(0, 0, 800, 350);
+                        ctx.fillStyle = '#1a1a2e';
+                        ctx.fillRect(0, 0, 800, 350);
+                        ctx.fillStyle = '#3d3d5c';
+                        ctx.fillRect(0, window.groundY, 800, 50);
+                        ctx.fillStyle = '#4d4d6c';
+                        ctx.fillRect(0, window.groundY, 800, 3);
+                        window.drawDoraemon(ctx, window.playerX, window.playerY, window.playerWidth, window.playerHeight);
+                    }
+                    var titleEl = document.getElementById('currentGameTitle');
+                    if (titleEl) titleEl.textContent = window.currentGameTitle;
+                }, 200);
+                
+            } catch (err) {
+                console.error(err);
+                alert("⚠️ Lỗi khi chơi game!");
+            }
+        };
+
+        // ===== XÓA GAME =====
+        window.deleteGame = async function(key) {
+            var currentUser = JSON.parse(localStorage.getItem("currentUser"));
+            if (!currentUser || currentUser.role !== "Ban Quản Trị") {
+                alert("⛔ Chỉ Ban Quản Trị mới có quyền xóa game!");
+                return;
+            }
+            
+            if (!confirm("Bạn có chắc chắn muốn xóa game này?")) return;
+
+            try {
+                await remove(ref(db, 'games/' + key));
+                alert("✅ Đã xóa game!");
+            } catch (err) {
+                console.error(err);
+                alert("⚠️ Lỗi khi xóa game!");
+            }
+        };
+
+        // ===== LOAD GAMES =====
         function loadGames() {
             var tbody = document.getElementById("gameTableBody");
             if (!tbody) return;
             var currentUser = JSON.parse(localStorage.getItem("currentUser"));
             var isAdmin = currentUser && currentUser.role === "Admin";
+            var isBQT = currentUser && currentUser.role === "Ban Quản Trị";
 
             onValue(ref(db, "games"), function(snapshot) {
                 tbody.innerHTML = "";
@@ -1217,98 +1752,75 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
                 snapshot.forEach(function(child) {
                     var game = child.val();
                     var key = child.key;
-                    var actions = isAdmin ?
-                        '<span class="badge-default">Chỉ xem</span>' :
-                        '<button onclick="window.playGame(\'' + key + '\')" class="btn-create" style="background:#8b5cf6;">Chơi</button>';
+                    
+                    var actions = "";
+                    if (isAdmin) {
+                        actions = '<span class="badge-default">Chỉ xem</span>';
+                    } else if (isBQT) {
+                        actions = `
+                            <button onclick="window.playGame('${key}')" class="btn-create" style="background:#10b981;">🎮 Chơi</button>
+                            <button onclick="window.deleteGame('${key}')" class="btn-delete">🗑️ Xóa</button>
+                        `;
+                    } else {
+                        actions = `<button onclick="window.playGame('${key}')" class="btn-create" style="background:#10b981;">🎮 Chơi</button>`;
+                    }
 
                     tbody.innerHTML += `
                         <tr>
                             <td><strong>${game.title || "N/A"}</strong></td>
                             <td>${game.desc || ""}</td>
-                            <td><span style="background:#8b5cf6; color:white; padding:2px 10px; border-radius:12px; font-size:12px;">${game.type || "Quiz"}</span></td>
-                            <td>${game.createdAt ? new Date(game.createdAt).toLocaleDateString() : "N/A"}</td>
+                            <td><span id="highScore_${key}">...</span></td>
+                            <td><span id="highScorePlayer_${key}">...</span></td>
                             <td>${actions}</td>
                         </tr>
                     `;
+                    
+                    loadGameHighScore(key);
                 });
             });
         }
 
-        window.addGame = async function() {
-            var currentUser = JSON.parse(localStorage.getItem("currentUser"));
-            if (!currentUser || currentUser.role !== "Ban Quản Trị") {
-                alert("⛔ Chỉ Ban Quản Trị mới có quyền tạo game!");
-                return;
-            }
-            var title = document.getElementById("gameTitle")?.value.trim();
-            var desc = document.getElementById("gameDesc")?.value.trim();
-            var type = document.getElementById("gameType")?.value;
-
-            if (!title || !desc) {
-                alert("⚠️ Vui lòng nhập tên và mô tả game!");
-                return;
-            }
-
-            try {
-                await push(ref(db, "games"), {
-                    title: title,
-                    desc: desc,
-                    type: type || "Quiz",
-                    createdBy: currentUser.username,
-                    createdAt: new Date().toISOString()
-                });
-
-                alert("✅ Tạo game thành công!");
-                document.getElementById("gameTitle").value = "";
-                document.getElementById("gameDesc").value = "";
-            } catch (err) {
-                console.error(err);
-                alert("⚠️ Lỗi khi tạo game!");
-            }
-        };
-
-        window.playGame = async function(key) {
-            var currentUser = JSON.parse(localStorage.getItem("currentUser"));
-            if (!currentUser) return;
-
-            try {
-                var snapshot = await get(ref(db, 'games/' + key));
-                if (!snapshot.exists()) {
-                    alert("Game không tồn tại!");
-                    return;
-                }
-                var game = snapshot.val();
-
-                var gameQuestions = [
-                    { q: "Doraemon sinh ra ở đâu?", a: "Tokyo" },
-                    { q: "Nobita thích ai?", a: "Shizuka" },
-                    { q: "Bảo bối yêu thích của Doraemon?", a: "Cánh cửa thần kỳ" }
-                ];
-
-                var confirmPlay = confirm('🎮 ' + game.title + '\n\n' + game.desc + '\n\nThể loại: ' + game.type + '\n\nBắt đầu chơi?');
-                if (confirmPlay) {
-                    var score = 0;
-                    for (var i = 0; i < Math.min(3, gameQuestions.length); i++) {
-                        var userAnswer = prompt(gameQuestions[i].q + '\n\nĐáp án gợi ý: ' + gameQuestions[i].a);
-                        if (userAnswer && userAnswer.trim().length > 0) {
-                            score += Math.floor(100 / Math.min(3, gameQuestions.length));
-                        }
+        function loadGameHighScore(gameKey) {
+            get(ref(db, "gameScores")).then(function(snapshot) {
+                if (!snapshot.exists()) return;
+                
+                var scores = [];
+                snapshot.forEach(function(child) {
+                    var data = child.val();
+                    if (data.gameId === gameKey) {
+                        scores.push(data);
                     }
-                    var rank = score >= 80 ? "Huyền thoại" : score >= 60 ? "Chiến binh" : "Tân binh";
-                    alert('🎯 KẾT QUẢ\n\nĐiểm: ' + score + '/100\n🏆 Xếp hạng: ' + rank);
-
-                    await push(ref(db, "gameScores"), {
-                        gameId: key,
-                        username: currentUser.username,
-                        score: score,
-                        createdAt: new Date().toISOString()
-                    });
+                });
+                
+                scores.sort(function(a, b) { return (b.score || 0) - (a.score || 0); });
+                
+                var highScoreEl = document.getElementById('highScore_' + gameKey);
+                var highScorePlayerEl = document.getElementById('highScorePlayer_' + gameKey);
+                
+                if (scores.length > 0) {
+                    if (highScoreEl) highScoreEl.textContent = scores[0].score || 0;
+                    if (highScorePlayerEl) highScorePlayerEl.textContent = scores[0].userName || scores[0].username || 'Unknown';
+                } else {
+                    if (highScoreEl) highScoreEl.textContent = '0';
+                    if (highScorePlayerEl) highScorePlayerEl.textContent = '-';
                 }
-            } catch (err) {
-                console.error(err);
-                alert("⚠️ Lỗi khi chơi game!");
+            }).catch(function() {});
+        }
+
+        // ===== PHÍM SPACE =====
+        document.addEventListener('keydown', function(e) {
+            if (e.key === ' ' || e.key === 'Space') {
+                e.preventDefault();
+                window.jumpGame();
             }
-        };
+        });
+
+        // ===== CLICK CANVAS =====
+        document.addEventListener('click', function(e) {
+            if (e.target.id === 'gameCanvas') {
+                window.jumpGame();
+            }
+        });
 
         // ==========================================
         // CÀI ĐẶT
