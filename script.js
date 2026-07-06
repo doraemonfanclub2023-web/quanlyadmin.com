@@ -575,11 +575,8 @@ window.listenToUserTable = function() {
     });
 }
 
-window.addAccount = async function() {
-    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-
-    // Chỉ BQT mới được tạo tài khoản
-    if (!currentUser || currentUser.role === 'Admin') {
+    // Chỉ chặn Admin
+    if (currentUser.role === 'Admin') {
         return alert('⛔ Bạn không có quyền thêm tài khoản!');
     }
 
@@ -589,15 +586,15 @@ window.addAccount = async function() {
     const role = document.getElementById('newRole')?.value;
 
     if (!username || !password) {
-        return alert('❌ Vui lòng nhập đầy đủ thông tin!');
+        return alert('Vui lòng nhập đầy đủ thông tin!');
     }
 
-    // BQT không được tạo thêm BQT
-    if (
-        currentUser.role === 'Ban Quản Trị' &&
-        role === 'Ban Quản Trị'
-    ) {
-    }
+    await set(ref(db, `users/${username}`), {
+        username,
+        name: name || username,
+        password,
+        role
+    });
 
     // Kiểm tra tài khoản đã tồn tại chưa
     const checkUser = await get(ref(db, `users/${username}`));
