@@ -1,7 +1,6 @@
-// --- 1. CẤU HÌNH & KHỞI TẠO ---
-// Thêm chữ 'get' vào danh sách import
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getDatabase, ref, set, get, child, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { getDatabase, ref, get, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
 const firebaseConfig = {
     apiKey: "AIzaSyC-U9L1plaQ6pcP7Iecg4RO0GirBjunISM",
     authDomain: "admin-27099.firebaseapp.com",
@@ -16,25 +15,39 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// --- 2. PHÂN QUYỀN (Admin: 25, BQT: 50, Dev: 100) ---
-function checkPermission(requiredLevel) {
+window.checkPermission = function(requiredLevel) {
     const user = JSON.parse(localStorage.getItem('currentUser'));
-    if (!user) {
+    
+    if (!user || !user.role) {
         window.location.href = "index.html";
         return false;
     }
+
     const roles = { 'Dev': 100, 'Ban Quản Trị': 50, 'Admin': 25 };
     const userLevel = roles[user.role] || 0;
 
-    if (userLevel >= requiredLevel) return true;
-    
-    alert("⚠️ Bạn không có đủ quyền hạn để thực hiện thao tác này!");
-    return false;
-}
+    if (userLevel >= requiredLevel) {
+        return true;
+    }
 
-// --- 3. HÀM RENDER BẢNG (Đã chặn undefined) ---
+    alert("⚠️ Bạn không có đủ quyền hạn!");
+    return false;
+};
+
+window.deleteAccount = function(uid) {
+    if (!window.checkPermission(50)) return;
+    
+    if (confirm("Bạn có chắc chắn muốn xóa tài khoản này?")) {
+        remove(ref(db, 'users/' + uid)).then(() => {
+            alert("Đã xóa thành công!");
+        }).catch((error) => {
+            alert("Lỗi khi xóa: " + error.message);
+        });
+    }
+};
+
 function loadAccountData() {
-    const dbRef = ref(db, 'users'); // Đảm bảo đúng đường dẫn trong DB của bồ
+    const dbRef = ref(db, 'users');
     onValue(dbRef, (snapshot) => {
         const tableBody = document.querySelector('tbody');
         if (!tableBody) return;
@@ -43,15 +56,13 @@ function loadAccountData() {
         snapshot.forEach((childSnapshot) => {
             const data = childSnapshot.val();
             
-            // CHẶN DÒNG LỖI Ở ĐÂY
-            if (!data || (!data.id && !data.maTaiKhoan)) { 
+            if (!data || typeof data !== 'object' || (!data.id && !data.maTaiKhoan)) { 
                 return; 
             }
 
-            // Render dòng hợp lệ
             tableBody.innerHTML += `
                 <tr>
-                    <td>${data.maTaiKhoan || data.id}</td>
+                    <td>${data.maTaiKhoan || data.id || 'N/A'}</td>
                     <td>${data.ten || 'Chưa cập nhật'}</td>
                     <td>${data.role || 'Thành viên'}</td>
                     <td>
@@ -64,7 +75,6 @@ function loadAccountData() {
     });
 }
 
-// Gọi hàm load dữ liệu khi trang web sẵn sàng
 loadAccountData();
 /* ====================================================
    2. KHỔI TẠO TÀI KHOẢN GỐC TRÊN CLOUD
