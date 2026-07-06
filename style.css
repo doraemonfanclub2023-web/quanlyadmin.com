@@ -1,4 +1,32 @@
-/* --- NÂNG CẤP DASHBOARD (CHO HOME) --- */
+/* 1. Reset & Khung Layout (QUAN TRỌNG ĐỂ KHÔNG VỠ GIAO DIỆN) */
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+body { background-color: #f8fafc; color: #334155; }
+
+.container { 
+    display: flex; 
+    min-height: 100vh; 
+    width: 100%; 
+}
+
+/* 2. Sidebar */
+.sidebar { 
+    width: 260px; 
+    flex-shrink: 0; /* Giữ nguyên kích thước không bị co */
+    background: #0f172a; 
+    color: #f8fafc; 
+    padding: 24px 0; 
+    height: 100vh;
+    position: fixed; /* Cố định sidebar */
+}
+
+/* 3. Content - Thêm margin-left để không bị đè bởi sidebar */
+.content { 
+    flex-grow: 1; 
+    margin-left: 260px; /* BẮT BUỘC CÓ DÒNG NÀY */
+    padding: 30px 40px; 
+}
+
+/* 4. Nâng cấp Dashboard (Grid) */
 .cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -13,14 +41,14 @@
     border: 1px solid #e2e8f0;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     transition: transform 0.2s;
+    cursor: pointer;
 }
 
 .card:hover { transform: translateY(-5px); }
-
 .card h3 { font-size: 14px; color: #64748b; margin-bottom: 8px; }
 .card h1 { font-size: 28px; color: #0f172a; margin: 0; }
 
-/* --- NÂNG CẤP DANH SÁCH HOẠT ĐỘNG --- */
+/* 5. Danh sách hoạt động */
 .activity {
     background: #fff;
     padding: 24px;
@@ -29,16 +57,10 @@
 }
 
 .activity h3 { margin-bottom: 15px; color: #1e293b; }
-
-#homeNoticeList {
-    list-style: none;
-}
-
+#homeNoticeList { list-style: none; }
 #homeNoticeList li {
     padding: 12px 0;
     border-bottom: 1px solid #f1f5f9;
     font-size: 14px;
     line-height: 1.5;
 }
-
-#homeNoticeList li strong { color: #0284c7; }
