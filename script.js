@@ -12,7 +12,20 @@ const firebaseConfig = {
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getDatabase, ref, set, get, child, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
+// Đặt ngay đầu file script.js
+function checkPermission(requiredRole) {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    if (!user) {
+        window.location.href = "index.html";
+        return false;
+    }
+    if (user.role === 'Ban Quản Trị') return true;
+    if (user.role !== requiredRole) {
+        alert("⚠️ Bạn không có quyền thực hiện thao tác này!");
+        return false;
+    }
+    return true;
+}
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
