@@ -1,34 +1,71 @@
-// 1. CẤU HÌNH CLOUD FIREBASE CỦA BẠN
+// --- 1. CẤU HÌNH & KHỞI TẠO ---
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
 const firebaseConfig = {
-  apiKey: "AIzaSyC-U9L1plaQ6pcP7Iecg4RO0GirBjunISM",
-  authDomain: "admin-27099.firebaseapp.com",
-  databaseURL: "https://admin-27099-default-rtdb.firebaseio.com", 
-  projectId: "admin-27099",
-  storageBucket: "admin-27099.firebasestorage.app",
-  messagingSenderId: "510976750235",
-  appId: "1:510976750235:web:78d3e138d302235a788c3e",
-  measurementId: "G-GG545GEB8M"
+    apiKey: "AIzaSyC-U9L1plaQ6pcP7Iecg4RO0GirBjunISM",
+    authDomain: "admin-27099.firebaseapp.com",
+    databaseURL: "https://admin-27099-default-rtdb.firebaseio.com", 
+    projectId: "admin-27099",
+    storageBucket: "admin-27099.firebasestorage.app",
+    messagingSenderId: "510976750235",
+    appId: "1:510976750235:web:78d3e138d302235a788c3e",
+    measurementId: "G-GG545GEB8M"
 };
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getDatabase, ref, set, get, child, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-// Đặt ngay đầu file script.js
-function checkPermission(requiredRole) {
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// --- 2. PHÂN QUYỀN (Admin: 25, BQT: 50, Dev: 100) ---
+function checkPermission(requiredLevel) {
     const user = JSON.parse(localStorage.getItem('currentUser'));
     if (!user) {
         window.location.href = "index.html";
         return false;
     }
-    if (user.role === 'Ban Quản Trị') return true;
-    if (user.role !== requiredRole) {
-        alert("⚠️ Bạn không có quyền thực hiện thao tác này!");
-        return false;
-    }
-    return true;
-}
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+    const roles = { 'Dev': 100, 'Ban Quản Trị': 50, 'Admin': 25 };
+    const userLevel = roles[user.role] || 0;
 
+    if (userLevel >= requiredLevel) return true;
+    
+    alert("⚠️ Bạn không có đủ quyền hạn để thực hiện thao tác này!");
+    return false;
+}
+
+// --- 3. HÀM RENDER BẢNG (Đã chặn undefined) ---
+function loadAccountData() {
+    const dbRef = ref(db, 'users'); // Đảm bảo đúng đường dẫn trong DB của bồ
+    onValue(dbRef, (snapshot) => {
+        const tableBody = document.querySelector('tbody');
+        if (!tableBody) return;
+        tableBody.innerHTML = ""; 
+
+        snapshot.forEach((childSnapshot) => {
+            const data = childSnapshot.val();
+            
+            // CHẶN DÒNG LỖI Ở ĐÂY
+            if (!data || (!data.id && !data.maTaiKhoan)) { 
+                return; 
+            }
+
+            // Render dòng hợp lệ
+            tableBody.innerHTML += `
+                <tr>
+                    <td>${data.maTaiKhoan || data.id}</td>
+                    <td>${data.ten || 'Chưa cập nhật'}</td>
+                    <td>${data.role || 'Thành viên'}</td>
+                    <td>
+                        <button class="btn-action btn-edit">Đổi MK</button>
+                        <button class="btn-action btn-delete" onclick="deleteAccount('${childSnapshot.key}')">Xóa</button>
+                    </td>
+                </tr>
+            `;
+        });
+    });
+}
+
+// Gọi hàm load dữ liệu khi trang web sẵn sàng
+loadAccountData();
 /* ====================================================
    2. KHỔI TẠO TÀI KHOẢN GỐC TRÊN CLOUD
    ==================================================== */
