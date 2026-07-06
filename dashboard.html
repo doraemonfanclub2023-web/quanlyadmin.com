@@ -380,7 +380,7 @@ window.deleteNotice = async function(key) {
 };
 
 // ==========================================
-// QUẢN LÝ VĂN BẢN (TÍNH NĂNG MỚI 1)
+// QUẢN LÝ VĂN BẢN
 // ==========================================
 function getDocumentsPage(user) {
     const canManage = user.role !== "Admin";
@@ -581,7 +581,7 @@ window.searchDocuments = function() {
 };
 
 // ==========================================
-// QUẢN LÝ TEST KỸ NĂNG (TÍNH NĂNG MỚI 2)
+// QUẢN LÝ TEST KỸ NĂNG
 // ==========================================
 function getTestsPage(user) {
     const canManage = user.role !== "Admin";
@@ -690,10 +690,8 @@ window.startTest = async function(key) {
         }
         const test = snapshot.val();
         
-        // Mô phỏng làm bài test (demo)
         const answer = confirm(`📝 ${test.title}\n\n${test.desc}\n\nSố câu hỏi: ${test.questions}\nĐiểm đạt: ${test.passScore}%\n\nBắt đầu làm test?`);
         if (answer) {
-            // Demo: random điểm
             const score = Math.floor(Math.random() * 100) + 1;
             const result = score >= test.passScore ? "✅ Đạt" : "❌ Không đạt";
             const rank = score >= 90 ? "🏆 Xuất sắc" : 
@@ -703,7 +701,6 @@ window.startTest = async function(key) {
             
             alert(`📊 KẾT QUẢ\n\nĐiểm: ${score}/100\nXếp loại: ${rank}\nKết quả: ${result}`);
             
-            // Lưu kết quả
             await push(ref(db, "testResults"), {
                 testId: key,
                 username: currentUser.username,
@@ -720,7 +717,7 @@ window.startTest = async function(key) {
 };
 
 // ==========================================
-// GAME NỘI BỘ (TÍNH NĂNG MỚI 3)
+// GAME NỘI BỘ
 // ==========================================
 function getGamesPage(user) {
     const canManage = user.role !== "Admin";
@@ -827,7 +824,6 @@ window.playGame = async function(key) {
         
         const answer = confirm(`🎮 ${game.title}\n\n${game.desc}\n\nThể loại: ${game.type}\n\nBắt đầu chơi?`);
         if (answer) {
-            // Demo: random điểm
             const score = Math.floor(Math.random() * 100) + 1;
             alert(`🎯 KẾT QUẢ\n\nĐiểm: ${score}/100\n🏆 Xếp hạng: ${score >= 80 ? "Huyền thoại" : score >= 60 ? "Chiến binh" : "Tân binh"}`);
             
