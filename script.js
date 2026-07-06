@@ -578,7 +578,7 @@ window.listenToUserTable = function() {
 window.addAccount = async function() {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
 
-    // Chỉ BQT hoặc Dev mới được tạo tài khoản
+    // Chỉ BQT mới được tạo tài khoản
     if (!currentUser || currentUser.role === 'Admin') {
         return alert('⛔ Bạn không có quyền thêm tài khoản!');
     }
@@ -597,7 +597,6 @@ window.addAccount = async function() {
         currentUser.role === 'Ban Quản Trị' &&
         role === 'Ban Quản Trị'
     ) {
-        return alert('⛔ Chỉ Dev mới được tạo tài khoản Ban Quản Trị!');
     }
 
     // Kiểm tra tài khoản đã tồn tại chưa
