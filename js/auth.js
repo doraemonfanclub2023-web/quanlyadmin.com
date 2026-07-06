@@ -1,53 +1,59 @@
-import {
-    db,
-    ref,
-    get
-} from "./firebase.js";
+import { db, ref, get } from "./firebase.js";
 
-window.login = async function () {
-
-    const username =
-        document.getElementById("username").value.trim();
-
-    const password =
-        document.getElementById("password").value.trim();
+// ===== ĐĂNG NHẬP =====
+window.login = async function() {
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const errorBox = document.getElementById("errorBox");
 
     if (!username || !password) {
-        alert("Vui lòng nhập đầy đủ thông tin!");
+        errorBox.textContent = "⚠️ Vui lòng nhập đầy đủ thông tin!";
         return;
     }
 
     try {
-
-        const snapshot =
-            await get(ref(db, `users/${username}`));
+        const snapshot = await get(ref(db, `users/${username}`));
 
         if (!snapshot.exists()) {
-            alert("Sai tài khoản hoặc mật khẩu!");
+            errorBox.textContent = "❌ Sai tài khoản hoặc mật khẩu!";
             return;
         }
 
         const user = snapshot.val();
 
         if (user.password !== password) {
-            alert("Sai tài khoản hoặc mật khẩu!");
+            errorBox.textContent = "❌ Sai tài khoản hoặc mật khẩu!";
             return;
         }
 
-        localStorage.setItem(
-            "currentUser",
-            JSON.stringify(user)
-        );
-
-        window.location.href =
-            "dashboard.html";
+        localStorage.setItem("currentUser", JSON.stringify(user));
+        window.location.href = "dashboard.html";
 
     } catch (err) {
-
-        console.error(err);
-
-        alert(
-            "Không thể kết nối Firebase!"
-        );
+        console.error("Lỗi đăng nhập:", err);
+        errorBox.textContent = "⚠️ Không thể kết nối Firebase!";
     }
 };
+
+// ===== ĐĂNG XUẤT =====
+window.logout = function() {
+    localStorage.removeItem("currentUser");
+    window.location.href = "index.html";
+};
+
+// ===== XỬ LÝ ENTER =====
+document.addEventListener("DOMContentLoaded", function() {
+    const passwordInput = document.getElementById("password");
+    if (passwordInput) {
+        passwordInput.addEventListener("keydown", function(e) {
+            if (e.key === "Enter") {
+                document.getElementById("loginBtn")?.click();
+            }
+        });
+    }
+
+    const loginBtn = document.getElementById("loginBtn");
+    if (loginBtn) {
+        loginBtn.addEventListener("click", window.login);
+    }
+});
