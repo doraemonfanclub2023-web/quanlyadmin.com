@@ -1,222 +1,1222 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+// ============================================================
+// FIREBASE IMPORT
+// ============================================================
+import { db, ref, get, set, update, remove, push, onValue } from "./firebase.js";
 
-import {
-    getDatabase,
-    ref,
-    get,
-    set,
-    remove,
-    onValue
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyC-U9L1plaQ6pcP7Iecg4RO0GirBjunISM",
-    authDomain: "admin-27099.firebaseapp.com",
-    databaseURL: "https://admin-27099-default-rtdb.firebaseio.com",
-    projectId: "admin-27099",
-    storageBucket: "admin-27099.firebasestorage.app",
-    messagingSenderId: "510976750235",
-    appId: "1:510976750235:web:78d3e138d302235a788c3e"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-async function createDefaultAccounts() {
-
-    const snapshot = await get(ref(db, "users"));
-
-    if (!snapshot.exists()) {
-
-        await set(ref(db, "users"), {
-
-            BQT001: {
-                username: "BQT001",
-                password: "123",
-                name: "Nguyễn Tuấn Khải",
-                role: "Ban Quản Trị"
-            },
-
-            BQT002: {
-                username: "BQT002",
-                password: "123",
-                name: "Cao Ngọc Duyên",
-                role: "Admin"
-            }
-
-        });
+// ============================================================
+// KIỂM TRA ĐĂNG NHẬP
+// ============================================================
+function checkAuth() {
+    const user = JSON.parse(localStorage.getItem("currentUser"));
+    if (!user) {
+        window.location.href = "index.html";
+        return null;
     }
+    return user;
 }
 
-createDefaultAccounts();
-
-window.login = async function () {
-
-    const username =
-        document.getElementById("username")?.value.trim();
-
-    const password =
-        document.getElementById("password")?.value.trim();
-
-    const error =
-        document.getElementById("error");
-
-    if (!username || !password) {
-        return;
-    }
-
-    try {
-
-        const snapshot =
-            await get(ref(db, `users/${username}`));
-
-        if (!snapshot.exists()) {
-
-            if (error) {
-                error.style.display = "block";
-            }
-
-            return;
-        }
-
-        const user = snapshot.val();
-
-        if (user.password !== password) {
-
-            if (error) {
-                error.style.display = "block";
-            }
-
-            return;
-        }
-
-        localStorage.setItem(
-            "currentUser",
-            JSON.stringify(user)
-        );
-
-        window.location.href = "dashboard.html";
-
-    } catch (err) {
-
-        console.error(err);
-
-        alert("Lỗi kết nối Firebase");
-    }
+// ============================================================
+// TOGGLE MENU CHO MOBILE
+// ============================================================
+window.toggleMenu = function() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    if (sidebar) sidebar.classList.toggle('open');
+    if (overlay) overlay.classList.toggle('active');
 };
 
-window.logout = function () {
+// ============================================================
+// KHỞI TẠO
+// ============================================================
+document.addEventListener("DOMContentLoaded", function() {
+    const user = checkAuth();
+    if (!user) return;
 
-    localStorage.removeItem("currentUser");
+    document.querySelector(".user-info .name").textContent = user.name || user.username;
+    document.querySelector(".user-info .role").textContent = user.role || "Admin";
 
-    window.location.href = "index.html";
-};
-
-window.addAccount = async function () {
-
-    const currentUser =
-        JSON.parse(localStorage.getItem("currentUser"));
-
-    if (!currentUser) {
-        return alert("Chưa đăng nhập");
-    }
-
-    if (currentUser.role === "Admin") {
-        return alert("Không đủ quyền");
-    }
-
-    const username =
-        document.getElementById("newUsername")?.value.trim();
-
-    const name =
-        document.getElementById("newName")?.value.trim();
-
-    const password =
-        document.getElementById("newPassword")?.value.trim();
-
-    const role =
-        document.getElementById("newRole")?.value;
-
-    if (!username || !password) {
-        return alert("Thiếu thông tin");
-    }
-
-    const check =
-        await get(ref(db, `users/${username}`));
-
-    if (check.exists()) {
-        return alert("Tài khoản đã tồn tại");
-    }
-
-    await set(ref(db, `users/${username}`), {
-
-        username,
-        name,
-        password,
-        role
-
+    document.querySelectorAll(".sidebar nav a").forEach(link => {
+        link.addEventListener("click", function(e) {
+            e.preventDefault();
+            const page = this.dataset.page;
+            if (page) {
+                window.showPage(page);
+                if (window.innerWidth <= 768) {
+                    window.toggleMenu();
+                }
+            }
+        });
     });
 
-    alert("Tạo thành công");
-};
+    window.showPage("home");
+});
 
-window.deleteAccount = async function (username) {
-
-    const currentUser =
-        JSON.parse(localStorage.getItem("currentUser"));
-
-    if (!currentUser) return;
-
-    if (currentUser.role === "Admin") {
-        return alert("Không đủ quyền");
+// Tự động đóng menu khi resize lên desktop
+window.addEventListener('resize', function() {
+    if (window.innerWidth > 768) {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.querySelector('.sidebar-overlay');
+        if (sidebar) sidebar.classList.remove('open');
+        if (overlay) overlay.classList.remove('active');
     }
+});
 
-    if (!confirm("Xóa tài khoản?")) {
+// ============================================================
+// HÀM SHOW PAGE CHÍNH
+// ============================================================
+window.showPage = function(pageId) {
+    const user = checkAuth();
+    if (!user) return;
+
+    if (pageId === "settings" && user.role !== "Ban Quản Trị") {
+        alert("⛔ Bạn không có quyền truy cập Cài đặt!");
         return;
     }
 
-    await remove(ref(db, `users/${username}`));
+    document.querySelectorAll(".sidebar nav a").forEach(el => el.classList.remove("active"));
+    const menu = document.querySelector(`.sidebar nav a[data-page="${pageId}"]`);
+    if (menu) menu.classList.add("active");
 
-    alert("Đã xóa");
+    const titles = {
+        home: "🏠 Trang chủ",
+        users: "👥 Quản lý thành viên",
+        notices: "📢 Quản lý thông báo",
+        documents: "📄 Quản lý văn bản",
+        tests: "📝 Quản lý test kỹ năng",
+        games: "🎮 Game nội bộ",
+        settings: "⚙️ Cài đặt hệ thống",
+        profile: "👤 Hồ sơ cá nhân"
+    };
+    document.getElementById("pageTitle").textContent = titles[pageId] || "Trang";
+
+    const content = document.getElementById("pageContent");
+    if (!content) return;
+
+    const pages = {
+        home: getHomePage(),
+        users: getUsersPage(user),
+        notices: getNoticesPage(user),
+        documents: getDocumentsPage(user),
+        tests: getTestsPage(user),
+        games: getGamesPage(user),
+        settings: getSettingsPage(user),
+        profile: getProfilePage(user)
+    };
+
+    content.innerHTML = pages[pageId] || "<h2>Trang đang phát triển</h2>";
+
+    if (pageId === "home") loadHomeData();
+    if (pageId === "users") loadUsers();
+    if (pageId === "notices") loadNotices();
+    if (pageId === "documents") loadDocuments();
+    if (pageId === "tests") loadTests();
+    if (pageId === "games") { loadGames(); loadScores(); initGameCanvas(); }
+    if (pageId === "settings") loadSettings();
+    if (pageId === "profile") loadProfile();
 };
 
-window.loadUsers = function () {
+// ============================================================
+// TRANG CHỦ
+// ============================================================
+function getHomePage() {
+    return `
+        <div class="cards">
+            <div class="card" onclick="window.showPage('users')" style="cursor:pointer;">
+                <h3>👥 Thành viên</h3>
+                <h1 id="totalUsers">...</h1>
+            </div>
+            <div class="card" onclick="window.showPage('notices')" style="cursor:pointer;">
+                <h3>📢 Thông báo</h3>
+                <h1 id="totalNotices">...</h1>
+            </div>
+            <div class="card" onclick="window.showPage('documents')" style="cursor:pointer;">
+                <h3>📄 Văn bản</h3>
+                <h1 id="totalDocs">...</h1>
+            </div>
+            <div class="card" onclick="window.showPage('tests')" style="cursor:pointer;">
+                <h3>📝 Bài test</h3>
+                <h1 id="totalTests">...</h1>
+            </div>
+        </div>
+        <div class="account-form-box">
+            <h3>📋 Hoạt động gần đây</h3>
+            <div id="recentActivities">🟢 Hệ thống đang hoạt động bình thường</div>
+        </div>
+    `;
+}
 
-    const tbody =
-        document.getElementById("userTableBody");
+function loadHomeData() {
+    onValue(ref(db, "users"), s => document.getElementById("totalUsers").textContent = s.exists() ? Object.keys(s.val()).length : "0");
+    onValue(ref(db, "notices"), s => document.getElementById("totalNotices").textContent = s.exists() ? Object.keys(s.val()).length : "0");
+    onValue(ref(db, "documents"), s => document.getElementById("totalDocs").textContent = s.exists() ? Object.keys(s.val()).length : "0");
+    onValue(ref(db, "tests"), s => document.getElementById("totalTests").textContent = s.exists() ? Object.keys(s.val()).length : "0");
+}
 
+// ============================================================
+// QUẢN LÝ THÀNH VIÊN
+// ============================================================
+function getUsersPage(user) {
+    const canManage = user.role !== "Admin";
+    let html = `<h2>👥 Quản lý thành viên</h2>`;
+    if (canManage) {
+        html += `
+            <div class="account-form-box">
+                <h3>➕ Thêm tài khoản mới</h3>
+                <div class="inline-form">
+                    <input type="text" id="newUsername" placeholder="Mã tài khoản" />
+                    <input type="text" id="newName" placeholder="Họ và tên" />
+                    <input type="password" id="newPassword" placeholder="Mật khẩu" />
+                    <select id="newRole">
+                        <option value="Admin">Admin</option>
+                        <option value="Ban Quản Trị">Ban Quản Trị</option>
+                    </select>
+                    <button onclick="window.addAccount()" class="btn-create">Tạo</button>
+                </div>
+            </div>
+        `;
+    } else {
+        html += `<p style="color:#94a3b8; margin-bottom:16px;">🔒 Bạn ở chế độ chỉ xem.</p>`;
+    }
+    html += `
+        <div class="table-container">
+            <table class="table">
+                <thead><tr><th>Mã</th><th>Tên</th><th>Chức vụ</th><th>Thao tác</th></tr></thead>
+                <tbody id="userTableBody"><tr><td colspan="4">Đang tải...</td></tr></tbody>
+            </table>
+        </div>
+    `;
+    return html;
+}
+
+function loadUsers() {
+    const tbody = document.getElementById("userTableBody");
     if (!tbody) return;
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    const isAdmin = currentUser?.role === "Admin";
 
-    onValue(ref(db, "users"), (snapshot) => {
-
+    onValue(ref(db, "users"), snapshot => {
         tbody.innerHTML = "";
-
-        snapshot.forEach((child) => {
-
+        if (!snapshot.exists()) {
+            tbody.innerHTML = '<tr><td colspan="4">Chưa có tài khoản</td></tr>';
+            return;
+        }
+        snapshot.forEach(child => {
             const u = child.val();
-
+            const key = child.key;
+            let actions = "";
+            if (isAdmin) {
+                actions = '<span class="badge-default">Chỉ xem</span>';
+            } else if (u.username === "BQT001" || u.username === "BQT002") {
+                actions = '<span style="color:#94a3b8;">Hệ thống</span>';
+            } else {
+                actions = `
+                    <button onclick="window.changePassword('${key}')" class="btn-edit">Đổi MK</button>
+                    <button onclick="window.deleteAccount('${key}')" class="btn-delete">Xóa</button>
+                `;
+            }
             tbody.innerHTML += `
                 <tr>
-                    <td>${u.username}</td>
-                    <td>${u.name}</td>
-                    <td>${u.role}</td>
-                    <td>
-                        <button onclick="deleteAccount('${u.username}')">
-                            Xóa
-                        </button>
-                    </td>
+                    <td><strong>${u.username}</strong></td>
+                    <td>${u.name || u.username}</td>
+                    <td>${u.role || "Admin"}</td>
+                    <td>${actions}</td>
                 </tr>
             `;
         });
     });
+}
+
+window.addAccount = async function() {
+    const user = JSON.parse(localStorage.getItem("currentUser"));
+    if (!user || user.role === "Admin") return alert("⛔ Bạn không có quyền thêm tài khoản!");
+    const username = document.getElementById("newUsername")?.value.trim();
+    const name = document.getElementById("newName")?.value.trim();
+    const password = document.getElementById("newPassword")?.value.trim();
+    const role = document.getElementById("newRole")?.value;
+    if (!username || !password) return alert("⚠️ Vui lòng nhập Mã và Mật khẩu!");
+    try {
+        if ((await get(ref(db, 'users/' + username))).exists()) return alert("❌ Mã tài khoản đã tồn tại!");
+        await set(ref(db, 'users/' + username), { username, name: name || username, password, role: role || "Admin" });
+        alert("✅ Tạo tài khoản thành công!");
+        document.getElementById("newUsername").value = "";
+        document.getElementById("newName").value = "";
+        document.getElementById("newPassword").value = "";
+    } catch (e) { console.error(e); alert("⚠️ Lỗi khi tạo tài khoản!"); }
 };
 
-document.addEventListener("DOMContentLoaded", () => {
+window.deleteAccount = async function(username) {
+    const user = JSON.parse(localStorage.getItem("currentUser"));
+    if (!user || user.role === "Admin") return alert("⛔ Bạn không có quyền xóa!");
+    if (username === "BQT001" || username === "BQT002") return alert("⛔ Không thể xóa tài khoản hệ thống!");
+    if (!confirm('Xóa tài khoản "' + username + '"?')) return;
+    try { await remove(ref(db, 'users/' + username)); alert("✅ Đã xóa thành công!"); } catch (e) { console.error(e); alert("⚠️ Lỗi khi xóa!"); }
+};
 
-    const userTable =
-        document.getElementById("userTableBody");
+window.changePassword = async function(username) {
+    const user = JSON.parse(localStorage.getItem("currentUser"));
+    if (!user || user.role === "Admin") return alert("⛔ Bạn không có quyền đổi mật khẩu!");
+    const newPass = prompt('Nhập mật khẩu mới cho "' + username + '":');
+    if (newPass === null) return;
+    const clean = newPass.trim();
+    if (!clean) return alert("⚠️ Mật khẩu không được để trống!");
+    try { await update(ref(db, 'users/' + username), { password: clean }); alert("✅ Đổi mật khẩu thành công!"); } catch (e) { console.error(e); alert("⚠️ Lỗi khi đổi mật khẩu!"); }
+};
 
-    if (userTable) {
-        loadUsers();
+// ============================================================
+// QUẢN LÝ THÔNG BÁO
+// ============================================================
+function getNoticesPage(user) {
+    const canManage = user.role !== "Admin";
+    let html = `<h2>📢 Quản lý thông báo</h2>`;
+    if (canManage) {
+        html += `
+            <div class="account-form-box">
+                <h3>📝 Đăng thông báo mới</h3>
+                <div class="inline-form" style="flex-direction:column; align-items:stretch;">
+                    <input type="text" id="noticeTitle" placeholder="Tiêu đề..." />
+                    <textarea id="noticeContent" placeholder="Nội dung..."></textarea>
+                    <button onclick="window.addNotice()" class="btn-create" style="align-self:flex-start;">Đăng</button>
+                </div>
+            </div>
+        `;
+    } else {
+        html += `<p style="color:#94a3b8; margin-bottom:16px;">🔒 Chế độ chỉ xem.</p>`;
+    }
+    html += `
+        <div class="table-container">
+            <table class="table">
+                <thead><tr><th>Ngày</th><th>Tiêu đề</th><th>Nội dung</th><th>Thao tác</th></tr></thead>
+                <tbody id="noticeTableBody"><tr><td colspan="4">Đang tải...</td></tr></tbody>
+            </table>
+        </div>
+    `;
+    return html;
+}
+
+function loadNotices() {
+    const tbody = document.getElementById("noticeTableBody");
+    if (!tbody) return;
+    const user = JSON.parse(localStorage.getItem("currentUser"));
+    const isAdmin = user?.role === "Admin";
+
+    onValue(ref(db, "notices"), snapshot => {
+        tbody.innerHTML = "";
+        if (!snapshot.exists()) { tbody.innerHTML = '<tr><td colspan="4">Chưa có thông báo</td></tr>'; return; }
+        const notices = [];
+        snapshot.forEach(child => notices.push({ key: child.key, ...child.val() }));
+        notices.reverse().forEach(n => {
+            const actions = isAdmin ? '<span class="badge-default">Chỉ xem</span>' : `<button onclick="window.deleteNotice('${n.key}')" class="btn-delete">Xóa</button>`;
+            tbody.innerHTML += `<tr><td>${n.date || "N/A"}</td><td><strong>${n.title}</strong></td><td>${n.content || ""}</td><td>${actions}</td></tr>`;
+        });
+    });
+}
+
+window.addNotice = async function() {
+    const user = JSON.parse(localStorage.getItem("currentUser"));
+    if (!user || user.role === "Admin") return alert("⛔ Bạn không có quyền đăng thông báo!");
+    const title = document.getElementById("noticeTitle")?.value.trim();
+    const content = document.getElementById("noticeContent")?.value.trim();
+    if (!title || !content) return alert("⚠️ Vui lòng nhập tiêu đề và nội dung!");
+    try {
+        const d = new Date();
+        const date = String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear();
+        await push(ref(db, "notices"), { title, content, date, author: user.name || user.username });
+        alert("✅ Đăng thông báo thành công!");
+        document.getElementById("noticeTitle").value = "";
+        document.getElementById("noticeContent").value = "";
+    } catch (e) { console.error(e); alert("⚠️ Lỗi khi đăng thông báo!"); }
+};
+
+window.deleteNotice = async function(key) {
+    const user = JSON.parse(localStorage.getItem("currentUser"));
+    if (!user || user.role === "Admin") return alert("⛔ Bạn không có quyền xóa!");
+    if (!confirm("Xóa thông báo này?")) return;
+    try { await remove(ref(db, 'notices/' + key)); alert("✅ Đã xóa!"); } catch (e) { console.error(e); alert("⚠️ Lỗi khi xóa!"); }
+};
+
+// ============================================================
+// QUẢN LÝ VĂN BẢN
+// ============================================================
+function getDocumentsPage(user) {
+    const canManage = user.role !== "Admin";
+    let html = `<h2>📄 Quản lý văn bản hành chính</h2>`;
+    if (canManage) {
+        html += `
+            <div class="account-form-box">
+                <h3>📝 Thêm văn bản mới</h3>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                        <input type="text" id="docSoVanBan" placeholder="Số văn bản (VD: 06/QĐ-BQT)" style="flex:1;" />
+                        <select id="docLoai" style="flex:1;">
+                            <option value="Quyết định">📄 Quyết định</option>
+                            <option value="Công văn">📨 Công văn</option>
+                            <option value="Nghị quyết">📋 Nghị quyết</option>
+                            <option value="Biên bản">📑 Biên bản</option>
+                            <option value="Quy chế">⚖️ Quy chế</option>
+                        </select>
+                    </div>
+                    <input type="text" id="docTieuDe" placeholder="Tiêu đề văn bản..." />
+                    <textarea id="docNoiDung" placeholder="Nội dung văn bản..." style="min-height:100px;"></textarea>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                        <input type="text" id="docNguoiKy" placeholder="Người ký..." style="flex:1;" />
+                        <input type="date" id="docNgayBanHanh" style="flex:1;" />
+                    </div>
+                    <button onclick="window.addDocument()" class="btn-create" style="align-self:flex-start;">📤 Đăng văn bản</button>
+                </div>
+            </div>
+        `;
+    } else {
+        html += `<p style="color:#94a3b8; margin-bottom:16px;">🔒 Chế độ chỉ xem văn bản.</p>`;
+    }
+    html += `
+        <div style="margin-bottom:16px; display:flex; gap:12px; flex-wrap:wrap;">
+            <input type="text" id="docSearch" placeholder="🔍 Tìm kiếm theo số, tiêu đề..." style="padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; flex:1; min-width:200px;" />
+            <select id="docFilterType" style="padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px;">
+                <option value="all">📋 Tất cả loại</option>
+                <option value="Quyết định">📄 Quyết định</option>
+                <option value="Công văn">📨 Công văn</option>
+                <option value="Nghị quyết">📋 Nghị quyết</option>
+                <option value="Biên bản">📑 Biên bản</option>
+                <option value="Quy chế">⚖️ Quy chế</option>
+            </select>
+            <button onclick="window.searchDocuments()" class="btn-create">Tìm kiếm</button>
+        </div>
+        <div class="table-container">
+            <table class="table">
+                <thead><tr><th>Số văn bản</th><th>Loại</th><th>Tiêu đề</th><th>Ngày ban hành</th><th>Người ký</th><th>Thao tác</th></tr></thead>
+                <tbody id="docTableBody"><tr><td colspan="6">Đang tải...</td></tr></tbody>
+            </table>
+        </div>
+    `;
+    return html;
+}
+
+function loadDocuments() {
+    const tbody = document.getElementById("docTableBody");
+    if (!tbody) return;
+    const user = JSON.parse(localStorage.getItem("currentUser"));
+    const isAdmin = user?.role === "Admin";
+    const colors = { "Quyết định": "#3b82f6", "Công văn": "#10b981", "Nghị quyết": "#f59e0b", "Biên bản": "#8b5cf6", "Quy chế": "#ef4444" };
+
+    onValue(ref(db, "documents"), snapshot => {
+        tbody.innerHTML = "";
+        if (!snapshot.exists()) { tbody.innerHTML = '<tr><td colspan="6">Chưa có văn bản nào</td></tr>'; return; }
+        const docs = [];
+        snapshot.forEach(child => docs.push({ key: child.key, ...child.val() }));
+        docs.reverse().forEach(doc => {
+            const actions = isAdmin ? '<span class="badge-default">Chỉ xem</span>' : `<button onclick="window.deleteDocument('${doc.key}')" class="btn-delete">Xóa</button>`;
+            const color = colors[doc.loai] || "#64748b";
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${doc.soVanBan || "N/A"}</strong></td>
+                    <td><span style="background:${color}; color:white; padding:2px 10px; border-radius:12px; font-size:12px;">${doc.loai || "Khác"}</span></td>
+                    <td>${doc.tieuDe || ""}</td>
+                    <td>${doc.ngayBanHanh || "N/A"}</td>
+                    <td>${doc.nguoiKy || "N/A"}</td>
+                    <td>${actions}</td>
+                </tr>
+            `;
+        });
+    });
+}
+
+window.addDocument = async function() {
+    const user = JSON.parse(localStorage.getItem("currentUser"));
+    if (!user || user.role === "Admin") return alert("⛔ Bạn không có quyền thêm văn bản!");
+    const so = document.getElementById("docSoVanBan")?.value.trim();
+    const loai = document.getElementById("docLoai")?.value;
+    const tieuDe = document.getElementById("docTieuDe")?.value.trim();
+    const noiDung = document.getElementById("docNoiDung")?.value.trim();
+    const nguoiKy = document.getElementById("docNguoiKy")?.value.trim();
+    const ngay = document.getElementById("docNgayBanHanh")?.value;
+    if (!so || !tieuDe || !noiDung) return alert("⚠️ Vui lòng nhập Số văn bản, Tiêu đề và Nội dung!");
+    try {
+        await push(ref(db, "documents"), { soVanBan: so, loai: loai || "Khác", tieuDe, noiDung, nguoiKy: nguoiKy || user.name || user.username, ngayBanHanh: ngay || new Date().toISOString().split("T")[0], trangThai: "Hiệu lực", createdAt: new Date().toISOString() });
+        alert("✅ Đăng văn bản thành công!");
+        document.getElementById("docSoVanBan").value = "";
+        document.getElementById("docTieuDe").value = "";
+        document.getElementById("docNoiDung").value = "";
+        document.getElementById("docNguoiKy").value = "";
+        document.getElementById("docNgayBanHanh").value = "";
+    } catch (e) { console.error(e); alert("⚠️ Lỗi khi đăng văn bản!"); }
+};
+
+window.deleteDocument = async function(key) {
+    const user = JSON.parse(localStorage.getItem("currentUser"));
+    if (!user || user.role === "Admin") return alert("⛔ Bạn không có quyền xóa văn bản!");
+    if (!confirm("Xóa văn bản này?")) return;
+    try { await remove(ref(db, 'documents/' + key)); alert("✅ Đã xóa văn bản!"); } catch (e) { console.error(e); alert("⚠️ Lỗi khi xóa!"); }
+};
+
+window.searchDocuments = function() {
+    const keyword = document.getElementById("docSearch")?.value.trim().toLowerCase();
+    const filter = document.getElementById("docFilterType")?.value;
+    if (!keyword && filter === "all") { loadDocuments(); return; }
+    const tbody = document.getElementById("docTableBody");
+    if (!tbody) return;
+    const colors = { "Quyết định": "#3b82f6", "Công văn": "#10b981", "Nghị quyết": "#f59e0b", "Biên bản": "#8b5cf6", "Quy chế": "#ef4444" };
+    get(ref(db, "documents")).then(snapshot => {
+        tbody.innerHTML = "";
+        if (!snapshot.exists()) { tbody.innerHTML = '<tr><td colspan="6">Không có kết quả</td></tr>'; return; }
+        let found = false;
+        snapshot.forEach(child => {
+            const doc = child.val();
+            let match = true;
+            if (filter !== "all" && doc.loai !== filter) match = false;
+            if (keyword && !doc.soVanBan?.toLowerCase().includes(keyword) && !doc.tieuDe?.toLowerCase().includes(keyword)) match = false;
+            if (match) {
+                found = true;
+                const color = colors[doc.loai] || "#64748b";
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${doc.soVanBan || "N/A"}</strong></td>
+                        <td><span style="background:${color}; color:white; padding:2px 10px; border-radius:12px; font-size:12px;">${doc.loai || "Khác"}</span></td>
+                        <td>${doc.tieuDe || ""}</td>
+                        <td>${doc.ngayBanHanh || "N/A"}</td>
+                        <td>${doc.nguoiKy || "N/A"}</td>
+                        <td><button onclick="alert('📄 ${doc.tieuDe}\\n\\n${doc.noiDung || "Không có nội dung"}')" class="btn-edit">Xem</button></td>
+                    </tr>
+                `;
+            }
+        });
+        if (!found) tbody.innerHTML = '<tr><td colspan="6">Không tìm thấy văn bản phù hợp</td></tr>';
+    }).catch(() => tbody.innerHTML = '<tr><td colspan="6">⚠️ Lỗi tìm kiếm</td></tr>');
+};
+
+// ============================================================
+// QUẢN LÝ TEST KỸ NĂNG
+// ============================================================
+function getTestsPage(user) {
+    const canManage = user.role === "Ban Quản Trị";
+    let html = `<h2>📝 Quản lý test kỹ năng</h2>`;
+    if (canManage) {
+        html += `
+            <div class="account-form-box">
+                <h3>📝 Tạo bài test mới</h3>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <input type="text" id="testTitle" placeholder="Tiêu đề bài test" />
+                    <textarea id="testDesc" placeholder="Mô tả..." style="min-height:60px;"></textarea>
+                    <input type="number" id="testPassScore" placeholder="Điểm đạt (VD: 50)" style="flex:1;" />
+                    <div style="border:1px solid #e2e8f0; border-radius:8px; padding:16px; background:#f8fafc;">
+                        <h4>📝 Nhập câu hỏi</h4>
+                        <p style="font-size:13px; color:#64748b;">Dùng * trước đáp án đúng (VD: *b. Đáp án đúng)</p>
+                        <textarea id="testQuestionsInput" placeholder='Câu 1: Nội dung câu hỏi?\na. Đáp án A\n*b. Đáp án B\nc. Đáp án C\nd. Đáp án D' style="min-height:150px; width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:8px; font-family:monospace;"></textarea>
+                        <button onclick="window.previewQuestions()" class="btn-edit" style="background:#8b5cf6;">👁️ Xem trước</button>
+                        <span id="questionCount" style="color:#64748b; font-size:13px; margin-left:10px;">Số câu hỏi: 0</span>
+                        <div id="questionPreview" style="margin-top:10px; background:white; padding:12px; border-radius:6px; border:1px solid #e2e8f0; display:none;"></div>
+                    </div>
+                    <button onclick="window.addTest()" class="btn-create" style="align-self:flex-start;">📤 Tạo test</button>
+                </div>
+            </div>
+        `;
+    } else {
+        html += `<p style="color:#94a3b8;">🔒 Chỉ Ban Quản Trị mới được tạo/sửa/xóa test.</p>`;
+    }
+    html += `
+        <div class="table-container">
+            <table class="table">
+                <thead><tr><th>Tiêu đề</th><th>Mô tả</th><th>Số câu</th><th>Điểm đạt</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead>
+                <tbody id="testTableBody"><tr><td colspan="6">Đang tải...</td></tr></tbody>
+            </table>
+        </div>
+    `;
+    return html;
+}
+
+window.parseQuestions = function(text) {
+    const lines = text.split('\n');
+    const questions = [];
+    let currentQ = null;
+    let currentOpts = [];
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        const qMatch = trimmed.match(/^(Câu\s*)?(\d+)[:\.]\s*(.*)/i);
+        if (qMatch) {
+            if (currentQ && currentOpts.length > 0) questions.push({ question: currentQ, options: currentOpts });
+            currentQ = qMatch[3] || trimmed;
+            currentOpts = [];
+        } else {
+            const oMatch = trimmed.match(/^([a-d])[\.\)]\s*(.*)/i);
+            if (oMatch && currentQ !== null) {
+                let opt = oMatch[1] + '. ' + oMatch[2];
+                if (oMatch[2].trim().startsWith('*')) opt = '*' + oMatch[1] + '. ' + oMatch[2].trim().substring(1).trim();
+                currentOpts.push(opt);
+            } else {
+                if (currentQ !== null && currentOpts.length === 0) currentQ += ' ' + trimmed;
+            }
+        }
+    }
+    if (currentQ && currentOpts.length > 0) questions.push({ question: currentQ, options: currentOpts });
+    return questions;
+};
+
+window.previewQuestions = function() {
+    const input = document.getElementById("testQuestionsInput")?.value;
+    const preview = document.getElementById("questionPreview");
+    const count = document.getElementById("questionCount");
+    if (!input || !input.trim()) { preview.style.display = "none"; count.textContent = "Số câu hỏi: 0"; return; }
+    const qs = window.parseQuestions(input);
+    count.textContent = "Số câu hỏi: " + qs.length;
+    if (qs.length === 0) { preview.style.display = "block"; preview.innerHTML = '<p style="color:#ef4444;">⚠️ Không tìm thấy câu hỏi hợp lệ!</p>'; return; }
+    let html = '<div style="max-height:300px; overflow-y:auto;">';
+    qs.forEach((q, idx) => {
+        html += `<div style="padding:8px 0; border-bottom:1px solid #f1f5f9;"><strong>Câu ${idx+1}:</strong> ${q.question}<div style="margin-left:20px; font-size:13px;">`;
+        q.options.forEach(opt => {
+            const isCorrect = opt.startsWith('*');
+            html += `<div style="${isCorrect ? 'color:#10b981; font-weight:600;' : 'color:#475569;'}">${isCorrect ? '✅ ' : '○ '}${isCorrect ? opt.substring(1) : opt}</div>`;
+        });
+        html += '</div></div>';
+    });
+    html += '</div>';
+    preview.style.display = "block";
+    preview.innerHTML = html;
+};
+
+window.addTest = async function() {
+    const user = JSON.parse(localStorage.getItem("currentUser"));
+    if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền tạo test!");
+    const title = document.getElementById("testTitle")?.value.trim();
+    const desc = document.getElementById("testDesc")?.value.trim();
+    const passScore = parseInt(document.getElementById("testPassScore")?.value) || 50;
+    const qText = document.getElementById("testQuestionsInput")?.value;
+    if (!title || !desc) return alert("⚠️ Vui lòng nhập tiêu đề và mô tả!");
+    if (!qText || !qText.trim()) return alert("⚠️ Vui lòng nhập câu hỏi!");
+    const qs = window.parseQuestions(qText);
+    if (qs.length === 0) return alert("⚠️ Không tìm thấy câu hỏi hợp lệ!");
+    for (let i = 0; i < qs.length; i++) {
+        if (qs[i].options.length < 4) return alert("⚠️ Câu " + (i + 1) + " thiếu đáp án!");
+        if (!qs[i].options.some(o => o.startsWith('*'))) return alert("⚠️ Câu " + (i + 1) + " chưa có đáp án đúng!");
+    }
+    try {
+        await push(ref(db, "tests"), { title, desc, questions: qs, passScore, totalQuestions: qs.length, createdBy: user.username, createdAt: new Date().toISOString() });
+        alert("✅ Tạo bài test thành công! (" + qs.length + " câu hỏi)");
+        document.getElementById("testTitle").value = "";
+        document.getElementById("testDesc").value = "";
+        document.getElementById("testPassScore").value = "";
+        document.getElementById("testQuestionsInput").value = "";
+        document.getElementById("questionPreview").style.display = "none";
+        document.getElementById("questionCount").textContent = "Số câu hỏi: 0";
+    } catch (e) { console.error(e); alert("⚠️ Lỗi khi tạo test!"); }
+};
+
+window.editTest = async function(key) {
+    const user = JSON.parse(localStorage.getItem("currentUser"));
+    if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền sửa test!");
+    try {
+        const snap = await get(ref(db, 'tests/' + key));
+        if (!snap.exists()) return alert("Bài test không tồn tại!");
+        const test = snap.val();
+        const newTitle = prompt("✏️ Sửa tiêu đề:", test.title);
+        if (newTitle === null) return;
+        const newDesc = prompt("✏️ Sửa mô tả:", test.desc);
+        if (newDesc === null) return;
+        const newPass = prompt("✏️ Sửa điểm đạt:", test.passScore);
+        if (newPass === null) return;
+        let qText = "";
+        test.questions.forEach((q, idx) => {
+            qText += "Câu " + (idx + 1) + ": " + q.question + "\n";
+            q.options.forEach(o => qText += o + "\n");
+            qText += "\n";
+        });
+        const newQ = prompt("✏️ Sửa câu hỏi:", qText);
+        if (newQ === null) return;
+        const qs = window.parseQuestions(newQ);
+        if (qs.length === 0) return alert("⚠️ Không tìm thấy câu hỏi hợp lệ!");
+        for (let i = 0; i < qs.length; i++) {
+            if (qs[i].options.length < 4) return alert("⚠️ Câu " + (i + 1) + " thiếu đáp án!");
+            if (!qs[i].options.some(o => o.startsWith('*'))) return alert("⚠️ Câu " + (i + 1) + " chưa có đáp án đúng!");
+        }
+        await update(ref(db, 'tests/' + key), { title: newTitle.trim(), desc: newDesc.trim(), questions: qs, passScore: parseInt(newPass) || 50, totalQuestions: qs.length, updatedAt: new Date().toISOString(), updatedBy: user.username });
+        alert("✅ Cập nhật test thành công!");
+        window.showPage('tests');
+    } catch (e) { console.error(e); alert("⚠️ Lỗi khi sửa test!"); }
+};
+
+window.deleteTest = async function(key) {
+    const user = JSON.parse(localStorage.getItem("currentUser"));
+    if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền xóa test!");
+    if (!confirm("Xóa bài test này?")) return;
+    try { await remove(ref(db, 'tests/' + key)); alert("✅ Đã xóa test!"); } catch (e) { console.error(e); alert("⚠️ Lỗi khi xóa test!"); }
+};
+
+window.startTest = async function(key) {
+    const user = JSON.parse(localStorage.getItem("currentUser"));
+    if (!user) return;
+    try {
+        const snap = await get(ref(db, 'tests/' + key));
+        if (!snap.exists()) return alert("Bài test không tồn tại!");
+        const test = snap.val();
+        if (!test.questions || test.questions.length === 0) return alert("Bài test không có câu hỏi!");
+        if (!confirm('📝 ' + test.title + '\n\n' + test.desc + '\n\nSố câu hỏi: ' + test.questions.length + '\nĐiểm đạt: ' + test.passScore + '%\n\nBắt đầu làm test?')) return;
+        let score = 0;
+        const answers = [];
+        for (let i = 0; i < test.questions.length; i++) {
+            const q = test.questions[i];
+            const opts = q.options.map((o, idx) => String.fromCharCode(65 + idx) + '. ' + (o.startsWith('*') ? o.substring(1) : o)).join('\n');
+            let ans = prompt('📝 Câu ' + (i + 1) + '/' + test.questions.length + '\n\n' + q.question + '\n\n' + opts + '\n\nNhập đáp án (A, B, C, D):');
+            if (ans === null) break;
+            ans = ans.trim().toUpperCase();
+            let idx = -1;
+            if (ans === 'A') idx = 0;
+            else if (ans === 'B') idx = 1;
+            else if (ans === 'C') idx = 2;
+            else if (ans === 'D') idx = 3;
+            if (idx === -1 || idx >= q.options.length) { i--; continue; }
+            const correct = q.options[idx].startsWith('*');
+            if (correct) score++;
+            answers.push({ question: q.question, selected: q.options[idx], correct });
+        }
+        const finalScore = Math.round((score / test.questions.length) * 100);
+        const passed = finalScore >= test.passScore;
+        const rank = finalScore >= 90 ? "🏆 Xuất sắc" : finalScore >= 75 ? "⭐ Giỏi" : finalScore >= 50 ? "📖 Khá" : finalScore >= 30 ? "📝 Trung bình" : "❌ Yếu";
+        let msg = '📊 KẾT QUẢ\n\nĐiểm: ' + finalScore + '/100\nXếp loại: ' + rank + '\nKết quả: ' + (passed ? "✅ Đạt" : "❌ Không đạt") + '\nTrả lời đúng: ' + score + '/' + test.questions.length + ' câu\n\n';
+        answers.forEach((a, idx) => msg += 'Câu ' + (idx + 1) + ': ' + (a.correct ? '✅ Đúng' : '❌ Sai') + '\n   Đáp án: ' + a.selected + '\n');
+        alert(msg);
+        await push(ref(db, "testResults"), { testId: key, testTitle: test.title, username: user.username, userName: user.name || user.username, score: finalScore, correctCount: score, totalQuestions: test.questions.length, rank, result: passed ? "Đạt" : "Không đạt", answers, createdAt: new Date().toISOString() });
+    } catch (e) { console.error(e); alert("⚠️ Lỗi khi làm test!"); }
+};
+
+function loadTests() {
+    const tbody = document.getElementById("testTableBody");
+    if (!tbody) return;
+    const user = JSON.parse(localStorage.getItem("currentUser"));
+    const isBQT = user?.role === "Ban Quản Trị";
+    const isAdmin = user?.role === "Admin";
+
+    onValue(ref(db, "tests"), snapshot => {
+        tbody.innerHTML = "";
+        if (!snapshot.exists()) { tbody.innerHTML = '<tr><td colspan="6">Chưa có bài test nào</td></tr>'; return; }
+        snapshot.forEach(child => {
+            const test = child.val();
+            const key = child.key;
+            let actions = "";
+            if (isAdmin) actions = '<span class="badge-default">Chỉ xem</span>';
+            else if (isBQT) actions = `
+                <button onclick="window.editTest('${key}')" class="btn-edit" style="background:#8b5cf6;">✏️ Sửa</button>
+                <button onclick="window.startTest('${key}')" class="btn-create" style="background:#10b981;">📝 Làm</button>
+                <button onclick="window.deleteTest('${key}')" class="btn-delete">🗑️ Xóa</button>
+            `;
+            else actions = `<button onclick="window.startTest('${key}')" class="btn-create" style="background:#10b981;">📝 Làm test</button>`;
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${test.title || "N/A"}</strong></td>
+                    <td>${test.desc || ""}</td>
+                    <td>${test.totalQuestions || test.questions?.length || "0"}</td>
+                    <td>${test.passScore || "50"}%</td>
+                    <td>${test.createdAt ? new Date(test.createdAt).toLocaleDateString() : "N/A"}</td>
+                    <td>${actions}</td>
+                </tr>
+            `;
+        });
+    });
+}
+
+// ============================================================
+// GAME DORAEMON RUN
+// ============================================================
+let gameRunning = false, gameScore = 0, gameHighScore = parseInt(localStorage.getItem('doraemonHighScore')) || 0;
+let gameSpeed = 6, obstacles = [], frameId = null, isJumping = false, jumpVelocity = 0;
+const gravity = 0.6, playerX = 80, playerWidth = 40, playerHeight = 50, groundY = 300;
+let playerY = groundY - playerHeight;
+let currentGameTitle = 'Doraemon Run';
+
+function drawDoraemon(ctx, x, y, w, h) {
+    ctx.fillStyle = '#2196F3';
+    ctx.beginPath();
+    ctx.arc(x + w / 2, y + h / 2 - 5, w / 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.arc(x + w / 2, y + h / 2 + 5, w / 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#2196F3';
+    ctx.beginPath();
+    ctx.arc(x + w / 2, y + 5, w / 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.arc(x + w / 2 - 5, y + 8, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + w / 2 + 5, y + 8, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.arc(x + w / 2 - 7, y + 8, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + w / 2 + 3, y + 8, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#FF1744';
+    ctx.beginPath();
+    ctx.arc(x + w / 2 - 2, y + 14, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(x + w / 2 - 2, y + 18, 5, 0.1, Math.PI - 0.1);
+    ctx.stroke();
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 1;
+    for (let i = -1; i <= 1; i += 2) {
+        ctx.beginPath();
+        ctx.moveTo(x + w / 2 + i * 10, y + 10);
+        ctx.lineTo(x + w / 2 + i * 25, y + 5 + i * 5);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x + w / 2 + i * 10, y + 14);
+        ctx.lineTo(x + w / 2 + i * 25, y + 14 + i * 5);
+        ctx.stroke();
+    }
+    ctx.fillStyle = '#FFD700';
+    ctx.beginPath();
+    ctx.arc(x + w / 2, y + h - 2, 6, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function initGameCanvas() {
+    const canvas = document.getElementById('gameCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, 800, 350);
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0, 0, 800, 350);
+    ctx.fillStyle = '#3d3d5c';
+    ctx.fillRect(0, groundY, 800, 50);
+    ctx.fillStyle = '#4d4d6c';
+    ctx.fillRect(0, groundY, 800, 3);
+    drawDoraemon(ctx, playerX, playerY, playerWidth, playerHeight);
+    document.getElementById('gameHighScore').textContent = gameHighScore;
+}
+
+window.startGame = function() {
+    const canvas = document.getElementById('gameCanvas');
+    if (!canvas) return alert('⚠️ Không tìm thấy canvas!');
+    if (gameRunning) return;
+    gameRunning = true;
+    gameScore = 0;
+    obstacles = [];
+    gameSpeed = 6;
+    playerY = groundY - playerHeight;
+    isJumping = false;
+    jumpVelocity = 0;
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('gameScore');
+    const startBtn = document.getElementById('gameStartBtn');
+    if (startBtn) startBtn.textContent = '⏹️ Đang chơi...';
+
+    function createObstacle() {
+        const types = ['cactus', 'bird', 'rock'];
+        const type = types[Math.floor(Math.random() * types.length)];
+        const width = type === 'bird' ? 30 : type === 'cactus' ? 20 : 25;
+        const height = type === 'bird' ? 25 : type === 'cactus' ? 35 : 20;
+        const y = type === 'bird' ? groundY - 60 - Math.random() * 30 : groundY - height;
+        obstacles.push({ x: 800, y, width, height, type, scored: false });
+    }
+
+    function drawObstacle(ctx, obs) {
+        if (obs.type === 'cactus') {
+            ctx.fillStyle = '#2E7D32';
+            ctx.fillRect(obs.x + 5, obs.y + 10, 10, obs.height - 10);
+            ctx.fillRect(obs.x - 5, obs.y + 15, 8, 15);
+            ctx.fillRect(obs.x + 12, obs.y + 15, 8, 12);
+        } else if (obs.type === 'bird') {
+            ctx.fillStyle = '#FF6F00';
+            ctx.beginPath();
+            ctx.arc(obs.x + obs.width / 2, obs.y + obs.height / 2, obs.width / 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#E65100';
+            ctx.fillRect(obs.x + 2, obs.y - 5, 10, 6);
+            ctx.fillRect(obs.x + 15, obs.y - 5, 10, 6);
+        } else {
+            ctx.fillStyle = '#78909C';
+            ctx.beginPath();
+            ctx.ellipse(obs.x + obs.width / 2, obs.y + obs.height / 2, obs.width / 2, obs.height / 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    function gameLoop() {
+        if (!gameRunning) return;
+        ctx.clearRect(0, 0, 800, 350);
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(0, 0, 800, 350);
+        ctx.fillStyle = '#2d2d44';
+        ctx.fillRect(0, groundY, 800, 50);
+        ctx.fillStyle = '#3d3d5c';
+        for (let i = 0; i < 800; i += 40) {
+            const offset = (Date.now() / 100 * gameSpeed / 6) % 40;
+            ctx.fillRect(i - offset, groundY, 20, 3);
+        }
+        drawDoraemon(ctx, playerX, playerY, playerWidth, playerHeight);
+        if (isJumping) {
+            playerY += jumpVelocity;
+            jumpVelocity += gravity;
+            if (playerY >= groundY - playerHeight) { playerY = groundY - playerHeight;
+                isJumping = false;
+                jumpVelocity = 0; }
+        }
+        if (Math.random() < 0.02 + gameSpeed / 400) createObstacle();
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            const obs = obstacles[i];
+            obs.x -= gameSpeed;
+            if (!obs.scored && obs.x + obs.width < playerX) { obs.scored = true;
+                gameScore += 10; if (scoreEl) scoreEl.textContent = gameScore; }
+            if (obs.x < playerX + playerWidth - 10 && obs.x + obs.width > playerX + 10 &&
+                obs.y < playerY + playerHeight - 5 && obs.y + obs.height > playerY + 5) {
+                gameRunning = false;
+                if (startBtn) startBtn.textContent = '▶️ Bắt đầu';
+                if (gameScore > gameHighScore) {
+                    gameHighScore = gameScore;
+                    localStorage.setItem('doraemonHighScore', gameHighScore);
+                    document.getElementById('gameHighScore').textContent = gameHighScore;
+                    saveScore(gameScore);
+                    alert('🎉 KỶ LỤC MỚI! ' + gameScore + ' điểm!');
+                } else { alert('💀 Game Over! Điểm: ' + gameScore); }
+                obstacles = [];
+                return;
+            }
+            if (obs.x + obs.width < -50) obstacles.splice(i, 1);
+            drawObstacle(ctx, obs);
+        }
+        if (gameSpeed < 15) gameSpeed += 0.002;
+        if (scoreEl) scoreEl.textContent = gameScore;
+        frameId = requestAnimationFrame(gameLoop);
+    }
+    gameLoop();
+};
+
+window.jumpGame = function() {
+    if (!gameRunning || isJumping) return;
+    isJumping = true;
+    jumpVelocity = -12;
+};
+
+window.resetGame = function() {
+    gameRunning = false;
+    if (frameId) { cancelAnimationFrame(frameId);
+        frameId = null; }
+    obstacles = [];
+    gameScore = 0;
+    gameSpeed = 6;
+    playerY = groundY - playerHeight;
+    isJumping = false;
+    jumpVelocity = 0;
+    document.getElementById('gameScore').textContent = '0';
+    const startBtn = document.getElementById('gameStartBtn');
+    if (startBtn) startBtn.textContent = '▶️ Bắt đầu';
+    const canvas = document.getElementById('gameCanvas');
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, 800, 350);
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(0, 0, 800, 350);
+        ctx.fillStyle = '#3d3d5c';
+        ctx.fillRect(0, groundY, 800, 50);
+        ctx.fillStyle = '#4d4d6c';
+        ctx.fillRect(0, groundY, 800, 3);
+        drawDoraemon(ctx, playerX, playerY, playerWidth, playerHeight);
+    }
+};
+
+window.exitGame = function() {
+    gameRunning = false;
+    if (frameId) { cancelAnimationFrame(frameId);
+        frameId = null; }
+    window.showPage('games');
+};
+
+async function saveScore(score) {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    if (!user) return;
+    const title = document.getElementById('currentGameTitle')?.textContent || 'Doraemon Run';
+    try { await push(ref(db, "gameScores"), { gameTitle: title, username: user.username, userName: user.name || user.username, score, createdAt: new Date().toISOString() });
+        loadScores(); } catch (e) { console.error('Lỗi lưu điểm:', e); }
+}
+
+function loadScores() {
+    const tbody = document.getElementById('scoreTableBody');
+    if (!tbody) return;
+    onValue(ref(db, "gameScores"), snapshot => {
+        tbody.innerHTML = '';
+        if (!snapshot.exists()) { tbody.innerHTML = '<tr><td colspan="5">Chưa có điểm nào</td></tr>'; return; }
+        const scores = [];
+        snapshot.forEach(child => scores.push(child.val()));
+        scores.sort((a, b) => (b.score || 0) - (a.score || 0));
+        scores.slice(0, 20).forEach((s, idx) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>#${idx + 1}</strong></td>
+                    <td>${s.userName || s.username || 'Unknown'}</td>
+                    <td><strong>${s.score || 0}</strong></td>
+                    <td>${s.gameTitle || 'Doraemon Run'}</td>
+                    <td>${s.createdAt ? new Date(s.createdAt).toLocaleDateString() : 'N/A'}</td>
+                </tr>
+            `;
+        });
+    });
+}
+
+function getGamesPage(user) {
+    const canManage = user.role === "Ban Quản Trị";
+    let html = `<h2>🎮 Game nội bộ</h2>`;
+    html += `
+        <div style="background:#1a1a2e; border-radius:12px; padding:20px; margin-bottom:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+                <h3 style="color:#fff; margin:0;">🎮 <span id="currentGameTitle">${currentGameTitle}</span></h3>
+                <button onclick="window.exitGame()" class="btn-delete" style="background:#ef4444;">❌ Thoát game</button>
+            </div>
+            <canvas id="gameCanvas" width="800" height="350" style="width:100%; max-width:800px; height:auto; border-radius:8px; background:#1a1a2e; display:block; margin:0 auto;"></canvas>
+            <div style="display:flex; justify-content:space-between; color:#fff; margin-top:10px; font-size:16px; flex-wrap:wrap; gap:10px;">
+                <span>🏆 Điểm: <strong id="gameScore">0</strong></span>
+                <span>🥇 Cao nhất: <strong id="gameHighScore">${gameHighScore}</strong></span>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+                <button onclick="window.startGame()" class="btn-create" style="background:#10b981;" id="gameStartBtn">▶️ Bắt đầu</button>
+                <button onclick="window.jumpGame()" class="btn-create" style="background:#f59e0b;">⬆️ Nhảy (Space)</button>
+                <button onclick="window.resetGame()" class="btn-delete" style="background:#64748b;">🔄 Chơi lại</button>
+            </div>
+            <p style="color:#94a3b8; font-size:12px; margin-top:8px;">⌨️ <strong>Phím Space</strong> để Bắt đầu / Nhảy | Click chuột vào màn hình để nhảy</p>
+        </div>
+    `;
+    if (canManage) {
+        html += `
+            <div class="account-form-box">
+                <h3>🎯 Tạo game mới</h3>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <input type="text" id="gameTitle" placeholder="Tên game" value="Doraemon Run" />
+                    <textarea id="gameDesc" placeholder="Mô tả..." style="min-height:60px;">Chạy cùng Doraemon, tránh chướng ngại vật!</textarea>
+                    <button onclick="window.addGame()" class="btn-create" style="align-self:flex-start;">🎮 Tạo game & Chơi</button>
+                </div>
+            </div>
+        `;
+    } else {
+        html += `<p style="color:#94a3b8; margin-bottom:16px;">🔒 Chỉ Ban Quản Trị mới tạo được game.</p>`;
+    }
+    html += `
+        <div class="table-container">
+            <table class="table">
+                <thead><tr><th>Tên game</th><th>Mô tả</th><th>Điểm cao nhất</th><th>Người giữ kỷ lục</th><th>Thao tác</th></tr></thead>
+                <tbody id="gameTableBody"><tr><td colspan="5">Đang tải...</td></tr></tbody>
+            </table>
+        </div>
+        <div style="margin-top:24px;">
+            <h3>🏆 Bảng xếp hạng game</h3>
+            <div class="table-container">
+                <table class="table">
+                    <thead><tr><th>#</th><th>Người chơi</th><th>Điểm</th><th>Game</th><th>Ngày</th></tr></thead>
+                    <tbody id="scoreTableBody"><tr><td colspan="5">Đang tải...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    setTimeout(initGameCanvas, 100);
+    return html;
+}
+
+window.addGame = async function() {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền tạo game!");
+    const title = document.getElementById("gameTitle")?.value.trim() || 'Doraemon Run';
+    const desc = document.getElementById("gameDesc")?.value.trim() || 'Chạy cùng Doraemon!';
+    try { await push(ref(db, "games"), { title, desc, type: 'Doraemon Run', createdBy: user.username, createdAt: new Date().toISOString() });
+        alert("✅ Tạo game thành công!");
+        window.showPage('games'); } catch (e) { console.error(e);
+        alert("⚠️ Lỗi khi tạo game!"); }
+};
+
+window.playGame = async function(key) {
+    try {
+        const snap = await get(ref(db, 'games/' + key));
+        if (!snap.exists()) return alert("Game không tồn tại!");
+        const game = snap.val();
+        currentGameTitle = game.title || 'Doraemon Run';
+        const titleEl = document.getElementById('currentGameTitle');
+        if (titleEl) titleEl.textContent = currentGameTitle;
+        window.showPage('games');
+        setTimeout(initGameCanvas, 200);
+    } catch (e) { console.error(e);
+        alert("⚠️ Lỗi khi chơi game!"); }
+};
+
+window.deleteGame = async function(key) {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền xóa game!");
+    if (!confirm("Xóa game này?")) return;
+    try { await remove(ref(db, 'games/' + key));
+        alert("✅ Đã xóa game!"); } catch (e) { console.error(e);
+        alert("⚠️ Lỗi khi xóa game!"); }
+};
+
+function loadGames() {
+    const tbody = document.getElementById("gameTableBody");
+    if (!tbody) return;
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    const isAdmin = user?.role === "Admin";
+    const isBQT = user?.role === "Ban Quản Trị";
+
+    onValue(ref(db, "games"), snapshot => {
+        tbody.innerHTML = "";
+        if (!snapshot.exists()) { tbody.innerHTML = '<tr><td colspan="5">Chưa có game nào</td></tr>'; return; }
+        snapshot.forEach(child => {
+            const game = child.val();
+            const key = child.key;
+            let actions = "";
+            if (isAdmin) actions = '<span class="badge-default">Chỉ xem</span>';
+            else if (isBQT) actions = `
+                <button onclick="window.playGame('${key}')" class="btn-create" style="background:#10b981;">🎮 Chơi</button>
+                <button onclick="window.deleteGame('${key}')" class="btn-delete">🗑️ Xóa</button>
+            `;
+            else actions = `<button onclick="window.playGame('${key}')" class="btn-create" style="background:#10b981;">🎮 Chơi</button>`;
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${game.title || "N/A"}</strong></td>
+                    <td>${game.desc || ""}</td>
+                    <td><span id="highScore_${key}">...</span></td>
+                    <td><span id="highScorePlayer_${key}">...</span></td>
+                    <td>${actions}</td>
+                </tr>
+            `;
+            loadGameHighScore(key);
+        });
+    });
+}
+
+function loadGameHighScore(gameKey) {
+    get(ref(db, "gameScores")).then(snapshot => {
+        if (!snapshot.exists()) return;
+        const scores = [];
+        snapshot.forEach(child => {
+            const data = child.val();
+            if (data.gameTitle === gameKey || data.gameId === gameKey) scores.push(data);
+        });
+        scores.sort((a, b) => (b.score || 0) - (a.score || 0));
+        const el = document.getElementById('highScore_' + gameKey);
+        const elPlayer = document.getElementById('highScorePlayer_' + gameKey);
+        if (scores.length > 0) {
+            if (el) el.textContent = scores[0].score || 0;
+            if (elPlayer) elPlayer.textContent = scores[0].userName || scores[0].username || 'Unknown';
+        } else {
+            if (el) el.textContent = '0';
+            if (elPlayer) elPlayer.textContent = '-';
+        }
+    }).catch(() => {});
+}
+
+// ============================================================
+// CÀI ĐẶT
+// ============================================================
+function getSettingsPage(user) {
+    if (user.role !== "Ban Quản Trị") return '<h2>⛔ Bạn không có quyền truy cập trang này</h2>';
+    return `
+        <h2>⚙️ Cài đặt hệ thống</h2>
+        <div class="account-form-box">
+            <h3>🛡️ Bảo trì hệ thống</h3>
+            <div class="inline-form">
+                <select id="maintenanceSelect">
+                    <option value="off">🟢 Bình thường</option>
+                    <option value="on">🔴 Bảo trì</option>
+                </select>
+                <button onclick="window.saveSettings()" class="btn-create">Lưu</button>
+            </div>
+        </div>
+        <div class="account-form-box">
+            <h3>💾 Sao lưu dữ liệu</h3>
+            <button onclick="window.backupData()" class="btn-create" style="background:#3b82f6;">📥 Xuất file backup</button>
+        </div>
+    `;
+}
+
+function loadSettings() {
+    const select = document.getElementById("maintenanceSelect");
+    if (!select) return;
+    get(ref(db, "system_config/maintenance")).then(s => { if (s.exists()) select.value = s.val(); }).catch(() => {});
+}
+
+window.saveSettings = async function() {
+    const val = document.getElementById("maintenanceSelect")?.value || "off";
+    try { await update(ref(db, "system_config"), { maintenance: val, lastUpdated: new Date().toLocaleString() });
+        alert("✅ Đã lưu cài đặt!"); } catch (e) { console.error(e);
+        alert("⚠️ Lỗi khi lưu!"); }
+};
+
+window.backupData = async function() {
+    try {
+        const snap = await get(ref(db));
+        if (!snap.exists()) return alert("Không có dữ liệu để backup!");
+        const a = document.createElement("a");
+        a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(snap.val(), null, 4));
+        a.download = "backup_" + new Date().toISOString().slice(0, 10) + ".json";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    } catch (e) { console.error(e);
+        alert("⚠️ Lỗi backup!"); }
+};
+
+// ============================================================
+// HỒ SƠ CÁ NHÂN
+// ============================================================
+function getProfilePage(user) {
+    return `
+        <h2>👤 Hồ sơ cá nhân</h2>
+        <div class="account-form-box" style="max-width:500px;">
+            <div class="form-group"><label>Mã tài khoản</label><input type="text" id="profileUsername" value="${user.username}" readonly style="background:#f1f5f9;" /></div>
+            <div class="form-group"><label>Họ và tên</label><input type="text" id="profileName" value="${user.name || ""}" /></div>
+            <div class="form-group"><label>Chức vụ</label><input type="text" id="profileRole" value="${user.role}" readonly style="background:#f1f5f9;" /></div>
+            <button onclick="window.updateProfile()" class="btn-create">Cập nhật</button>
+        </div>
+    `;
+}
+
+function loadProfile() {
+    const user = JSON.parse(localStorage.getItem("currentUser"));
+    if (!user) return;
+    const el = document.getElementById("profileName");
+    if (el) el.value = user.name || "";
+}
+
+window.updateProfile = async function() {
+    const user = JSON.parse(localStorage.getItem("currentUser"));
+    if (!user) return;
+    const name = document.getElementById("profileName")?.value.trim();
+    if (!name) return alert("⚠️ Họ và tên không được để trống!");
+    try {
+        await update(ref(db, 'users/' + user.username), { name });
+        user.name = name;
+        localStorage.setItem("currentUser", JSON.stringify(user));
+        document.querySelector(".user-info .name").textContent = name;
+        alert("✅ Cập nhật thành công!");
+    } catch (e) { console.error(e);
+        alert("⚠️ Lỗi khi cập nhật!"); }
+};
+
+// ============================================================
+// ĐĂNG XUẤT
+// ============================================================
+window.logout = function() {
+    localStorage.removeItem("currentUser");
+    window.location.href = "index.html";
+};
+
+// ============================================================
+// ĐIỀU KHIỂN PHÍM SPACE
+// ============================================================
+document.addEventListener('keydown', function(e) {
+    if (e.key === ' ' || e.key === 'Space') {
+        e.preventDefault();
+        if (!gameRunning) window.startGame();
+        else window.jumpGame();
     }
 });
+
+document.addEventListener('click', function(e) {
+    if (e.target.id === 'gameCanvas') {
+        if (!gameRunning) window.startGame();
+        else window.jumpGame();
+    }
+});
+
+console.log("✅ Dashboard đã tải thành công!");
+console.log("🎮 Chơi game: Nhấn SPACE để bắt đầu và nhảy!");
