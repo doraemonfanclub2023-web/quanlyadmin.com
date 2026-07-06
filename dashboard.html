@@ -8,9 +8,13 @@
 </head>
 <body>
 
+<!-- ===== NÚT TOGGLE MENU CHO MOBILE ===== -->
+<button class="menu-toggle" onclick="window.toggleMenu()">☰</button>
+<div class="sidebar-overlay" onclick="window.toggleMenu()"></div>
+
 <div class="dashboard">
 
-    <!-- SIDEBAR -->
+    <!-- ===== SIDEBAR ===== -->
     <aside class="sidebar">
         <div class="brand">
             <img src="https://i.postimg.cc/Z57X57Gp/Chua-co-ten-(Logo)-(1).png" alt="Logo" />
@@ -34,12 +38,14 @@
         </div>
     </aside>
 
-    <!-- MAIN CONTENT -->
+    <!-- ===== MAIN CONTENT ===== -->
     <main class="main-content">
         <div class="page-header">
             <h2 id="pageTitle">Trang chủ</h2>
         </div>
-        <div id="pageContent"></div>
+        <div id="pageContent">
+            <!-- Nội dung sẽ được render bởi JavaScript -->
+        </div>
     </main>
 
 </div>
@@ -64,6 +70,16 @@
     }
 
     // ============================================================
+    // TOGGLE MENU CHO MOBILE
+    // ============================================================
+    window.toggleMenu = function() {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.querySelector('.sidebar-overlay');
+        if (sidebar) sidebar.classList.toggle('open');
+        if (overlay) overlay.classList.toggle('active');
+    };
+
+    // ============================================================
     // KHỞI TẠO
     // ============================================================
     document.addEventListener("DOMContentLoaded", function() {
@@ -77,11 +93,27 @@
             link.addEventListener("click", function(e) {
                 e.preventDefault();
                 const page = this.dataset.page;
-                if (page) window.showPage(page);
+                if (page) {
+                    window.showPage(page);
+                    // Đóng menu trên mobile
+                    if (window.innerWidth <= 768) {
+                        window.toggleMenu();
+                    }
+                }
             });
         });
 
         window.showPage("home");
+    });
+
+    // Tự động đóng menu khi resize lên desktop
+    window.addEventListener('resize', function() {
+        if (window.innerWidth > 768) {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            if (sidebar) sidebar.classList.remove('open');
+            if (overlay) overlay.classList.remove('active');
+        }
     });
 
     // ============================================================
