@@ -8,100 +8,6 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: #f1f5f9;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-}
-
-/* ===== LOGIN PAGE ===== */
-.login-container {
-    width: 100%;
-    padding: 20px;
-}
-
-.login-box {
-    max-width: 400px;
-    margin: 0 auto;
-    background: #ffffff;
-    padding: 40px 35px;
-    border-radius: 16px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-    text-align: center;
-}
-
-.login-box .logo {
-    width: 80px;
-    height: 80px;
-    margin-bottom: 16px;
-}
-
-.login-box h1 {
-    font-size: 26px;
-    color: #0f172a;
-    letter-spacing: 1px;
-}
-
-.login-box p {
-    font-size: 14px;
-    color: #64748b;
-    margin-bottom: 28px;
-}
-
-.form-group {
-    text-align: left;
-    margin-bottom: 18px;
-}
-
-.form-group label {
-    display: block;
-    font-weight: 600;
-    font-size: 13px;
-    color: #334155;
-    margin-bottom: 6px;
-}
-
-.form-group input {
-    width: 100%;
-    padding: 12px 14px;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 15px;
-    outline: none;
-    transition: 0.2s;
-    background: #f8fafc;
-}
-
-.form-group input:focus {
-    border-color: #0284c7;
-    background: #ffffff;
-    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
-}
-
-#loginBtn {
-    width: 100%;
-    padding: 14px;
-    background: #0284c7;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: 0.2s;
-    margin-top: 8px;
-}
-
-#loginBtn:hover {
-    background: #0369a1;
-    transform: translateY(-1px);
-}
-
-#errorBox {
-    margin-top: 14px;
-    font-size: 14px;
-    color: #ef4444;
-    min-height: 24px;
 }
 
 /* ===== DASHBOARD ===== */
@@ -161,6 +67,7 @@ body {
     font-weight: 500;
     transition: 0.15s;
     margin-bottom: 2px;
+    cursor: pointer;
 }
 
 .sidebar nav a:hover {
@@ -411,8 +318,5 @@ body {
     .main-content {
         margin-left: 0;
         padding: 12px;
-    }
-    .login-box {
-        padding: 24px 18px;
     }
 }
