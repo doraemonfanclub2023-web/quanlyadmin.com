@@ -1,11 +1,49 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <title>Dashboard</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dora Admin 2.0</title>
+    <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <h1>Dashboard đang được xây dựng...</h1>
-    <button onclick="localStorage.removeItem('currentUser'); window.location.href='index.html';">Đăng xuất</button>
+
+    <div class="dashboard">
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="sidebar">
+            <div class="brand">
+                <img src="https://i.postimg.cc/Z57X57Gp/Chua-co-ten-(Logo)-(1).png" alt="Logo" />
+                <h3>DORA ADMIN</h3>
+                <span>Hệ thống quản trị</span>
+            </div>
+
+            <nav>
+                <a href="#" data-page="home" class="active">🏠 Trang chủ</a>
+                <a href="#" data-page="users">👥 Thành viên</a>
+                <a href="#" data-page="notices">📢 Thông báo</a>
+                <a href="#" data-page="settings">⚙️ Cài đặt</a>
+                <a href="#" data-page="profile">👤 Hồ sơ</a>
+            </nav>
+
+            <div class="user-info">
+                <div class="name">Đang tải...</div>
+                <div class="role">...</div>
+                <button onclick="window.logout()">🚪 Đăng xuất</button>
+            </div>
+        </aside>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="main-content">
+            <div class="page-header">
+                <h2 id="pageTitle">Trang chủ</h2>
+            </div>
+            <div id="pageContent">
+                <!-- Nội dung sẽ được render bởi JavaScript -->
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="js/firebase.js"></script>
+    <script type="module" src="js/dashboard.js"></script>
 </body>
 </html>
