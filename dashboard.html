@@ -1,3 +1,56 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dora Admin 2.0</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+    <div class="dashboard">
+
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="sidebar">
+            <div class="brand">
+                <img src="https://i.postimg.cc/Z57X57Gp/Chua-co-ten-(Logo)-(1).png" alt="Logo" />
+                <h3>DORA ADMIN</h3>
+                <span>Hệ thống quản trị</span>
+            </div>
+
+            <nav>
+                <a href="#" data-page="home" class="active">🏠 Trang chủ</a>
+                <a href="#" data-page="users">👥 Thành viên</a>
+                <a href="#" data-page="notices">📢 Thông báo</a>
+                <a href="#" data-page="documents">📄 Văn bản</a>
+                <a href="#" data-page="tests">📝 Test kỹ năng</a>
+                <a href="#" data-page="games">🎮 Game</a>
+                <a href="#" data-page="settings">⚙️ Cài đặt</a>
+                <a href="#" data-page="profile">👤 Hồ sơ</a>
+            </nav>
+
+            <div class="user-info">
+                <div class="name">Đang tải...</div>
+                <div class="role">...</div>
+                <button onclick="window.logout()">🚪 Đăng xuất</button>
+            </div>
+        </aside>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="main-content">
+            <div class="page-header">
+                <h2 id="pageTitle">Trang chủ</h2>
+            </div>
+            <div id="pageContent">
+                <!-- Nội dung sẽ được render bởi JavaScript -->
+            </div>
+        </main>
+
+    </div>
+
+    <!-- ===== FIREBASE ===== -->
+    <script type="module" src="js/firebase.js"></script>
+
     <!-- ===== TOÀN BỘ CODE DASHBOARD ===== -->
     <script type="module">
         import { db, ref, get, set, update, remove, push, onValue } from "./js/firebase.js";
@@ -646,7 +699,7 @@
         };
 
         // ==========================================
-        // QUẢN LÝ TEST KỸ NĂNG (ĐÃ SỬA)
+        // QUẢN LÝ TEST KỸ NĂNG
         // ==========================================
         function getTestsPage(user) {
             var canManage = user.role !== "Admin";
@@ -683,7 +736,7 @@
             return html;
         }
 
-        // Hàm tải danh sách test
+        // ===== HÀM TẢI DANH SÁCH TEST =====
         function loadTests() {
             var tbody = document.getElementById("testTableBody");
             if (!tbody) return;
@@ -717,7 +770,7 @@
             });
         }
 
-        // Hàm tạo test mới
+        // ===== TẠO TEST MỚI =====
         window.addTest = async function() {
             var currentUser = JSON.parse(localStorage.getItem("currentUser"));
             if (!currentUser || currentUser.role === "Admin") {
@@ -755,7 +808,7 @@
             }
         };
 
-        // Hàm làm test
+        // ===== LÀM TEST =====
         window.startTest = async function(key) {
             var currentUser = JSON.parse(localStorage.getItem("currentUser"));
             if (!currentUser) return;
@@ -768,21 +821,20 @@
                 }
                 var test = snapshot.val();
 
-                // Demo: 3 câu hỏi mẫu
                 var questions = [
-                    { q: "Câu 1: Quy chế phát ngôn của Fanclub là gì?", a: "Tuân thủ quy định" },
+                    { q: "Câu 1: Quy chế phát ngôn của Fanclub?", a: "Tuân thủ quy định chung" },
                     { q: "Câu 2: Nội quy Fanpage gồm những gì?", a: "Không spam, không quảng cáo" },
-                    { q: "Câu 3: Khi xử lý bình luận tiêu cực cần làm gì?", a: "Bình tĩnh, phản hồi chuyên nghiệp" }
+                    { q: "Câu 3: Xử lý bình luận tiêu cực?", a: "Bình tĩnh, phản hồi chuyên nghiệp" }
                 ];
 
                 var answer = confirm('📝 ' + test.title + '\n\n' + test.desc + '\n\nSố câu hỏi: ' + test.questions + '\nĐiểm đạt: ' + test.passScore + '%\n\nBắt đầu làm test?');
                 if (answer) {
                     var score = 0;
-                    // Mô phỏng trả lời 3 câu hỏi
-                    for (var i = 0; i < Math.min(3, test.questions); i++) {
+                    var totalQ = Math.min(3, test.questions);
+                    for (var i = 0; i < totalQ; i++) {
                         var userAnswer = prompt(questions[i].q + '\n\nĐáp án gợi ý: ' + questions[i].a);
                         if (userAnswer && userAnswer.trim().length > 0) {
-                            score += Math.floor(100 / Math.min(3, test.questions));
+                            score += Math.floor(100 / totalQ);
                         }
                     }
 
@@ -810,7 +862,7 @@
         };
 
         // ==========================================
-        // GAME NỘI BỘ (ĐÃ SỬA)
+        // GAME NỘI BỘ
         // ==========================================
         function getGamesPage(user) {
             var canManage = user.role !== "Admin";
@@ -925,11 +977,10 @@
                 }
                 var game = snapshot.val();
 
-                // Demo câu hỏi game
                 var gameQuestions = [
                     { q: "Doraemon sinh ra ở đâu?", a: "Tokyo" },
                     { q: "Nobita thích ai?", a: "Shizuka" },
-                    { q: "Bảo bối yêu thích của Doraemon là gì?", a: "Cánh cửa thần kỳ" }
+                    { q: "Bảo bối yêu thích của Doraemon?", a: "Cánh cửa thần kỳ" }
                 ];
 
                 var answer = confirm('🎮 ' + game.title + '\n\n' + game.desc + '\n\nThể loại: ' + game.type + '\n\nBắt đầu chơi?');
@@ -1088,3 +1139,6 @@
         console.log("✅ Dashboard đã tải thành công!");
         console.log("🔍 window.showPage:", typeof window.showPage);
     </script>
+
+</body>
+</html>
