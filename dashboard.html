@@ -6,11 +6,8 @@
 </head>
 <body>
     <div class="container">
-        <!-- Sidebar -->
         <nav class="sidebar">
-            <div class="brand">
-                <h3>DORAEMON FANCLUB<br>VIỆT NAM ADMIN</h3>
-            </div>
+            <div class="brand"><h3>DORAEMON FANCLUB<br>VIỆT NAM ADMIN</h3></div>
             <ul>
                 <li onclick="showPage('home')">🏠 Trang chủ</li>
                 <li onclick="showPage('members')">👥 Quản lý thành viên</li>
@@ -23,16 +20,13 @@
             <div class="logout-btn" onclick="logout()">Đăng xuất</div>
         </nav>
 
-        <!-- Nội dung chính -->
         <main class="content">
             <div class="footer-note">Hệ thống Quản trị Đám mây 🌐</div>
-            <div id="pageContent">
-                <!-- Nội dung sẽ được render tại đây bởi script của bồ -->
-            </div>
+            <div id="pageContent"></div>
         </main>
     </div>
 
-    <!-- THÊM DÒNG NÀY VÀO ĐÂY BỒ NHÉ -->
-    <script src="script.js"></script>
+    <!-- Phải để script ở đây thì các hàm onclick mới hoạt động -->
+    <script type="module" src="script.js"></script>
 </body>
 </html>
