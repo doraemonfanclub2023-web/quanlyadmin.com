@@ -723,21 +723,9 @@ window.backupSystemData = async function() {
    ==================================================== */
 
 // Gán các hàm vào window để HTML có thể gọi được qua onclick="..."
-window.showPage = showPage;
-window.logout = logout;
-window.login = login;
-window.addAccount = addAccount;
-window.deleteAccount = deleteAccount;
-window.addNotice = addNotice;
-window.deleteNotice = deleteNotice;
-window.addMiniGame = addMiniGame;
-window.deleteMiniGame = deleteMiniGame;
-window.viewGameDetail = viewGameDetail;
-window.updateProfileName = updateProfileName;
-window.saveSysSettingOnly = saveSysSettingOnly;
-window.saveClubConfigOnly = saveClubConfigOnly;
-window.backupSystemData = backupSystemData;
-window.changeUserPassword = changeUserPassword;
+window.showPage = function() {}
+window.login = function() {}
+window.logout = function() {}
 
 // Khởi chạy các tác vụ khi trang load xong
 document.addEventListener('DOMContentLoaded', () => {
