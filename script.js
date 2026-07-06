@@ -615,23 +615,7 @@ window.listenToUserTable = function() {
 
     const checkUser = await get(ref(db, `users/${username}`));
 
-    if (checkUser.exists()) {
-        return alert('❌ Mã tài khoản đã tồn tại!');
-    }
 
-    await set(ref(db, `users/${username}`), {
-        username,
-        name: name || username,
-        password,
-        role
-    });
-
-    alert('✅ Tạo tài khoản thành công!');
-
-    document.getElementById('newUsername').value = '';
-    document.getElementById('newName').value = '';
-    document.getElementById('newPassword').value = '';
-}
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (currentUser && currentUser.role === 'Admin') return alert('⛔ Bạn không có quyền xóa thành viên này!');
     if (confirm('Xóa tài khoản này khỏi hệ thống đám mây?')) {
