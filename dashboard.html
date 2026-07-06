@@ -317,7 +317,7 @@
     };
 
     // ============================================================
-    // QUẢN LÝ THÔNG BÁO (ĐÃ SỬA LỖI HAO HỤT)
+    // QUẢN LÝ THÔNG BÁO (ĐÃ SỬA LỖI)
     // ============================================================
     function getNoticesPage(user) {
         const canManage = user.role !== "Admin";
@@ -325,11 +325,11 @@
         if (canManage) {
             html += `
                 <div class="account-form-box">
-                    <h3>📝 Đăng thông báo mới</h3>
-                    <div class="inline-form" style="flex-direction:column; align-items:stretch;">
-                        <input type="text" id="noticeTitle" placeholder="Tiêu đề..." />
-                        <textarea id="noticeContent" placeholder="Nội dung..."></textarea>
-                        <button onclick="window.addNotice()" class="btn-create" style="align-self:flex-start;">Đăng</button>
+                    <h3>📝 Soạn thông báo mới</h3>
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <input type="text" id="noticeTitle" placeholder="📌 Tiêu đề thông báo..." style="padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
+                        <textarea id="noticeContent" placeholder="📝 Nội dung thông báo..." style="min-height:100px; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px; resize:vertical;"></textarea>
+                        <button onclick="window.addNotice()" class="btn-create" style="align-self:flex-start;">📤 Đăng thông báo</button>
                     </div>
                 </div>
             `;
@@ -340,7 +340,7 @@
             <div class="table-container">
                 <table class="table">
                     <thead><tr><th>Ngày</th><th>Tiêu đề</th><th>Nội dung</th><th>Thao tác</th></tr></thead>
-                    <tbody id="noticeTableBody"><tr><td colspan="4">Đang tải...</td></tr></tbody>
+                    <tbody id="noticeTableBody"><tr><td colspan="4">📭 Đang tải...</td></tr></tbody>
                 </table>
             </div>
         `;
@@ -359,11 +359,9 @@
                 tbody.innerHTML = '<tr><td colspan="4">📭 Chưa có thông báo nào</td></tr>';
                 return;
             }
-            
             const notices = [];
             snapshot.forEach(child => {
                 const data = child.val();
-                // === KIỂM TRA DỮ LIỆU ĐẦY ĐỦ ===
                 if (data && typeof data === 'object') {
                     notices.push({
                         key: child.key,
@@ -374,15 +372,11 @@
                     });
                 }
             });
-            
-            // Sắp xếp mới nhất lên đầu
             notices.reverse();
-            
             if (notices.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4">📭 Chưa có thông báo nào</td></tr>';
                 return;
             }
-            
             notices.forEach(n => {
                 const actions = isAdmin ? 
                     '<span class="badge-default">Chỉ xem</span>' : 
@@ -399,33 +393,43 @@
         });
     }
 
+    // ===== THÊM THÔNG BÁO (ĐÃ SỬA LỖI) =====
     window.addNotice = async function() {
-        const user = JSON.parse(localStorage.getItem("currentUser"));
-        if (!user || user.role === "Admin") return alert("⛔ Bạn không có quyền đăng thông báo!");
-        
-        const title = document.getElementById("noticeTitle")?.value.trim();
-        const content = document.getElementById("noticeContent")?.value.trim();
-        
-        if (!title || !content) return alert("⚠️ Vui lòng nhập tiêu đề và nội dung!");
-        
         try {
+            const user = JSON.parse(localStorage.getItem("currentUser"));
+            if (!user) return alert("⚠️ Vui lòng đăng nhập lại!");
+            if (user.role === "Admin") return alert("⛔ Admin không có quyền đăng thông báo!");
+
+            const titleInput = document.getElementById("noticeTitle");
+            const contentInput = document.getElementById("noticeContent");
+
+            if (!titleInput || !contentInput) {
+                return alert("⚠️ Không tìm thấy form nhập liệu! Vui lòng tải lại trang.");
+            }
+
+            const title = titleInput.value.trim();
+            const content = contentInput.value.trim();
+
+            if (!title) return alert("⚠️ Vui lòng nhập tiêu đề!");
+            if (!content) return alert("⚠️ Vui lòng nhập nội dung!");
+
             const d = new Date();
             const date = String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear();
             const time = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
-            
-            await push(ref(db, "notices"), { 
-                title: title, 
-                content: content, 
+
+            await push(ref(db, "notices"), {
+                title: title,
+                content: content,
                 date: date + " " + time,
                 author: user.name || user.username || "Unknown"
             });
-            
+
             alert("✅ Đăng thông báo thành công!");
-            document.getElementById("noticeTitle").value = "";
-            document.getElementById("noticeContent").value = "";
-        } catch (e) { 
-            console.error(e); 
-            alert("⚠️ Lỗi khi đăng thông báo!"); 
+            titleInput.value = "";
+            contentInput.value = "";
+        } catch (e) {
+            console.error("Lỗi đăng thông báo:", e);
+            alert("⚠️ Lỗi khi đăng thông báo: " + e.message);
         }
     };
 
@@ -433,13 +437,7 @@
         const user = JSON.parse(localStorage.getItem("currentUser"));
         if (!user || user.role === "Admin") return alert("⛔ Bạn không có quyền xóa!");
         if (!confirm("🗑️ Xóa thông báo này?")) return;
-        try { 
-            await remove(ref(db, 'notices/' + key)); 
-            alert("✅ Đã xóa thông báo!"); 
-        } catch (e) { 
-            console.error(e); 
-            alert("⚠️ Lỗi khi xóa!"); 
-        }
+        try { await remove(ref(db, 'notices/' + key)); alert("✅ Đã xóa thông báo!"); } catch (e) { console.error(e); alert("⚠️ Lỗi khi xóa!"); }
     };
 
     // ============================================================
@@ -890,7 +888,10 @@
 
     function initGameCanvas() {
         const canvas = document.getElementById('gameCanvas');
-        if (!canvas) return;
+        if (!canvas) {
+            console.log('⏳ Chưa có canvas, đợi vào trang Game...');
+            return;
+        }
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, 800, 350);
         ctx.fillStyle = '#1a1a2e';
@@ -901,11 +902,15 @@
         ctx.fillRect(0, groundY, 800, 3);
         drawDoraemon(ctx, playerX, playerY, playerWidth, playerHeight);
         document.getElementById('gameHighScore').textContent = gameHighScore;
+        console.log('✅ Canvas đã sẵn sàng!');
     }
 
     window.startGame = function() {
         const canvas = document.getElementById('gameCanvas');
-        if (!canvas) return alert('⚠️ Không tìm thấy canvas!');
+        if (!canvas) {
+            alert('⚠️ Vui lòng vào trang Game trước khi bắt đầu!');
+            return;
+        }
         if (gameRunning) return;
         gameRunning = true;
         gameScore = 0;
@@ -1124,7 +1129,7 @@
                 </div>
             </div>
         `;
-        setTimeout(initGameCanvas, 100);
+        setTimeout(initGameCanvas, 200);
         return html;
     }
 
@@ -1148,7 +1153,7 @@
             const titleEl = document.getElementById('currentGameTitle');
             if (titleEl) titleEl.textContent = currentGameTitle;
             window.showPage('games');
-            setTimeout(initGameCanvas, 200);
+            setTimeout(initGameCanvas, 300);
         } catch (e) { console.error(e);
             alert("⚠️ Lỗi khi chơi game!"); }
     };
@@ -1332,7 +1337,7 @@
     });
 
     console.log("✅ Dashboard đã tải thành công!");
-    console.log("🎮 Chơi game: Nhấn SPACE để bắt đầu và nhảy!");
+    console.log("🎮 Chơi game: Vào menu Game và nhấn Space để chơi!");
 </script>
 
 </body>
