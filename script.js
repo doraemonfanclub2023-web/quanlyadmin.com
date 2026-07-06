@@ -575,15 +575,45 @@ window.listenToUserTable = function() {
     });
 }
 
-    // Chỉ chặn Admin
+  window.addAccount = async function() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+    if (!currentUser) {
+        return alert('Vui lòng đăng nhập!');
+    }
+
     if (currentUser.role === 'Admin') {
-        return alert('⛔ Bạn không có quyền thêm tài khoản!');
+        return alert('⛔ Bạn không có quyền thêm thành viên mới!');
     }
 
     const username = document.getElementById('newUsername')?.value.trim();
     const name = document.getElementById('newName')?.value.trim();
     const password = document.getElementById('newPassword')?.value.trim();
     const role = document.getElementById('newRole')?.value;
+
+    if (!username || !password) {
+        return alert('Thiếu thông tin tạo tài khoản!');
+    }
+
+    const checkUser = await get(ref(db, `users/${username}`));
+
+    if (checkUser.exists()) {
+        return alert('❌ Mã tài khoản đã tồn tại!');
+    }
+
+    await set(ref(db, `users/${username}`), {
+        username,
+        name: name || username,
+        password,
+        role
+    });
+
+    alert('✅ Tạo tài khoản thành công!');
+
+    document.getElementById('newUsername').value = '';
+    document.getElementById('newName').value = '';
+    document.getElementById('newPassword').value = '';
+}
 
     if (!username || !password) {
         return alert('Vui lòng nhập đầy đủ thông tin!');
@@ -721,11 +751,6 @@ window.backupSystemData = async function() {
 /* ====================================================
    7. KHỞI CHẠY KHI TẢI TRANG & ĐĂNG KÝ CẤU HÌNH HỆ THỐNG
    ==================================================== */
-
-// Gán các hàm vào window để HTML có thể gọi được qua onclick="..."
-window.showPage = function() {}
-window.login = function() {}
-window.logout = function() {}
 
 // Khởi chạy các tác vụ khi trang load xong
 document.addEventListener('DOMContentLoaded', () => {
