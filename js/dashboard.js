@@ -967,3 +967,6 @@ window.logout = function() {
     localStorage.removeItem("currentUser");
     window.location.href = "index.html";
 };
+
+console.log("✅ dashboard.js đã tải thành công!");
+console.log("🔍 window.showPage:", typeof window.showPage);
