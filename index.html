@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dora Admin 2.0</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+    <div class="login-container">
+        <div class="login-box">
+
+            <img 
+                src="https://i.postimg.cc/Z57X57Gp/Chua-co-ten-(Logo)-(1).png" 
+                alt="Doraemon Admin Logo" 
+                class="logo" 
+            />
+
+            <h1>DORA ADMIN</h1>
+            <p>Hệ thống quản trị nội bộ Doraemon Fanclub</p>
+
+            <div class="form-group">
+                <label>Mã tài khoản</label>
+                <input type="text" id="username" placeholder="VD: BQT001" />
+            </div>
+
+            <div class="form-group">
+                <label>Mật khẩu</label>
+                <input type="password" id="password" placeholder="Nhập mật khẩu..." />
+            </div>
+
+            <button id="loginBtn">ĐĂNG NHẬP</button>
+
+            <div id="errorBox"></div>
+        </div>
+    </div>
+
+    <script type="module" src="js/firebase.js"></script>
+    <script type="module" src="js/auth.js"></script>
+</body>
+</html>
