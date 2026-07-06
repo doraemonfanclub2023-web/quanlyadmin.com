@@ -1,5 +1,15 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getDatabase, ref, get, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import {
+    getDatabase,
+    ref,
+    get,
+    onValue,
+    remove,
+    set,
+    update,
+    push,
+    child
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyC-U9L1plaQ6pcP7Iecg4RO0GirBjunISM",
@@ -587,6 +597,14 @@ window.listenToUserTable = function() {
     }
 
     const username = document.getElementById('newUsername')?.value.trim();
+   window.addAccount = async function() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+    if (currentUser && currentUser.role === 'Admin') {
+        return alert('⛔ Bạn không có quyền thêm thành viên mới!');
+    }
+
+    const username = document.getElementById('newUsername')?.value.trim();
     const name = document.getElementById('newName')?.value.trim();
     const password = document.getElementById('newPassword')?.value.trim();
     const role = document.getElementById('newRole')?.value;
@@ -614,27 +632,6 @@ window.listenToUserTable = function() {
     document.getElementById('newName').value = '';
     document.getElementById('newPassword').value = '';
 }
-
-
-    if (checkUser.exists()) {
-        return alert('❌ Mã tài khoản đã tồn tại!');
-    }
-
-    await set(ref(db, `users/${username}`), {
-        username,
-        name: name || username,
-        password,
-        role
-    });
-
-    alert('✅ Tạo tài khoản thành công!');
-
-    document.getElementById('newUsername').value = '';
-    document.getElementById('newName').value = '';
-    document.getElementById('newPassword').value = '';
-}
-
-window.deleteAccount = async function(username) {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (currentUser && currentUser.role === 'Admin') return alert('⛔ Bạn không có quyền xóa thành viên này!');
     if (confirm('Xóa tài khoản này khỏi hệ thống đám mây?')) {
