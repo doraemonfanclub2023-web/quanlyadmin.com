@@ -85,7 +85,9 @@ function loadAccountData() {
     });
 }
 
-loadAccountData();
+if (document.querySelector('tbody')) {
+    loadAccountData();
+}
 /* ====================================================
    2. KHỔI TẠO TÀI KHOẢN GỐC TRÊN CLOUD
    ==================================================== */
