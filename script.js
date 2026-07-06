@@ -616,8 +616,6 @@ window.listenToUserTable = function() {
     }
 
     const checkUser = await get(ref(db, `users/${username}`));
-
-
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (currentUser && currentUser.role === 'Admin') return alert('⛔ Bạn không có quyền xóa thành viên này!');
     if (confirm('Xóa tài khoản này khỏi hệ thống đám mây?')) {
