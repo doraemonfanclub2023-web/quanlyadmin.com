@@ -741,4 +741,229 @@ function getGamesPage(user) {
         
         <div class="table-container">
             <table class="table">
-                <thead><tr><th>Tên game</th><th>
+                <thead><tr><th>Tên game</th><th>Mô tả</th><th>Thể loại</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead>
+                <tbody id="gameTableBody"><tr><td colspan="5">Đang tải...</td></tr></tbody>
+            </table>
+        </div>
+    `;
+}
+
+function loadGames() {
+    const tbody = document.getElementById("gameTableBody");
+    if (!tbody) return;
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    const isAdmin = currentUser?.role === "Admin";
+
+    onValue(ref(db, "games"), (snapshot) => {
+        tbody.innerHTML = "";
+        if (!snapshot.exists()) {
+            tbody.innerHTML = `<tr><td colspan="5">Chưa có game nào</td></tr>`;
+            return;
+        }
+        snapshot.forEach((child) => {
+            const game = child.val();
+            const key = child.key;
+            const actions = isAdmin
+                ? `<span class="badge-default">Chỉ xem</span>`
+                : `<button onclick="window.playGame('${key}')" class="btn-create" style="background:#8b5cf6;">Chơi</button>`;
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${game.title || "N/A"}</strong></td>
+                    <td>${game.desc || ""}</td>
+                    <td><span style="background:#8b5cf6; color:white; padding:2px 10px; border-radius:12px; font-size:12px;">${game.type || "Quiz"}</span></td>
+                    <td>${game.createdAt ? new Date(game.createdAt).toLocaleDateString() : "N/A"}</td>
+                    <td>${actions}</td>
+                </tr>
+            `;
+        });
+    });
+}
+
+window.addGame = async function() {
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    if (!currentUser || currentUser.role === "Admin") {
+        alert("⛔ Bạn không có quyền tạo game!");
+        return;
+    }
+    const title = document.getElementById("gameTitle")?.value.trim();
+    const desc = document.getElementById("gameDesc")?.value.trim();
+    const type = document.getElementById("gameType")?.value;
+    
+    if (!title || !desc) {
+        alert("⚠️ Vui lòng nhập tên và mô tả game!");
+        return;
+    }
+    try {
+        await push(ref(db, "games"), {
+            title,
+            desc,
+            type: type || "Quiz",
+            createdBy: currentUser.username,
+            createdAt: new Date().toISOString()
+        });
+        alert("✅ Tạo game thành công!");
+        document.getElementById("gameTitle").value = "";
+        document.getElementById("gameDesc").value = "";
+    } catch (err) {
+        console.error(err);
+        alert("⚠️ Lỗi khi tạo game!");
+    }
+};
+
+window.playGame = async function(key) {
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    if (!currentUser) return;
+    
+    try {
+        const snapshot = await get(ref(db, `games/${key}`));
+        if (!snapshot.exists()) {
+            alert("Game không tồn tại!");
+            return;
+        }
+        const game = snapshot.val();
+        
+        const answer = confirm(`🎮 ${game.title}\n\n${game.desc}\n\nThể loại: ${game.type}\n\nBắt đầu chơi?`);
+        if (answer) {
+            const score = Math.floor(Math.random() * 100) + 1;
+            alert(`🎯 KẾT QUẢ\n\nĐiểm: ${score}/100\n🏆 Xếp hạng: ${score >= 80 ? "Huyền thoại" : score >= 60 ? "Chiến binh" : "Tân binh"}`);
+            
+            await push(ref(db, "gameScores"), {
+                gameId: key,
+                username: currentUser.username,
+                score: score,
+                createdAt: new Date().toISOString()
+            });
+        }
+    } catch (err) {
+        console.error(err);
+        alert("⚠️ Lỗi khi chơi game!");
+    }
+};
+
+// ==========================================
+// CÀI ĐẶT
+// ==========================================
+function getSettingsPage(user) {
+    if (user.role !== "Ban Quản Trị") {
+        return `<h2>⛔ Bạn không có quyền truy cập trang này</h2>`;
+    }
+    return `
+        <h2>⚙️ Cài đặt hệ thống</h2>
+        <div class="account-form-box">
+            <h3>🛡️ Bảo trì hệ thống</h3>
+            <div class="inline-form">
+                <select id="maintenanceSelect">
+                    <option value="off">🟢 Bình thường</option>
+                    <option value="on">🔴 Bảo trì</option>
+                </select>
+                <button onclick="window.saveSettings()" class="btn-create">Lưu</button>
+            </div>
+        </div>
+        <div class="account-form-box">
+            <h3>💾 Sao lưu dữ liệu</h3>
+            <button onclick="window.backupData()" class="btn-create" style="background:#3b82f6;">📥 Xuất file backup</button>
+        </div>
+    `;
+}
+
+function loadSettings() {
+    const select = document.getElementById("maintenanceSelect");
+    if (!select) return;
+    get(ref(db, "system_config/maintenance")).then((snapshot) => {
+        if (snapshot.exists()) select.value = snapshot.val();
+    }).catch(() => {});
+}
+
+window.saveSettings = async function() {
+    const maintenance = document.getElementById("maintenanceSelect")?.value;
+    try {
+        await update(ref(db, "system_config"), {
+            maintenance: maintenance || "off",
+            lastUpdated: new Date().toLocaleString()
+        });
+        alert("✅ Đã lưu cài đặt!");
+    } catch (err) {
+        console.error(err);
+        alert("⚠️ Lỗi khi lưu!");
+    }
+};
+
+window.backupData = async function() {
+    try {
+        const snapshot = await get(ref(db));
+        if (!snapshot.exists()) {
+            alert("Không có dữ liệu để backup!");
+            return;
+        }
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(
+            JSON.stringify(snapshot.val(), null, 4)
+        );
+        const a = document.createElement("a");
+        a.href = dataStr;
+        a.download = `backup_${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    } catch (err) {
+        console.error(err);
+        alert("⚠️ Lỗi backup!");
+    }
+};
+
+// ==========================================
+// HỒ SƠ CÁ NHÂN
+// ==========================================
+function getProfilePage(user) {
+    return `
+        <h2>👤 Hồ sơ cá nhân</h2>
+        <div class="account-form-box" style="max-width:500px;">
+            <div class="form-group">
+                <label>Mã tài khoản</label>
+                <input type="text" id="profileUsername" value="${user.username}" readonly style="background:#f1f5f9;" />
+            </div>
+            <div class="form-group">
+                <label>Họ và tên</label>
+                <input type="text" id="profileName" value="${user.name || ""}" />
+            </div>
+            <div class="form-group">
+                <label>Chức vụ</label>
+                <input type="text" id="profileRole" value="${user.role}" readonly style="background:#f1f5f9;" />
+            </div>
+            <button onclick="window.updateProfile()" class="btn-create">Cập nhật</button>
+        </div>
+    `;
+}
+
+function loadProfile() {
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    if (!currentUser) return;
+    const nameInput = document.getElementById("profileName");
+    if (nameInput) nameInput.value = currentUser.name || "";
+}
+
+window.updateProfile = async function() {
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    if (!currentUser) return;
+    const name = document.getElementById("profileName")?.value.trim();
+    if (!name) {
+        alert("⚠️ Họ và tên không được để trống!");
+        return;
+    }
+    try {
+        await update(ref(db, `users/${currentUser.username}`), { name });
+        currentUser.name = name;
+        localStorage.setItem("currentUser", JSON.stringify(currentUser));
+        alert("✅ Cập nhật thành công!");
+        const nameEl = document.querySelector(".user-info .name");
+        if (nameEl) nameEl.textContent = name;
+    } catch (err) {
+        console.error(err);
+        alert("⚠️ Lỗi khi cập nhật!");
+    }
+};
+
+// ===== ĐĂNG XUẤT =====
+window.logout = function() {
+    localStorage.removeItem("currentUser");
+    window.location.href = "index.html";
+};
