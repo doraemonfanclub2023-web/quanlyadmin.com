@@ -95,7 +95,6 @@
                 const page = this.dataset.page;
                 if (page) {
                     window.showPage(page);
-                    // Đóng menu trên mobile
                     if (window.innerWidth <= 768) {
                         window.toggleMenu();
                     }
@@ -318,7 +317,7 @@
     };
 
     // ============================================================
-    // QUẢN LÝ THÔNG BÁO
+    // QUẢN LÝ THÔNG BÁO (ĐÃ SỬA LỖI HAO HỤT)
     // ============================================================
     function getNoticesPage(user) {
         const canManage = user.role !== "Admin";
@@ -356,12 +355,46 @@
 
         onValue(ref(db, "notices"), snapshot => {
             tbody.innerHTML = "";
-            if (!snapshot.exists()) { tbody.innerHTML = '<tr><td colspan="4">Chưa có thông báo</td></tr>'; return; }
+            if (!snapshot.exists()) {
+                tbody.innerHTML = '<tr><td colspan="4">📭 Chưa có thông báo nào</td></tr>';
+                return;
+            }
+            
             const notices = [];
-            snapshot.forEach(child => notices.push({ key: child.key, ...child.val() }));
-            notices.reverse().forEach(n => {
-                const actions = isAdmin ? '<span class="badge-default">Chỉ xem</span>' : `<button onclick="window.deleteNotice('${n.key}')" class="btn-delete">Xóa</button>`;
-                tbody.innerHTML += `<tr><td>${n.date || "N/A"}</td><td><strong>${n.title}</strong></td><td>${n.content || ""}</td><td>${actions}</td></tr>`;
+            snapshot.forEach(child => {
+                const data = child.val();
+                // === KIỂM TRA DỮ LIỆU ĐẦY ĐỦ ===
+                if (data && typeof data === 'object') {
+                    notices.push({
+                        key: child.key,
+                        title: data.title || "📌 Không có tiêu đề",
+                        content: data.content || "Không có nội dung",
+                        date: data.date || "N/A",
+                        author: data.author || "Unknown"
+                    });
+                }
+            });
+            
+            // Sắp xếp mới nhất lên đầu
+            notices.reverse();
+            
+            if (notices.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4">📭 Chưa có thông báo nào</td></tr>';
+                return;
+            }
+            
+            notices.forEach(n => {
+                const actions = isAdmin ? 
+                    '<span class="badge-default">Chỉ xem</span>' : 
+                    `<button onclick="window.deleteNotice('${n.key}')" class="btn-delete">🗑️ Xóa</button>`;
+                tbody.innerHTML += `
+                    <tr>
+                        <td><span style="font-size:12px; color:#64748b;">${n.date}</span></td>
+                        <td><strong>${n.title}</strong></td>
+                        <td>${n.content}</td>
+                        <td>${actions}</td>
+                    </tr>
+                `;
             });
         });
     }
@@ -369,24 +402,44 @@
     window.addNotice = async function() {
         const user = JSON.parse(localStorage.getItem("currentUser"));
         if (!user || user.role === "Admin") return alert("⛔ Bạn không có quyền đăng thông báo!");
+        
         const title = document.getElementById("noticeTitle")?.value.trim();
         const content = document.getElementById("noticeContent")?.value.trim();
+        
         if (!title || !content) return alert("⚠️ Vui lòng nhập tiêu đề và nội dung!");
+        
         try {
             const d = new Date();
             const date = String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear();
-            await push(ref(db, "notices"), { title, content, date, author: user.name || user.username });
+            const time = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+            
+            await push(ref(db, "notices"), { 
+                title: title, 
+                content: content, 
+                date: date + " " + time,
+                author: user.name || user.username || "Unknown"
+            });
+            
             alert("✅ Đăng thông báo thành công!");
             document.getElementById("noticeTitle").value = "";
             document.getElementById("noticeContent").value = "";
-        } catch (e) { console.error(e); alert("⚠️ Lỗi khi đăng thông báo!"); }
+        } catch (e) { 
+            console.error(e); 
+            alert("⚠️ Lỗi khi đăng thông báo!"); 
+        }
     };
 
     window.deleteNotice = async function(key) {
         const user = JSON.parse(localStorage.getItem("currentUser"));
         if (!user || user.role === "Admin") return alert("⛔ Bạn không có quyền xóa!");
-        if (!confirm("Xóa thông báo này?")) return;
-        try { await remove(ref(db, 'notices/' + key)); alert("✅ Đã xóa!"); } catch (e) { console.error(e); alert("⚠️ Lỗi khi xóa!"); }
+        if (!confirm("🗑️ Xóa thông báo này?")) return;
+        try { 
+            await remove(ref(db, 'notices/' + key)); 
+            alert("✅ Đã xóa thông báo!"); 
+        } catch (e) { 
+            console.error(e); 
+            alert("⚠️ Lỗi khi xóa!"); 
+        }
     };
 
     // ============================================================
@@ -457,7 +510,12 @@
             tbody.innerHTML = "";
             if (!snapshot.exists()) { tbody.innerHTML = '<tr><td colspan="6">Chưa có văn bản nào</td></tr>'; return; }
             const docs = [];
-            snapshot.forEach(child => docs.push({ key: child.key, ...child.val() }));
+            snapshot.forEach(child => {
+                const data = child.val();
+                if (data && typeof data === 'object') {
+                    docs.push({ key: child.key, ...data });
+                }
+            });
             docs.reverse().forEach(doc => {
                 const actions = isAdmin ? '<span class="badge-default">Chỉ xem</span>' : `<button onclick="window.deleteDocument('${doc.key}')" class="btn-delete">Xóa</button>`;
                 const color = colors[doc.loai] || "#64748b";
