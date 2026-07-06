@@ -137,13 +137,11 @@
             if (pageId === "documents") loadDocuments();
             if (pageId === "tests") loadTests();
             if (pageId === "games") {
-                loadGames();
-                // Khởi tạo game nếu chưa có
                 setTimeout(function() {
-                    if (!document.getElementById('gameCanvas')) {
-                        initGameCanvas();
-                    }
-                }, 200);
+                    loadGames();
+                    loadScores();
+                    initGameCanvas();
+                }, 100);
             }
             if (pageId === "settings") loadSettings();
             if (pageId === "profile") loadProfile();
@@ -1165,102 +1163,119 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
         }
 
         // ==========================================
-        // GAME DORAEMON CHẠY (DINO STYLE)
+        // GAME DORAEMON RUN
         // ==========================================
 
-        // ===== KHỞI TẠO GAME =====
-        function initGameCanvas() {
-            if (document.getElementById('gameCanvas')) return;
+        // Biến game toàn cục
+        var gameRunning = false;
+        var gameScore = 0;
+        var gameHighScore = parseInt(localStorage.getItem('doraemonHighScore')) || 0;
+        var gameSpeed = 6;
+        var obstacles = [];
+        var frameId = null;
+        var isJumping = false;
+        var jumpVelocity = 0;
+        var gravity = 0.6;
+        var playerY = 250;
+        var playerX = 80;
+        var playerWidth = 40;
+        var playerHeight = 50;
+        var groundY = 300;
+        var currentGameTitle = 'Doraemon Run';
+
+        // Vẽ Doraemon
+        function drawDoraemon(ctx, x, y, w, h) {
+            // Thân
+            ctx.fillStyle = '#2196F3';
+            ctx.beginPath();
+            ctx.arc(x + w/2, y + h/2 - 5, w/2, 0, Math.PI * 2);
+            ctx.fill();
             
-            window.gameRunning = false;
-            window.gameScore = 0;
-            window.highScore = parseInt(localStorage.getItem('doraemonHighScore')) || 0;
-            window.gameSpeed = 6;
-            window.obstacles = [];
-            window.frameId = null;
-            window.isJumping = false;
-            window.jumpVelocity = 0;
-            window.gravity = 0.6;
-            window.playerY = 250;
-            window.playerX = 80;
-            window.playerWidth = 40;
-            window.playerHeight = 50;
-            window.groundY = 300;
-            window.currentGameTitle = 'Doraemon Run';
+            // Bụng
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(x + w/2, y + h/2 + 5, w/3, 0, Math.PI * 2);
+            ctx.fill();
             
-            window.drawDoraemon = function(ctx, x, y, w, h) {
-                // Thân
-                ctx.fillStyle = '#2196F3';
+            // Đầu
+            ctx.fillStyle = '#2196F3';
+            ctx.beginPath();
+            ctx.arc(x + w/2, y + 5, w/2.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Mặt
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(x + w/2 - 5, y + 8, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x + w/2 + 5, y + 8, 8, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Mắt
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(x + w/2 - 7, y + 8, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x + w/2 + 3, y + 8, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Mũi
+            ctx.fillStyle = '#FF1744';
+            ctx.beginPath();
+            ctx.arc(x + w/2 - 2, y + 14, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Miệng
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(x + w/2 - 2, y + 18, 5, 0.1, Math.PI - 0.1);
+            ctx.stroke();
+            
+            // Râu
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1;
+            for (var i = -1; i <= 1; i += 2) {
                 ctx.beginPath();
-                ctx.arc(x + w/2, y + h/2 - 5, w/2, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Bụng
-                ctx.fillStyle = '#FFFFFF';
-                ctx.beginPath();
-                ctx.arc(x + w/2, y + h/2 + 5, w/3, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Đầu
-                ctx.fillStyle = '#2196F3';
-                ctx.beginPath();
-                ctx.arc(x + w/2, y + 5, w/2.5, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Mặt
-                ctx.fillStyle = '#FFFFFF';
-                ctx.beginPath();
-                ctx.arc(x + w/2 - 5, y + 8, 8, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(x + w/2 + 5, y + 8, 8, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Mắt
-                ctx.fillStyle = '#000000';
-                ctx.beginPath();
-                ctx.arc(x + w/2 - 7, y + 8, 3, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(x + w/2 + 3, y + 8, 3, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Mũi
-                ctx.fillStyle = '#FF1744';
-                ctx.beginPath();
-                ctx.arc(x + w/2 - 2, y + 14, 3, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Miệng
-                ctx.strokeStyle = '#000000';
-                ctx.lineWidth = 1.5;
-                ctx.beginPath();
-                ctx.arc(x + w/2 - 2, y + 18, 5, 0.1, Math.PI - 0.1);
+                ctx.moveTo(x + w/2 + i * 10, y + 10);
+                ctx.lineTo(x + w/2 + i * 25, y + 5 + i * 5);
                 ctx.stroke();
-                
-                // Râu
-                ctx.strokeStyle = '#000000';
-                ctx.lineWidth = 1;
-                for (var i = -1; i <= 1; i += 2) {
-                    ctx.beginPath();
-                    ctx.moveTo(x + w/2 + i * 10, y + 10);
-                    ctx.lineTo(x + w/2 + i * 25, y + 5 + i * 5);
-                    ctx.stroke();
-                    ctx.beginPath();
-                    ctx.moveTo(x + w/2 + i * 10, y + 14);
-                    ctx.lineTo(x + w/2 + i * 25, y + 14 + i * 5);
-                    ctx.stroke();
-                }
-                
-                // Chuông
-                ctx.fillStyle = '#FFD700';
                 ctx.beginPath();
-                ctx.arc(x + w/2, y + h - 2, 6, 0, Math.PI * 2);
-                ctx.fill();
-            };
+                ctx.moveTo(x + w/2 + i * 10, y + 14);
+                ctx.lineTo(x + w/2 + i * 25, y + 14 + i * 5);
+                ctx.stroke();
+            }
+            
+            // Chuông
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(x + w/2, y + h - 2, 6, 0, Math.PI * 2);
+            ctx.fill();
         }
 
-        // ===== BẮT ĐẦU GAME =====
+        // Khởi tạo Canvas
+        function initGameCanvas() {
+            var canvas = document.getElementById('gameCanvas');
+            if (!canvas) return;
+            
+            var ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, 800, 350);
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, 800, 350);
+            ctx.fillStyle = '#3d3d5c';
+            ctx.fillRect(0, groundY, 800, 50);
+            ctx.fillStyle = '#4d4d6c';
+            ctx.fillRect(0, groundY, 800, 3);
+            drawDoraemon(ctx, playerX, playerY, playerWidth, playerHeight);
+            
+            // Cập nhật high score
+            var highEl = document.getElementById('gameHighScore');
+            if (highEl) highEl.textContent = gameHighScore;
+        }
+
+        // Bắt đầu game
         window.startGame = function() {
             var canvas = document.getElementById('gameCanvas');
             if (!canvas) {
@@ -1268,15 +1283,15 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
                 return;
             }
             
-            if (window.gameRunning) return;
+            if (gameRunning) return;
             
-            window.gameRunning = true;
-            window.gameScore = 0;
-            window.obstacles = [];
-            window.gameSpeed = 6;
-            window.playerY = window.groundY - window.playerHeight;
-            window.isJumping = false;
-            window.jumpVelocity = 0;
+            gameRunning = true;
+            gameScore = 0;
+            obstacles = [];
+            gameSpeed = 6;
+            playerY = groundY - playerHeight;
+            isJumping = false;
+            jumpVelocity = 0;
             
             var ctx = canvas.getContext('2d');
             var scoreEl = document.getElementById('gameScore');
@@ -1288,9 +1303,9 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
                 var type = types[Math.floor(Math.random() * types.length)];
                 var width = type === 'bird' ? 30 : type === 'cactus' ? 20 : 25;
                 var height = type === 'bird' ? 25 : type === 'cactus' ? 35 : 20;
-                var y = type === 'bird' ? window.groundY - 60 - Math.random() * 30 : window.groundY - height;
+                var y = type === 'bird' ? groundY - 60 - Math.random() * 30 : groundY - height;
                 
-                window.obstacles.push({
+                obstacles.push({
                     x: 800,
                     y: y,
                     width: width,
@@ -1323,7 +1338,7 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
             }
             
             function gameLoop() {
-                if (!window.gameRunning) return;
+                if (!gameRunning) return;
                 
                 ctx.clearRect(0, 0, 800, 350);
                 
@@ -1333,108 +1348,108 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
                 
                 // Mặt đất
                 ctx.fillStyle = '#2d2d44';
-                ctx.fillRect(0, window.groundY, 800, 50);
+                ctx.fillRect(0, groundY, 800, 50);
                 ctx.fillStyle = '#3d3d5c';
                 for (var i = 0; i < 800; i += 40) {
-                    var offset = (Date.now() / 100 * window.gameSpeed / 6) % 40;
-                    ctx.fillRect(i - offset, window.groundY, 20, 3);
+                    var offset = (Date.now() / 100 * gameSpeed / 6) % 40;
+                    ctx.fillRect(i - offset, groundY, 20, 3);
                 }
                 
                 // Vẽ Doraemon
-                window.drawDoraemon(ctx, window.playerX, window.playerY, window.playerWidth, window.playerHeight);
+                drawDoraemon(ctx, playerX, playerY, playerWidth, playerHeight);
                 
                 // Nhảy
-                if (window.isJumping) {
-                    window.playerY += window.jumpVelocity;
-                    window.jumpVelocity += window.gravity;
-                    if (window.playerY >= window.groundY - window.playerHeight) {
-                        window.playerY = window.groundY - window.playerHeight;
-                        window.isJumping = false;
-                        window.jumpVelocity = 0;
+                if (isJumping) {
+                    playerY += jumpVelocity;
+                    jumpVelocity += gravity;
+                    if (playerY >= groundY - playerHeight) {
+                        playerY = groundY - playerHeight;
+                        isJumping = false;
+                        jumpVelocity = 0;
                     }
                 }
                 
                 // Tạo chướng ngại vật
-                if (Math.random() < 0.02 + window.gameSpeed / 400) {
+                if (Math.random() < 0.02 + gameSpeed / 400) {
                     createObstacle();
                 }
                 
                 // Cập nhật chướng ngại vật
-                for (var i = window.obstacles.length - 1; i >= 0; i--) {
-                    var obs = window.obstacles[i];
-                    obs.x -= window.gameSpeed;
+                for (var i = obstacles.length - 1; i >= 0; i--) {
+                    var obs = obstacles[i];
+                    obs.x -= gameSpeed;
                     
-                    if (!obs.scored && obs.x + obs.width < window.playerX) {
+                    if (!obs.scored && obs.x + obs.width < playerX) {
                         obs.scored = true;
-                        window.gameScore += 10;
-                        if (scoreEl) scoreEl.textContent = window.gameScore;
+                        gameScore += 10;
+                        if (scoreEl) scoreEl.textContent = gameScore;
                     }
                     
                     // Va chạm
-                    if (obs.x < window.playerX + window.playerWidth - 10 &&
-                        obs.x + obs.width > window.playerX + 10 &&
-                        obs.y < window.playerY + window.playerHeight - 5 &&
-                        obs.y + obs.height > window.playerY + 5) {
-                        window.gameRunning = false;
+                    if (obs.x < playerX + playerWidth - 10 &&
+                        obs.x + obs.width > playerX + 10 &&
+                        obs.y < playerY + playerHeight - 5 &&
+                        obs.y + obs.height > playerY + 5) {
+                        gameRunning = false;
                         if (startBtn) startBtn.textContent = '▶️ Bắt đầu';
                         
-                        if (window.gameScore > window.highScore) {
-                            window.highScore = window.gameScore;
-                            localStorage.setItem('doraemonHighScore', window.highScore);
+                        if (gameScore > gameHighScore) {
+                            gameHighScore = gameScore;
+                            localStorage.setItem('doraemonHighScore', gameHighScore);
                             var highScoreEl = document.getElementById('gameHighScore');
-                            if (highScoreEl) highScoreEl.textContent = window.highScore;
+                            if (highScoreEl) highScoreEl.textContent = gameHighScore;
                             
-                            saveScore(window.gameScore);
-                            alert('🎉 KỶ LỤC MỚI! ' + window.gameScore + ' điểm!');
+                            saveScore(gameScore);
+                            alert('🎉 KỶ LỤC MỚI! ' + gameScore + ' điểm!');
                         } else {
-                            alert('💀 Game Over! Điểm: ' + window.gameScore);
+                            alert('💀 Game Over! Điểm: ' + gameScore);
                         }
                         
-                        window.obstacles = [];
+                        obstacles = [];
                         return;
                     }
                     
                     if (obs.x + obs.width < -50) {
-                        window.obstacles.splice(i, 1);
+                        obstacles.splice(i, 1);
                     }
                     
                     drawObstacle(ctx, obs);
                 }
                 
-                if (window.gameSpeed < 15) {
-                    window.gameSpeed += 0.002;
+                if (gameSpeed < 15) {
+                    gameSpeed += 0.002;
                 }
                 
-                if (scoreEl) scoreEl.textContent = window.gameScore;
+                if (scoreEl) scoreEl.textContent = gameScore;
                 
-                window.frameId = requestAnimationFrame(gameLoop);
+                frameId = requestAnimationFrame(gameLoop);
             }
             
             gameLoop();
         };
 
-        // ===== NHẢY =====
+        // Nhảy
         window.jumpGame = function() {
-            if (!window.gameRunning) return;
-            if (window.isJumping) return;
+            if (!gameRunning) return;
+            if (isJumping) return;
             
-            window.isJumping = true;
-            window.jumpVelocity = -12;
+            isJumping = true;
+            jumpVelocity = -12;
         };
 
-        // ===== RESET GAME =====
+        // Reset game
         window.resetGame = function() {
-            window.gameRunning = false;
-            if (window.frameId) {
-                cancelAnimationFrame(window.frameId);
-                window.frameId = null;
+            gameRunning = false;
+            if (frameId) {
+                cancelAnimationFrame(frameId);
+                frameId = null;
             }
-            window.obstacles = [];
-            window.gameScore = 0;
-            window.gameSpeed = 6;
-            window.playerY = window.groundY - window.playerHeight;
-            window.isJumping = false;
-            window.jumpVelocity = 0;
+            obstacles = [];
+            gameScore = 0;
+            gameSpeed = 6;
+            playerY = groundY - playerHeight;
+            isJumping = false;
+            jumpVelocity = 0;
             
             var scoreEl = document.getElementById('gameScore');
             if (scoreEl) scoreEl.textContent = '0';
@@ -1449,24 +1464,24 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
                 ctx.fillStyle = '#1a1a2e';
                 ctx.fillRect(0, 0, 800, 350);
                 ctx.fillStyle = '#3d3d5c';
-                ctx.fillRect(0, window.groundY, 800, 50);
+                ctx.fillRect(0, groundY, 800, 50);
                 ctx.fillStyle = '#4d4d6c';
-                ctx.fillRect(0, window.groundY, 800, 3);
-                window.drawDoraemon(ctx, window.playerX, window.playerY, window.playerWidth, window.playerHeight);
+                ctx.fillRect(0, groundY, 800, 3);
+                drawDoraemon(ctx, playerX, playerY, playerWidth, playerHeight);
             }
         };
 
-        // ===== THOÁT GAME =====
+        // Thoát game
         window.exitGame = function() {
-            window.gameRunning = false;
-            if (window.frameId) {
-                cancelAnimationFrame(window.frameId);
-                window.frameId = null;
+            gameRunning = false;
+            if (frameId) {
+                cancelAnimationFrame(frameId);
+                frameId = null;
             }
             window.showPage('games');
         };
 
-        // ===== LƯU ĐIỂM =====
+        // Lưu điểm
         async function saveScore(score) {
             var currentUser = JSON.parse(localStorage.getItem('currentUser'));
             if (!currentUser) return;
@@ -1487,7 +1502,7 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
             }
         }
 
-        // ===== TẢI BẢNG XẾP HẠNG =====
+        // Tải bảng xếp hạng
         function loadScores() {
             var tbody = document.getElementById('scoreTableBody');
             if (!tbody) return;
@@ -1527,27 +1542,26 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
             var canManage = user.role === "Ban Quản Trị";
             var html = '<h2>🎮 Game nội bộ</h2>';
 
-            if (window.gameRunning || document.getElementById('gameCanvas')) {
-                html += `
-                    <div style="background:#1a1a2e; border-radius:12px; padding:20px; margin-bottom:20px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
-                            <h3 style="color:#fff; margin:0;">🎮 Đang chơi: <span id="currentGameTitle">${window.currentGameTitle || 'Doraemon Run'}</span></h3>
-                            <button onclick="window.exitGame()" class="btn-delete" style="background:#ef4444;">❌ Thoát game</button>
-                        </div>
-                        <canvas id="gameCanvas" width="800" height="350" style="width:100%; max-width:800px; height:auto; border-radius:8px; background:#1a1a2e; display:block; margin:0 auto;"></canvas>
-                        <div style="display:flex; justify-content:space-between; color:#fff; margin-top:10px; font-size:16px; flex-wrap:wrap; gap:10px;">
-                            <span>🏆 Điểm: <strong id="gameScore">0</strong></span>
-                            <span>🥇 Cao nhất: <strong id="gameHighScore">${window.highScore || 0}</strong></span>
-                        </div>
-                        <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
-                            <button onclick="window.startGame()" class="btn-create" style="background:#10b981;" id="gameStartBtn">▶️ Bắt đầu</button>
-                            <button onclick="window.jumpGame()" class="btn-create" style="background:#f59e0b;" id="gameJumpBtn">⬆️ Nhảy (Space)</button>
-                            <button onclick="window.resetGame()" class="btn-delete" style="background:#64748b;">🔄 Chơi lại</button>
-                        </div>
-                        <p style="color:#94a3b8; font-size:12px; margin-top:8px;">⌨️ Phím Space hoặc Click chuột vào màn hình để nhảy</p>
+            // Canvas game
+            html += `
+                <div style="background:#1a1a2e; border-radius:12px; padding:20px; margin-bottom:20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+                        <h3 style="color:#fff; margin:0;">🎮 <span id="currentGameTitle">${currentGameTitle}</span></h3>
+                        <button onclick="window.exitGame()" class="btn-delete" style="background:#ef4444;">❌ Thoát game</button>
                     </div>
-                `;
-            }
+                    <canvas id="gameCanvas" width="800" height="350" style="width:100%; max-width:800px; height:auto; border-radius:8px; background:#1a1a2e; display:block; margin:0 auto;"></canvas>
+                    <div style="display:flex; justify-content:space-between; color:#fff; margin-top:10px; font-size:16px; flex-wrap:wrap; gap:10px;">
+                        <span>🏆 Điểm: <strong id="gameScore">0</strong></span>
+                        <span>🥇 Cao nhất: <strong id="gameHighScore">${gameHighScore}</strong></span>
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+                        <button onclick="window.startGame()" class="btn-create" style="background:#10b981;" id="gameStartBtn">▶️ Bắt đầu</button>
+                        <button onclick="window.jumpGame()" class="btn-create" style="background:#f59e0b;" id="gameJumpBtn">⬆️ Nhảy (Space)</button>
+                        <button onclick="window.resetGame()" class="btn-delete" style="background:#64748b;">🔄 Chơi lại</button>
+                    </div>
+                    <p style="color:#94a3b8; font-size:12px; margin-top:8px;">⌨️ Phím Space hoặc Click chuột vào màn hình để nhảy</p>
+                </div>
+            `;
 
             if (canManage) {
                 html += `
@@ -1583,30 +1597,15 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
                 </div>
             `;
 
+            // Khởi tạo canvas sau khi render
             setTimeout(function() {
-                if (!document.getElementById('gameCanvas')) {
-                    initGameCanvas();
-                }
-                // Vẽ Doraemon tĩnh
-                var canvas = document.getElementById('gameCanvas');
-                if (canvas && !window.gameRunning) {
-                    var ctx = canvas.getContext('2d');
-                    ctx.clearRect(0, 0, 800, 350);
-                    ctx.fillStyle = '#1a1a2e';
-                    ctx.fillRect(0, 0, 800, 350);
-                    ctx.fillStyle = '#3d3d5c';
-                    ctx.fillRect(0, window.groundY, 800, 50);
-                    ctx.fillStyle = '#4d4d6c';
-                    ctx.fillRect(0, window.groundY, 800, 3);
-                    window.drawDoraemon(ctx, window.playerX, window.playerY, window.playerWidth, window.playerHeight);
-                }
-                loadScores();
+                initGameCanvas();
             }, 100);
 
             return html;
         }
 
-        // ===== TẠO GAME MỚI =====
+        // ===== TẠO GAME =====
         window.addGame = async function() {
             var currentUser = JSON.parse(localStorage.getItem('currentUser'));
             if (!currentUser || currentUser.role !== "Ban Quản Trị") {
@@ -1626,40 +1625,8 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
                     createdAt: new Date().toISOString()
                 });
                 
-                alert("✅ Tạo game thành công! Bắt đầu chơi ngay!");
-                
-                window.currentGameTitle = title;
-                window.gameRunning = false;
-                if (window.frameId) {
-                    cancelAnimationFrame(window.frameId);
-                    window.frameId = null;
-                }
-                window.obstacles = [];
-                window.gameScore = 0;
-                window.gameSpeed = 6;
-                window.playerY = window.groundY - window.playerHeight;
-                window.isJumping = false;
-                window.jumpVelocity = 0;
-                
+                alert("✅ Tạo game thành công!");
                 window.showPage('games');
-                
-                setTimeout(function() {
-                    initGameCanvas();
-                    var canvas = document.getElementById('gameCanvas');
-                    if (canvas) {
-                        var ctx = canvas.getContext('2d');
-                        ctx.clearRect(0, 0, 800, 350);
-                        ctx.fillStyle = '#1a1a2e';
-                        ctx.fillRect(0, 0, 800, 350);
-                        ctx.fillStyle = '#3d3d5c';
-                        ctx.fillRect(0, window.groundY, 800, 50);
-                        ctx.fillStyle = '#4d4d6c';
-                        ctx.fillRect(0, window.groundY, 800, 3);
-                        window.drawDoraemon(ctx, window.playerX, window.playerY, window.playerWidth, window.playerHeight);
-                    }
-                    var titleEl = document.getElementById('currentGameTitle');
-                    if (titleEl) titleEl.textContent = title;
-                }, 200);
                 
             } catch (err) {
                 console.error(err);
@@ -1677,37 +1644,14 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
                 }
                 var game = snapshot.val();
                 
-                window.currentGameTitle = game.title || 'Doraemon Run';
-                window.gameRunning = false;
-                if (window.frameId) {
-                    cancelAnimationFrame(window.frameId);
-                    window.frameId = null;
-                }
-                window.obstacles = [];
-                window.gameScore = 0;
-                window.gameSpeed = 6;
-                window.playerY = window.groundY - window.playerHeight;
-                window.isJumping = false;
-                window.jumpVelocity = 0;
+                currentGameTitle = game.title || 'Doraemon Run';
+                var titleEl = document.getElementById('currentGameTitle');
+                if (titleEl) titleEl.textContent = currentGameTitle;
                 
                 window.showPage('games');
                 
                 setTimeout(function() {
                     initGameCanvas();
-                    var canvas = document.getElementById('gameCanvas');
-                    if (canvas) {
-                        var ctx = canvas.getContext('2d');
-                        ctx.clearRect(0, 0, 800, 350);
-                        ctx.fillStyle = '#1a1a2e';
-                        ctx.fillRect(0, 0, 800, 350);
-                        ctx.fillStyle = '#3d3d5c';
-                        ctx.fillRect(0, window.groundY, 800, 50);
-                        ctx.fillStyle = '#4d4d6c';
-                        ctx.fillRect(0, window.groundY, 800, 3);
-                        window.drawDoraemon(ctx, window.playerX, window.playerY, window.playerWidth, window.playerHeight);
-                    }
-                    var titleEl = document.getElementById('currentGameTitle');
-                    if (titleEl) titleEl.textContent = window.currentGameTitle;
                 }, 200);
                 
             } catch (err) {
@@ -1718,7 +1662,7 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
 
         // ===== XÓA GAME =====
         window.deleteGame = async function(key) {
-            var currentUser = JSON.parse(localStorage.getItem("currentUser"));
+            var currentUser = JSON.parse(localStorage.getItem('currentUser'));
             if (!currentUser || currentUser.role !== "Ban Quản Trị") {
                 alert("⛔ Chỉ Ban Quản Trị mới có quyền xóa game!");
                 return;
@@ -1739,7 +1683,7 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
         function loadGames() {
             var tbody = document.getElementById("gameTableBody");
             if (!tbody) return;
-            var currentUser = JSON.parse(localStorage.getItem("currentUser"));
+            var currentUser = JSON.parse(localStorage.getItem('currentUser'));
             var isAdmin = currentUser && currentUser.role === "Admin";
             var isBQT = currentUser && currentUser.role === "Ban Quản Trị";
 
@@ -1787,7 +1731,7 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
                 var scores = [];
                 snapshot.forEach(function(child) {
                     var data = child.val();
-                    if (data.gameId === gameKey) {
+                    if (data.gameTitle === gameKey || data.gameId === gameKey) {
                         scores.push(data);
                     }
                 });
@@ -1806,21 +1750,6 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
                 }
             }).catch(function() {});
         }
-
-        // ===== PHÍM SPACE =====
-        document.addEventListener('keydown', function(e) {
-            if (e.key === ' ' || e.key === 'Space') {
-                e.preventDefault();
-                window.jumpGame();
-            }
-        });
-
-        // ===== CLICK CANVAS =====
-        document.addEventListener('click', function(e) {
-            if (e.target.id === 'gameCanvas') {
-                window.jumpGame();
-            }
-        });
 
         // ==========================================
         // CÀI ĐẶT
@@ -1950,8 +1879,25 @@ d. Không cần nội quy' style="min-height:150px; width:100%; padding:10px; bo
             window.location.href = "index.html";
         };
 
+        // ===== KEYBOARD EVENT =====
+        document.addEventListener('keydown', function(e) {
+            if (e.key === ' ' || e.key === 'Space') {
+                e.preventDefault();
+                window.jumpGame();
+            }
+        });
+
+        // ===== CLICK CANVAS =====
+        document.addEventListener('click', function(e) {
+            if (e.target.id === 'gameCanvas') {
+                window.jumpGame();
+            }
+        });
+
         console.log("✅ Dashboard đã tải thành công!");
         console.log("🔍 window.showPage:", typeof window.showPage);
+        console.log("🔍 window.startGame:", typeof window.startGame);
+        console.log("🔍 window.jumpGame:", typeof window.jumpGame);
     </script>
 
 </body>
