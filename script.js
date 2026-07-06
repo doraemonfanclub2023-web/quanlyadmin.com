@@ -577,14 +577,48 @@ window.listenToUserTable = function() {
 
 window.addAccount = async function() {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    if (currentUser && currentUser.role === 'Admin') return alert('⛔ Bạn không có quyền thêm thành viên mới!');
+
+    // Chỉ BQT hoặc Dev mới được tạo tài khoản
+    if (!currentUser || currentUser.role === 'Admin') {
+        return alert('⛔ Bạn không có quyền thêm tài khoản!');
+    }
+
     const username = document.getElementById('newUsername')?.value.trim();
     const name = document.getElementById('newName')?.value.trim();
     const password = document.getElementById('newPassword')?.value.trim();
     const role = document.getElementById('newRole')?.value;
-    if (!username || !password) return alert('Thiếu thông tin tạo tài khoản!');
-    await set(ref(db, `users/${username}`), { username, name: name || username, password, role });
-    alert('Thêm tài khoản đồng bộ thành công!');
+
+    if (!username || !password) {
+        return alert('❌ Vui lòng nhập đầy đủ thông tin!');
+    }
+
+    // BQT không được tạo thêm BQT
+    if (
+        currentUser.role === 'Ban Quản Trị' &&
+        role === 'Ban Quản Trị'
+    ) {
+        return alert('⛔ Chỉ Dev mới được tạo tài khoản Ban Quản Trị!');
+    }
+
+    // Kiểm tra tài khoản đã tồn tại chưa
+    const checkUser = await get(ref(db, `users/${username}`));
+
+    if (checkUser.exists()) {
+        return alert('❌ Mã tài khoản đã tồn tại!');
+    }
+
+    await set(ref(db, `users/${username}`), {
+        username,
+        name: name || username,
+        password,
+        role
+    });
+
+    alert('✅ Tạo tài khoản thành công!');
+
+    document.getElementById('newUsername').value = '';
+    document.getElementById('newName').value = '';
+    document.getElementById('newPassword').value = '';
 }
 
 window.deleteAccount = async function(username) {
