@@ -629,51 +629,36 @@ window.backupSystemData = async function() {
 }
 
 /* ====================================================
-   7. KHỞI CHẠY KHI TẢI TRANG & ĐĂNG KÝ SỰ KIỆN CLICK MENU ĐỘNG
+   7. KHỞI CHẠY KHI TẢI TRANG & ĐĂNG KÝ CẤU HÌNH HỆ THỐNG
    ==================================================== */
-function forceRenderHomeDirectly() {
-    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    const contentDiv = document.getElementById('pageContent');
-    
-    if (currentUser && contentDiv) {
-        if (contentDiv.innerHTML.trim() === '' || contentDiv.innerHTML.includes('Đang kết nối Cloud...')) {
-            contentDiv.innerHTML = window.getPageContent('home', currentUser.role);
-            window.listenToHomeData(); 
-            console.log("-> Đã kích hoạt cơ chế Ép Render Trang Chủ Thành Công!");
-        }
-    }
-}
 
+// Gán các hàm vào window để HTML có thể gọi được qua onclick="..."
+window.showPage = showPage;
+window.logout = logout;
+window.login = login;
+window.addAccount = addAccount;
+window.deleteAccount = deleteAccount;
+window.addNotice = addNotice;
+window.deleteNotice = deleteNotice;
+window.addMiniGame = addMiniGame;
+window.deleteMiniGame = deleteMiniGame;
+window.viewGameDetail = viewGameDetail;
+window.updateProfileName = updateProfileName;
+window.saveSysSettingOnly = saveSysSettingOnly;
+window.saveClubConfigOnly = saveClubConfigOnly;
+window.backupSystemData = backupSystemData;
+window.changeUserPassword = changeUserPassword;
+
+// Khởi chạy các tác vụ khi trang load xong
 document.addEventListener('DOMContentLoaded', () => {
     const isLoginPage = document.getElementById('username') !== null;
+    
+    // Nếu không phải trang đăng nhập thì mới chạy các logic dashboard
+    if (!isLoginPage) {
+        // Tự động load trang chủ khi vào dashboard
+        showPage('home'); 
 
-    if (isLoginPage) {
-        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-        if (currentUser) {
-            window.location.href = "dashboard.html";
-            return;
-        }
-    } else {
-        forceRenderHomeDirectly();
-        setTimeout(forceRenderHomeDirectly, 100);
-        setTimeout(forceRenderHomeDirectly, 400);
-
-        const sidebar = document.querySelector('.sidebar');
-        if (sidebar) {
-            sidebar.addEventListener('click', (e) => {
-                const target = e.target.closest('[onclick*="showPage"]');
-                if (target) {
-                    e.preventDefault();
-                    const attr = target.getAttribute('onclick');
-                    const match = attr.match(/showPage\(['"]([^'"]+)['"]\)/);
-                    if (match && match[1]) {
-                        window.location.hash = match[1]; 
-                        window.showPage(match[1]);
-                    }
-                }
-            });
-        }
-
+        // Lắng nghe cấu hình hệ thống từ Firebase (Maintenance, Tên club, Favicon...)
         onValue(ref(db, 'system_config'), (snapshot) => {
             if (!snapshot.exists()) return;
             const config = snapshot.val();
@@ -681,6 +666,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const isMaintenance = config.maintenance;
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
             
+            // Kiểm tra bảo trì
             if (isMaintenance === 'on' && currentUser && currentUser.role !== 'Ban Quản Trị') {
                 alert('🔴 Hệ thống đang trong chế độ bảo trì công cộng. Vui lòng quay lại sau!');
                 localStorage.removeItem('currentUser');
@@ -688,19 +674,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const brandEl = document.getElementById('sidebarBrand') || 
-                            document.querySelector('.sidebar .brand') || 
-                            document.querySelector('.sidebar h1') || 
-                            document.querySelector('.sidebar h3');
-            
+            // Cập nhật tên thương hiệu trên sidebar
+            const brandEl = document.querySelector('.sidebar .brand h3');
             if (brandEl && config.clubName) {
-                brandEl.innerText = config.clubName.toUpperCase() + " ADMIN";
+                brandEl.innerHTML = config.clubName.toUpperCase() + "<br>ADMIN";
             }
 
+            // Cập nhật tiêu đề trang web
             if (config.clubName) {
                 document.title = `${config.clubName} - Hệ thống quản trị`;
             }
 
+            // Cập nhật Favicon
             const defaultFavicon = "https://i.postimg.cc/Z57X57Gp/Chua-co-ten-(Logo)-(1).png";
             let faviconEl = document.querySelector("link[rel*='icon']");
             if (!faviconEl) {
