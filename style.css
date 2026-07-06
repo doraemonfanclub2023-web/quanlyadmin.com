@@ -1,117 +1,126 @@
-/* 1. Reset & Layout Chính */
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-body { background-color: #f8fafc; color: #334155; }
-.container { display: flex; min-height: 100vh; width: 100%; }
+/* RESET */
 
-/* 2. Sidebar Menu - Đã tinh chỉnh lại để chuyên nghiệp hơn */
-.sidebar { 
-    width: 260px; 
-    flex-shrink: 0; 
-    background: #0f172a; 
-    color: #94a3b8; /* Màu chữ menu hơi xám để nhìn sang */
-    padding: 24px 0; 
-    height: 100vh; 
-    position: fixed; 
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Segoe UI, sans-serif;
+    background: #f1f5f9;
+}
+
+/* LOGIN */
+
+.login-container {
+    width: 100%;
+    min-height: 100vh;
+
     display: flex;
-    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    padding: 20px;
 }
 
-.sidebar .brand { 
-    padding: 0 24px 30px 24px; 
-    color: #fff; 
-    font-size: 16px; 
-    font-weight: bold; 
-    line-height: 1.4;
+.login-box {
+    width: 100%;
+    max-width: 420px;
+
+    background: white;
+
+    padding: 35px;
+
+    border-radius: 16px;
+
+    box-shadow:
+        0 10px 30px rgba(0,0,0,.08);
 }
 
-.sidebar ul { list-style: none; flex-grow: 1; }
+.logo {
+    width: 90px;
+    display: block;
+    margin: auto;
+    margin-bottom: 15px;
+}
 
-.sidebar li { 
-    padding: 14px 24px; 
-    cursor: pointer; 
-    transition: 0.2s; 
-    display: flex; 
-    align-items: center; 
-    gap: 12px;
+.login-box h1 {
+    text-align: center;
+    color: #0284c7;
+    margin-bottom: 10px;
+}
+
+.login-box p {
+    text-align: center;
+    color: #64748b;
+    margin-bottom: 25px;
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
     font-size: 14px;
-}
-
-.sidebar li:hover { 
-    background: #1e293b; 
-    color: #fff; 
-    border-left: 4px solid #38bdf8; /* Thêm đường highlight bên trái */
-}
-
-.logout-btn { 
-    color: #f87171; 
-    padding: 20px 24px; 
-    cursor: pointer; 
-    border-top: 1px solid #1e293b; 
     font-weight: 600;
+    color: #334155;
 }
 
-/* 3. Content - Luôn cách sidebar 260px */
-.content { flex-grow: 1; margin-left: 260px; padding: 30px 40px; }
+.form-group input {
+    width: 100%;
 
-/* 4. Các thành phần khác giữ nguyên... */
+    padding: 12px;
 
-/* 4. Dashboard Cards */
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
-.card { 
-    background: #fff; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; 
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); transition: transform 0.2s; cursor: pointer; 
-}
-.card:hover { transform: translateY(-5px); }
-.card h3 { font-size: 14px; color: #64748b; margin-bottom: 8px; }
-.card h1 { font-size: 28px; color: #0f172a; margin: 0; }
+    border: 1px solid #cbd5e1;
 
-/* 5. Activity List */
-.activity { background: #fff; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; }
-.activity h3 { margin-bottom: 15px; color: #1e293b; }
-#homeNoticeList { list-style: none; }
-#homeNoticeList li { padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; line-height: 1.5; }
+    border-radius: 8px;
 
-/* 6. BẢNG DỮ LIỆU (Tối ưu cho image_a5ab79.png) */
-table { 
-    width: 100%; border-collapse: separate; border-spacing: 0; 
-    margin-top: 20px; background: #fff; border-radius: 8px; 
-    border: 1px solid #e2e8f0; overflow: hidden; 
-}
-th, td { padding: 16px; text-align: left; border-bottom: 1px solid #f1f5f9; }
-th { background: #f8fafc; color: #475569; font-weight: 600; }
+    outline: none;
 
-/* 7. NÚT BẤM CHUYÊN NGHIỆP */
-.btn-action { 
-    padding: 6px 12px; border-radius: 4px; border: none; 
-    cursor: pointer; font-size: 12px; font-weight: 600; margin-right: 5px; 
+    transition: .2s;
 }
-.btn-edit { background: #fef3c7; color: #92400e; }
-.btn-delete { background: #fee2e2; color: #991b1b; }
-.btn-action:hover { opacity: 0.8; }
-/* 8. GIAO DIỆN FORM CÔNG VĂN (Theo image_a5b31c.jpg) */
-.form-card { 
-    background: #fff; padding: 24px; border-radius: 12px; 
-    border: 1px solid #e2e8f0; margin-bottom: 25px; 
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-.form-title { font-size: 16px; margin-bottom: 20px; color: #1e293b; font-weight: 600; }
-.form-row { display: flex; gap: 20px; margin-bottom: 15px; }
-.form-row input { 
-    flex: 1; padding: 12px; border: 1px solid #cbd5e1; 
-    border-radius: 6px; font-size: 14px; 
-}
-.input-full { 
-    width: 100%; padding: 12px; margin-bottom: 20px; 
-    border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; 
-}
-.btn-submit { 
-    background: #10b981; color: white; border: none; 
-    padding: 12px 24px; border-radius: 6px; cursor: pointer; 
-    font-weight: 600; transition: background 0.2s; 
-}
-.btn-submit:hover { background: #059669; }
 
-/* 9. BỔ SUNG CHO BẢNG CÔNG VĂN */
-.table-info { font-size: 13px; color: #64748b; margin-bottom: 10px; }
-.link-view { color: #3b82f6; text-decoration: none; font-size: 14px; }
-.link-view:hover { text-decoration: underline; }
+.form-group input:focus {
+    border-color: #0284c7;
+}
+
+#loginBtn {
+    width: 100%;
+
+    padding: 13px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: #0284c7;
+
+    color: white;
+
+    font-size: 15px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition: .2s;
+}
+
+#loginBtn:hover {
+    background: #0369a1;
+}
+
+#errorBox {
+    margin-top: 15px;
+
+    color: #dc2626;
+
+    text-align: center;
+
+    font-size: 14px;
+
+    display: none;
+}
