@@ -1,7 +1,7 @@
 // --- 1. CẤU HÌNH & KHỞI TẠO ---
+// Thêm chữ 'get' vào danh sách import
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
+import { getDatabase, ref, set, get, child, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 const firebaseConfig = {
     apiKey: "AIzaSyC-U9L1plaQ6pcP7Iecg4RO0GirBjunISM",
     authDomain: "admin-27099.firebaseapp.com",
