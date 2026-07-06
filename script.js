@@ -615,19 +615,6 @@ window.listenToUserTable = function() {
     document.getElementById('newPassword').value = '';
 }
 
-    if (!username || !password) {
-        return alert('Vui lòng nhập đầy đủ thông tin!');
-    }
-
-    await set(ref(db, `users/${username}`), {
-        username,
-        name: name || username,
-        password,
-        role
-    });
-
-    // Kiểm tra tài khoản đã tồn tại chưa
-    const checkUser = await get(ref(db, `users/${username}`));
 
     if (checkUser.exists()) {
         return alert('❌ Mã tài khoản đã tồn tại!');
