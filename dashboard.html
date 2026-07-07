@@ -619,7 +619,7 @@
     };
 
     // ============================================================
-    // QUẢN LÝ TEST KỸ NĂNG - GIAO DIỆN CHUẨN
+    // QUẢN LÝ TEST KỸ NĂNG - THEO ẢNH "giao diện giữa.png"
     // ============================================================
     function getTestsPage(user) {
         console.log("📝 Đang tạo trang Tests...");
@@ -642,28 +642,7 @@
                 <div style="background:white; border-radius:12px; padding:16px 20px; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
                     <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
                         <span style="font-weight:600; color:#0f172a; font-size:15px;">📄 Mẫu nhúng:</span>
-                        <span style="color:#64748b;">
-                            <a href="https://docs.google.com/forms/d/e/1FAIpQLSefvxSq_FtGv43zh_wH4a1k04zBfr1O9Xq8Nq7xAyAsDF6gQw/viewform?usp=header" 
-                               target="_blank" 
-                               style="color:#0284c7; text-decoration:none;">
-                                📝 Mở form tạo test
-                            </a>
-                            &nbsp;|&nbsp;
-                            <a href="https://docs.google.com/spreadsheets/d/1BrXO-57mvO3B4EittZyG54gxrcNzQbLKLg4TLlgZ5S0/edit?usp=sharing" 
-                               target="_blank" 
-                               style="color:#10b981; text-decoration:none;">
-                                📊 Xem kết quả
-                            </a>
-                        </span>
-                    </div>
-                </div>
-                
-                <!-- Lưu bài test -->
-                <div style="background:white; border-radius:12px; padding:16px 20px; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
-                    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                        <span style="font-weight:600; color:#0f172a; font-size:15px;">💾 Lưu bài test:</span>
-                        <button onclick="window.saveTestData()" class="btn-create" style="font-size:13px; padding:6px 16px;">💾 Lưu</button>
-                        <span style="font-size:12px; color:#94a3b8;">(Lưu danh sách test lên Firebase)</span>
+                        <span style="color:#64748b;">Lưu bài test</span>
                     </div>
                 </div>
                 
@@ -816,16 +795,7 @@
     }
 
     // ============================================================
-    // LƯU BÀI TEST
-    // ============================================================
-    window.saveTestData = function() {
-        const user = JSON.parse(localStorage.getItem("currentUser"));
-        if (!user) return alert("⚠️ Vui lòng đăng nhập!");
-        alert("💾 Dữ liệu test đã được lưu tự động trên Firebase!");
-    };
-
-    // ============================================================
-    // CÁC HÀM XỬ LÝ TEST
+    // CÁC HÀM XỬ LÝ TEST (GIỮ LẠI)
     // ============================================================
     window.editTest = async function(key) {
         const user = JSON.parse(localStorage.getItem("currentUser"));
@@ -1363,7 +1333,7 @@
 
     console.log("✅ Dashboard đã tải thành công!");
     console.log("📢 Hàm addNotice đã sẵn sàng!");
-    console.log("📝 Trang Test đã được cập nhật theo yêu cầu!");
+    console.log("📝 Trang Test đã cập nhật theo ảnh giao diện giữa.png!");
     console.log("🎮 Chơi game: Vào menu Game và nhấn Space để chơi!");
 </script>
 
