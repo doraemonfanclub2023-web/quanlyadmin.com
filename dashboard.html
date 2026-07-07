@@ -116,7 +116,7 @@
     });
 
     // ============================================================
-    // HÀM SHOW PAGE CHÍNH
+    // HÀM SHOW PAGE CHÍNH - ĐÃ SỬA LỖI ĐIỀU HƯỚNG
     // ============================================================
     window.showPage = function(pageId) {
         console.log("📄 Đang chuyển đến trang:", pageId);
@@ -166,10 +166,12 @@
                 loadDocuments();
                 break;
             case "tests":
+                console.log("✅ ĐANG VÀO TRANG TEST KỸ NĂNG!");
                 content.innerHTML = getTestsPage(user);
                 loadTests();
                 break;
             case "games":
+                console.log("🎮 ĐANG VÀO TRANG GAME!");
                 content.innerHTML = getGamesPage(user);
                 loadGames();
                 loadScores();
@@ -674,7 +676,7 @@ d. Đáp án D' style="min-height:180px; width:100%; padding:10px; border:1px so
             <div class="table-container">
                 <table class="table">
                     <thead><tr><th>Tiêu đề</th><th>Mô tả</th><th>Số câu</th><th>Điểm đạt</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead>
-                    <tbody id="testTableBody"><tr><td colspan="6">Đang tải...</td></tr></tbody>
+                    <tbody id="testTableBody"><tr><td colspan="6">📭 Đang tải...</td></tr></tbody>
                 </table>
             </div>
         `;
