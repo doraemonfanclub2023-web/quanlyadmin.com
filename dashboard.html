@@ -573,7 +573,7 @@
     };
 
     // ============================================================
-    // QUẢN LÝ TEST KỸ NĂNG - FULL CHỨC NĂNG
+    // QUẢN LÝ TEST KỸ NĂNG
     // ============================================================
     function getTestsPage(user) {
         const canManage = user.role === "Ban Quản Trị";
@@ -621,7 +621,7 @@
     }
 
     // ============================================================
-    // HIỂN THỊ POPUP TẠO TEST (TÁCH 2 LOẠI)
+    // HIỂN THỊ POPUP TẠO TEST
     // ============================================================
     window.showCreateTestForm = function() {
         const user = JSON.parse(localStorage.getItem("currentUser"));
@@ -821,7 +821,7 @@
     }
 
     // ============================================================
-    // TẢI DANH SÁCH TEST
+    // TẢI DANH SÁCH TEST (CÓ NÚT LÀM BÀI CHO ADMIN)
     // ============================================================
     function loadTests() {
         const container = document.getElementById("testListContainer");
@@ -859,13 +859,17 @@
                 if (isBQT) {
                     actions = `
                         <button onclick="window.editTest('${key}')" class="btn-edit" style="font-size:11px; padding:2px 10px;">✏️ Sửa</button>
+                        <button onclick="window.startTest('${key}')" class="btn-create" style="font-size:11px; padding:2px 10px; background:#10b981;">📝 Làm bài</button>
                         <button onclick="window.deleteTest('${key}')" class="btn-delete" style="font-size:11px; padding:2px 10px;">🗑️ Xóa</button>
                         ${hasEmbed ? `<button onclick="window.viewEmbed('${key}')" class="btn-create" style="font-size:11px; padding:2px 10px; background:#8b5cf6;">📄 Xem form</button>` : ''}
                     `;
                 } else if (isAdmin) {
-                    actions = `<span class="badge-default">Chỉ xem</span>`;
+                    actions = `
+                        <button onclick="window.startTest('${key}')" class="btn-create" style="font-size:11px; padding:2px 10px; background:#10b981;">📝 Làm bài</button>
+                        ${hasEmbed ? `<button onclick="window.viewEmbed('${key}')" class="btn-create" style="font-size:11px; padding:2px 10px; background:#8b5cf6;">📄 Xem form</button>` : ''}
+                    `;
                 } else {
-                    actions = `<button onclick="window.startTest('${key}')" class="btn-create" style="font-size:11px; padding:2px 10px; background:#10b981;">📝 Làm test</button>`;
+                    actions = `<button onclick="window.startTest('${key}')" class="btn-create" style="font-size:11px; padding:2px 10px; background:#10b981;">📝 Làm bài</button>`;
                 }
                 
                 html += `
@@ -990,6 +994,9 @@
         }
     };
 
+    // ============================================================
+    // XÓA TEST
+    // ============================================================
     window.deleteTest = async function(key) {
         const user = JSON.parse(localStorage.getItem("currentUser"));
         if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền xóa test!");
@@ -997,8 +1004,103 @@
         try { await remove(ref(db, 'tests/' + key)); alert("✅ Đã xóa test!"); } catch (e) { console.error(e); alert("⚠️ Lỗi khi xóa!"); }
     };
 
+    // ============================================================
+    // LÀM BÀI TEST
+    // ============================================================
     window.startTest = async function(key) {
-        alert("📝 Tính năng làm test đang phát triển!");
+        const user = JSON.parse(localStorage.getItem("currentUser"));
+        if (!user) return alert("⚠️ Vui lòng đăng nhập!");
+        
+        try {
+            const snap = await get(ref(db, 'tests/' + key));
+            if (!snap.exists()) return alert("Bài test không tồn tại!");
+            const test = snap.val();
+            
+            // Kiểm tra nếu có mã nhúng thì mở form
+            if (test.embedCode && test.embedCode.trim().length > 0) {
+                window.viewEmbed(key);
+                return;
+            }
+            
+            // Nếu không có câu hỏi
+            if (!test.questions || test.questions.length === 0) {
+                alert("⚠️ Bài test này chưa có câu hỏi!");
+                return;
+            }
+            
+            if (!confirm('📝 ' + test.title + '\n\n' + test.desc + '\n\nSố câu hỏi: ' + test.questions.length + '\nĐiểm đạt: ' + test.passScore + '%\n\nBắt đầu làm test?')) return;
+            
+            let score = 0;
+            const answers = [];
+            
+            for (let i = 0; i < test.questions.length; i++) {
+                const q = test.questions[i];
+                const opts = q.options.map((o, idx) => {
+                    const letter = String.fromCharCode(65 + idx);
+                    return letter + '. ' + (o.startsWith('*') ? o.substring(1) : o);
+                }).join('\n');
+                
+                let ans = prompt('📝 Câu ' + (i + 1) + '/' + test.questions.length + '\n\n' + q.question + '\n\n' + opts + '\n\nNhập đáp án (A, B, C, D):');
+                if (ans === null) break;
+                
+                ans = ans.trim().toUpperCase();
+                let idx = -1;
+                if (ans === 'A') idx = 0;
+                else if (ans === 'B') idx = 1;
+                else if (ans === 'C') idx = 2;
+                else if (ans === 'D') idx = 3;
+                
+                if (idx === -1 || idx >= q.options.length) {
+                    alert('⚠️ Đáp án không hợp lệ! Vui lòng nhập A, B, C hoặc D.');
+                    i--;
+                    continue;
+                }
+                
+                const correct = q.options[idx].startsWith('*');
+                if (correct) score++;
+                answers.push({
+                    question: q.question,
+                    selected: q.options[idx],
+                    correct: correct
+                });
+            }
+            
+            const finalScore = Math.round((score / test.questions.length) * 100);
+            const passed = finalScore >= test.passScore;
+            const rank = finalScore >= 90 ? "🏆 Xuất sắc" : 
+                        finalScore >= 75 ? "⭐ Giỏi" : 
+                        finalScore >= 50 ? "📖 Khá" : 
+                        finalScore >= 30 ? "📝 Trung bình" : "❌ Yếu";
+            
+            let msg = '📊 KẾT QUẢ\n\n';
+            msg += 'Điểm: ' + finalScore + '/100\n';
+            msg += 'Xếp loại: ' + rank + '\n';
+            msg += 'Kết quả: ' + (passed ? "✅ Đạt" : "❌ Không đạt") + '\n';
+            msg += 'Trả lời đúng: ' + score + '/' + test.questions.length + ' câu\n\n';
+            answers.forEach((a, idx) => {
+                msg += 'Câu ' + (idx + 1) + ': ' + (a.correct ? '✅ Đúng' : '❌ Sai') + '\n';
+                msg += '   Đáp án: ' + a.selected + '\n';
+            });
+            alert(msg);
+            
+            await push(ref(db, "testResults"), {
+                testId: key,
+                testTitle: test.title,
+                username: user.username,
+                userName: user.name || user.username,
+                score: finalScore,
+                correctCount: score,
+                totalQuestions: test.questions.length,
+                rank: rank,
+                result: passed ? "Đạt" : "Không đạt",
+                answers: answers,
+                createdAt: new Date().toISOString()
+            });
+            
+        } catch (e) {
+            console.error(e);
+            alert("⚠️ Lỗi khi làm test!");
+        }
     };
 
     // ============================================================
@@ -1565,7 +1667,7 @@
     });
 
     console.log("✅ Dashboard đã tải thành công!");
-    console.log("📝 BQT có thể tạo test với 2 loại: mã nhúng hoặc nhập câu hỏi!");
+    console.log("📝 Admin đã có nút Làm bài!");
 </script>
 
 </body>
