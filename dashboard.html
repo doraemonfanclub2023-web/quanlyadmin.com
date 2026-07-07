@@ -621,13 +621,14 @@
     }
 
     // ============================================================
-    // HIỂN THỊ POPUP TẠO TEST
+    // HIỂN THỊ POPUP TẠO TEST (SỬA LỖI NÚT X)
     // ============================================================
     window.showCreateTestForm = function() {
         const user = JSON.parse(localStorage.getItem("currentUser"));
         if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền tạo test!");
         
         const overlay = document.createElement('div');
+        overlay.id = 'testPopupOverlay';
         overlay.style.cssText = `
             position:fixed; top:0; left:0; width:100%; height:100%;
             background:rgba(0,0,0,0.5); z-index:9999;
@@ -637,7 +638,7 @@
         
         overlay.innerHTML = `
             <div style="background:white; border-radius:16px; padding:30px; max-width:750px; width:100%; max-height:90vh; overflow-y:auto; position:relative;">
-                <button onclick="this.closest('div[style*=\"border-radius:16px\"]').parentElement.remove()" 
+                <button onclick="window.closeTestPopup()" 
                         style="position:absolute; top:10px; right:15px; background:#ef4444; color:white; border:none; border-radius:50%; width:30px; height:30px; font-size:18px; cursor:pointer;">✕</button>
                 
                 <h3 style="margin-bottom:16px;">📝 Tạo bài test mới</h3>
@@ -705,6 +706,12 @@
         }, 100);
     };
 
+    // ===== ĐÓNG POPUP =====
+    window.closeTestPopup = function() {
+        const overlay = document.getElementById('testPopupOverlay');
+        if (overlay) overlay.remove();
+    };
+
     // ===== TOGGLE GIỮA 2 LOẠI TEST =====
     window.toggleTestType = function() {
         const embedSection = document.getElementById('embedSection');
@@ -769,7 +776,7 @@
             });
             alert("✅ Tạo test thành công!" + (testType === 'embed' ? ' (Dùng mã nhúng)' : ' (' + questions.length + ' câu hỏi)'));
             
-            const overlay = document.querySelector('div[style*="position:fixed"][style*="z-index:9999"]');
+            const overlay = document.getElementById('testPopupOverlay');
             if (overlay) overlay.remove();
             
             loadTests();
@@ -902,6 +909,7 @@
             if (!test.embedCode) return alert("⚠️ Bài test này chưa có mã nhúng!");
             
             const overlay = document.createElement('div');
+            overlay.id = 'embedPopupOverlay';
             overlay.style.cssText = `
                 position:fixed; top:0; left:0; width:100%; height:100%;
                 background:rgba(0,0,0,0.7); z-index:9999;
@@ -911,7 +919,7 @@
             
             overlay.innerHTML = `
                 <div style="background:white; border-radius:16px; padding:20px; max-width:900px; width:100%; max-height:90vh; overflow-y:auto; position:relative;">
-                    <button onclick="this.closest('div[style*=\"border-radius:16px\"]').parentElement.remove()" 
+                    <button onclick="this.parentElement.parentElement.remove()" 
                             style="position:absolute; top:10px; right:15px; background:#ef4444; color:white; border:none; border-radius:50%; width:30px; height:30px; font-size:18px; cursor:pointer;">✕</button>
                     <h3 style="margin-bottom:12px;">📄 ${test.title || "Form"}</h3>
                     <div style="border:1px solid #e2e8f0; border-radius:8px; padding:10px; background:#f8fafc; overflow:auto;">
@@ -1668,6 +1676,7 @@
 
     console.log("✅ Dashboard đã tải thành công!");
     console.log("📝 Admin đã có nút Làm bài!");
+    console.log("✅ Nút X đã được sửa!");
 </script>
 
 </body>
