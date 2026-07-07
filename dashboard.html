@@ -317,7 +317,7 @@
     };
 
     // ============================================================
-    // QUẢN LÝ THÔNG BÁO (ĐÃ SỬA LỖI)
+    // QUẢN LÝ THÔNG BÁO
     // ============================================================
     function getNoticesPage(user) {
         const canManage = user.role !== "Admin";
@@ -393,7 +393,6 @@
         });
     }
 
-    // ===== THÊM THÔNG BÁO (ĐÃ SỬA LỖI) =====
     window.addNotice = async function() {
         console.log("🔥 Bắt đầu đăng thông báo...");
         try {
@@ -622,7 +621,7 @@
     };
 
     // ============================================================
-    // QUẢN LÝ TEST KỸ NĂNG
+    // QUẢN LÝ TEST KỸ NĂNG (ĐÃ SỬA LỖI)
     // ============================================================
     function getTestsPage(user) {
         const canManage = user.role === "Ban Quản Trị";
@@ -637,10 +636,31 @@
                         <input type="number" id="testPassScore" placeholder="Điểm đạt (VD: 50)" style="flex:1;" />
                         <div style="border:1px solid #e2e8f0; border-radius:8px; padding:16px; background:#f8fafc;">
                             <h4>📝 Nhập câu hỏi</h4>
-                            <p style="font-size:13px; color:#64748b;">Dùng * trước đáp án đúng (VD: *b. Đáp án đúng)</p>
-                            <textarea id="testQuestionsInput" placeholder='Câu 1: Nội dung câu hỏi?\na. Đáp án A\n*b. Đáp án B\nc. Đáp án C\nd. Đáp án D' style="min-height:150px; width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:8px; font-family:monospace;"></textarea>
-                            <button onclick="window.previewQuestions()" class="btn-edit" style="background:#8b5cf6;">👁️ Xem trước</button>
-                            <span id="questionCount" style="color:#64748b; font-size:13px; margin-left:10px;">Số câu hỏi: 0</span>
+                            <div style="background:#fef3c7; border-left:4px solid #f59e0b; padding:10px 14px; border-radius:4px; margin-bottom:12px;">
+                                <p style="font-size:13px; color:#92400e; margin:0;">
+                                    <strong>📌 Định dạng câu hỏi:</strong><br />
+                                    1️⃣ Mỗi câu hỏi bắt đầu bằng <strong>"Câu X:"</strong><br />
+                                    2️⃣ Có 4 đáp án <strong>a, b, c, d</strong><br />
+                                    3️⃣ Dùng <strong>*</strong> trước đáp án đúng<br />
+                                    <span style="font-size:12px; color:#78350f;">VD: *b. Đáp án đúng</span>
+                                </p>
+                            </div>
+                            <textarea id="testQuestionsInput" placeholder='Ví dụ:
+Câu 1: Nội dung câu hỏi?
+a. Đáp án A
+*b. Đáp án B (đúng)
+c. Đáp án C
+d. Đáp án D
+
+Câu 2: Nội dung câu hỏi thứ hai?
+a. Đáp án A
+b. Đáp án B
+*c. Đáp án C (đúng)
+d. Đáp án D' style="min-height:180px; width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:8px; font-family:monospace; font-size:14px;"></textarea>
+                            <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+                                <button onclick="window.previewQuestions()" class="btn-edit" style="background:#8b5cf6;">👁️ Xem trước</button>
+                                <span id="questionCount" style="color:#64748b; font-size:13px; align-self:center;">Số câu hỏi: 0</span>
+                            </div>
                             <div id="questionPreview" style="margin-top:10px; background:white; padding:12px; border-radius:6px; border:1px solid #e2e8f0; display:none;"></div>
                         </div>
                         <button onclick="window.addTest()" class="btn-create" style="align-self:flex-start;">📤 Tạo test</button>
@@ -696,7 +716,7 @@
         if (!input || !input.trim()) { preview.style.display = "none"; count.textContent = "Số câu hỏi: 0"; return; }
         const qs = window.parseQuestions(input);
         count.textContent = "Số câu hỏi: " + qs.length;
-        if (qs.length === 0) { preview.style.display = "block"; preview.innerHTML = '<p style="color:#ef4444;">⚠️ Không tìm thấy câu hỏi hợp lệ!</p>'; return; }
+        if (qs.length === 0) { preview.style.display = "block"; preview.innerHTML = '<p style="color:#ef4444;">⚠️ Không tìm thấy câu hỏi hợp lệ! Kiểm tra định dạng (Câu X: ...)</p>'; return; }
         let html = '<div style="max-height:300px; overflow-y:auto;">';
         qs.forEach((q, idx) => {
             html += `<div style="padding:8px 0; border-bottom:1px solid #f1f5f9;"><strong>Câu ${idx+1}:</strong> ${q.question}<div style="margin-left:20px; font-size:13px;">`;
@@ -721,10 +741,10 @@
         if (!title || !desc) return alert("⚠️ Vui lòng nhập tiêu đề và mô tả!");
         if (!qText || !qText.trim()) return alert("⚠️ Vui lòng nhập câu hỏi!");
         const qs = window.parseQuestions(qText);
-        if (qs.length === 0) return alert("⚠️ Không tìm thấy câu hỏi hợp lệ!");
+        if (qs.length === 0) return alert("⚠️ Không tìm thấy câu hỏi hợp lệ! Định dạng: Câu X: ...");
         for (let i = 0; i < qs.length; i++) {
-            if (qs[i].options.length < 4) return alert("⚠️ Câu " + (i + 1) + " thiếu đáp án!");
-            if (!qs[i].options.some(o => o.startsWith('*'))) return alert("⚠️ Câu " + (i + 1) + " chưa có đáp án đúng!");
+            if (qs[i].options.length < 4) return alert("⚠️ Câu " + (i + 1) + " thiếu đáp án! Cần có a, b, c, d.");
+            if (!qs[i].options.some(o => o.startsWith('*'))) return alert("⚠️ Câu " + (i + 1) + " chưa có đáp án đúng! Dùng * trước đáp án đúng.");
         }
         try {
             await push(ref(db, "tests"), { title, desc, questions: qs, passScore, totalQuestions: qs.length, createdBy: user.username, createdAt: new Date().toISOString() });
@@ -757,7 +777,7 @@
                 q.options.forEach(o => qText += o + "\n");
                 qText += "\n";
             });
-            const newQ = prompt("✏️ Sửa câu hỏi:", qText);
+            const newQ = prompt("✏️ Sửa câu hỏi (giữ nguyên định dạng):", qText);
             if (newQ === null) return;
             const qs = window.parseQuestions(newQ);
             if (qs.length === 0) return alert("⚠️ Không tìm thấy câu hỏi hợp lệ!");
@@ -1365,6 +1385,7 @@
 
     console.log("✅ Dashboard đã tải thành công!");
     console.log("📢 Hàm addNotice đã sẵn sàng!");
+    console.log("📝 Hàm addTest đã sẵn sàng!");
     console.log("🎮 Chơi game: Vào menu Game và nhấn Space để chơi!");
 </script>
 
