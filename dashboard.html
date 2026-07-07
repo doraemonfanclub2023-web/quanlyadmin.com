@@ -147,7 +147,7 @@
         const content = document.getElementById("pageContent");
         if (!content) return;
 
-        // Xác định trang cần hiển thị
+        // Xác định trang cần hiển thị - DÙNG SWITCH CASE RÕ RÀNG
         switch(pageId) {
             case "home":
                 content.innerHTML = getHomePage();
@@ -622,10 +622,10 @@
     };
 
     // ============================================================
-    // QUẢN LÝ TEST KỸ NĂNG
+    // QUẢN LÝ TEST KỸ NĂNG - BẢN HOÀN CHỈNH
     // ============================================================
     function getTestsPage(user) {
-        console.log("📝 Đang tạo trang Tests...");
+        console.log("🟢 Đang tạo trang Tests...");
         const canManage = user.role === "Ban Quản Trị";
         let html = `<h2>📝 Quản lý test kỹ năng</h2>`;
         if (canManage) {
