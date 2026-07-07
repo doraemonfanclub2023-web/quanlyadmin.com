@@ -168,6 +168,7 @@
                 console.log("✅ ĐANG VÀO TRANG TEST KỸ NĂNG!");
                 content.innerHTML = getTestsPage(user);
                 loadTests();
+                loadDeadline();
                 break;
             case "games":
                 console.log("🎮 ĐANG VÀO TRANG GAME!");
@@ -621,68 +622,95 @@
     };
 
     // ============================================================
-    // QUẢN LÝ TEST KỸ NĂNG - DÙNG FORM NGOÀI
+    // QUẢN LÝ TEST KỸ NĂNG - GIAO DIỆN MỚI
     // ============================================================
     function getTestsPage(user) {
+        console.log("📝 Đang tạo trang Tests...");
         const canManage = user.role === "Ban Quản Trị";
-        let html = `<h2>📝 Quản lý test kỹ năng</h2>`;
         
-        // Hướng dẫn + nút mở form
-        html += `
-            <div style="background:#f8fafc; border-radius:12px; padding:16px; margin-bottom:20px; border:1px solid #e2e8f0;">
-                <p style="color:#475569; font-size:14px; margin-bottom:10px;">
-                    📌 <strong>Hướng dẫn:</strong> Bấm nút bên dưới để mở form tạo/test câu hỏi.
-                </p>
-                <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                    <a href="https://docs.google.com/forms/d/e/1FAIpQLSefvxSq_FtGv43zh_wH4a1k04zBfr1O9Xq8Nq7xAyAsDF6gQw/viewform?usp=header" 
-                       target="_blank" 
-                       class="btn-create" 
-                       style="background:#0284c7; text-decoration:none; display:inline-block;">
-                        📝 Mở form tạo test
-                    </a>
-                    <a href="https://docs.google.com/spreadsheets/d/1BrXO-57mvO3B4EittZyG54gxrcNzQbLKLg4TLlgZ5S0/edit?usp=sharing" 
-                       target="_blank" 
-                       class="btn-create" 
-                       style="background:#10b981; text-decoration:none; display:inline-block;">
-                        📊 Xem kết quả (Google Sheet)
-                    </a>
+        let html = `
+            <div style="max-width:900px; margin:0 auto;">
+                <h2>📋 Thông tin bài test</h2>
+                
+                <!-- Mẫu nhúng -->
+                <div style="background:white; border-radius:12px; padding:20px; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04); border-left:4px solid #0284c7;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:20px;">📄</span>
+                        <div>
+                            <div style="font-weight:600; color:#0f172a;">Mẫu nhúng</div>
+                            <div style="font-size:14px; color:#64748b;">
+                                <a href="https://docs.google.com/forms/d/e/1FAIpQLSefvxSq_FtGv43zh_wH4a1k04zBfr1O9Xq8Nq7xAyAsDF6gQw/viewform?usp=header" 
+                                   target="_blank" 
+                                   style="color:#0284c7; text-decoration:none;">
+                                    📝 Mở form tạo test
+                                </a>
+                                &nbsp;|&nbsp;
+                                <a href="https://docs.google.com/spreadsheets/d/1BrXO-57mvO3B4EittZyG54gxrcNzQbLKLg4TLlgZ5S0/edit?usp=sharing" 
+                                   target="_blank" 
+                                   style="color:#10b981; text-decoration:none;">
+                                    📊 Xem kết quả
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        `;
-        
-        // Nhúng Google Form bằng iframe
-        html += `
-            <div style="background:white; border-radius:12px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04); margin-bottom:20px;">
-                <h3 style="margin-bottom:12px;">📋 Form tạo test</h3>
-                <div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:8px;">
-                    <iframe 
-                        src="https://docs.google.com/forms/d/e/1FAIpQLSefvxSq_FtGv43zh_wH4a1k04zBfr1O9Xq8Nq7xAyAsDF6gQw/viewform?embedded=true" 
-                        style="position:absolute; top:0; left:0; width:100%; height:100%; border:0; border-radius:8px;"
-                        allowfullscreen>
-                    </iframe>
+                
+                <!-- Thời hạn -->
+                <div style="background:white; border-radius:12px; padding:20px; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04); border-left:4px solid #f59e0b;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:20px;">⏰</span>
+                        <div>
+                            <div style="font-weight:600; color:#0f172a;">Thời hạn</div>
+                            <div style="font-size:14px; color:#64748b;">
+                                <span id="testDeadline">Đang cập nhật...</span>
+                                ${canManage ? `<button onclick="window.updateDeadline()" class="btn-edit" style="font-size:11px; padding:2px 10px; margin-left:10px;">✏️ Sửa</button>` : ''}
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        `;
-        
-        // Bảng danh sách test có sẵn từ Firebase
-        html += `
-            <div class="table-container">
-                <table class="table">
-                    <thead><tr><th>Tiêu đề</th><th>Mô tả</th><th>Số câu</th><th>Điểm đạt</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead>
-                    <tbody id="testTableBody"><tr><td colspan="6">📭 Đang tải...</td></tr></tbody>
-                </table>
+                
+                <!-- Form nhúng (ẩn/gọn) -->
+                <div style="background:white; border-radius:12px; padding:16px; margin-bottom:20px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                    <details>
+                        <summary style="font-weight:600; color:#0f172a; cursor:pointer; padding:4px 0;">
+                            📋 Mở form tạo test
+                        </summary>
+                        <div style="margin-top:12px;">
+                            <div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:8px;">
+                                <iframe 
+                                    src="https://docs.google.com/forms/d/e/1FAIpQLSefvxSq_FtGv43zh_wH4a1k04zBfr1O9Xq8Nq7xAyAsDF6gQw/viewform?embedded=true" 
+                                    style="position:absolute; top:0; left:0; width:100%; height:100%; border:0; border-radius:8px;"
+                                    allowfullscreen>
+                                </iframe>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+                
+                <!-- Bài test đã tạo -->
+                <div style="background:white; border-radius:12px; padding:20px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
+                        <h3 style="font-size:16px; color:#0f172a; margin:0;">📝 Bài test đã tạo</h3>
+                        <span style="font-size:13px; color:#64748b;">Tổng: <span id="totalTestsCount">0</span></span>
+                    </div>
+                    <div id="testListContainer">
+                        <div style="text-align:center; color:#94a3b8; padding:20px;">📭 Đang tải danh sách...</div>
+                    </div>
+                </div>
             </div>
         `;
         
         return html;
     }
 
-    // ===== CÁC HÀM XỬ LÝ TEST VẪN GIỮ LẠI ĐỂ HIỂN THỊ =====
+    // ============================================================
+    // TẢI DANH SÁCH TEST (GIAO DIỆN MỚI)
+    // ============================================================
     function loadTests() {
         console.log("📝 Đang tải danh sách tests...");
-        const tbody = document.getElementById("testTableBody");
-        if (!tbody) {
-            console.warn("⚠️ Không tìm thấy testTableBody!");
+        const container = document.getElementById("testListContainer");
+        if (!container) {
+            console.warn("⚠️ Không tìm thấy testListContainer!");
             return;
         }
         const user = JSON.parse(localStorage.getItem("currentUser"));
@@ -690,37 +718,133 @@
         const isAdmin = user?.role === "Admin";
 
         onValue(ref(db, "tests"), snapshot => {
-            tbody.innerHTML = "";
             if (!snapshot.exists()) { 
-                tbody.innerHTML = '<tr><td colspan="6">📭 Chưa có bài test nào</td></tr>';
+                container.innerHTML = `
+                    <div style="text-align:center; color:#94a3b8; padding:20px;">
+                        📭 Chưa có bài test nào. Bấm "Mở form tạo test" để tạo mới!
+                    </div>
+                `;
+                const countEl = document.getElementById("totalTestsCount");
+                if (countEl) countEl.textContent = "0";
                 return; 
             }
+            
+            const tests = [];
             snapshot.forEach(child => {
-                const test = child.val();
-                const key = child.key;
+                tests.push({ key: child.key, ...child.val() });
+            });
+            
+            // Cập nhật số lượng
+            const countEl = document.getElementById("totalTestsCount");
+            if (countEl) countEl.textContent = tests.length;
+            
+            // Sắp xếp mới nhất lên đầu
+            tests.reverse();
+            
+            let html = `<div style="display:flex; flex-direction:column; gap:12px;">`;
+            
+            tests.forEach((test, index) => {
+                const key = test.key;
+                const status = test.status || "Đang mở";
+                const deadline = test.deadline || "Chưa cập nhật";
+                const questionCount = test.totalQuestions || test.questions?.length || "0";
+                
                 let actions = "";
-                if (isAdmin) actions = '<span class="badge-default">Chỉ xem</span>';
-                else if (isBQT) actions = `
-                    <button onclick="window.editTest('${key}')" class="btn-edit" style="background:#8b5cf6;">✏️ Sửa</button>
-                    <button onclick="window.startTest('${key}')" class="btn-create" style="background:#10b981;">📝 Làm</button>
-                    <button onclick="window.deleteTest('${key}')" class="btn-delete">🗑️ Xóa</button>
-                `;
-                else actions = `<button onclick="window.startTest('${key}')" class="btn-create" style="background:#10b981;">📝 Làm test</button>`;
-                tbody.innerHTML += `
-                    <tr>
-                        <td><strong>${test.title || "N/A"}</strong></td>
-                        <td>${test.desc || ""}</td>
-                        <td>${test.totalQuestions || test.questions?.length || "0"}</td>
-                        <td>${test.passScore || "50"}%</td>
-                        <td>${test.createdAt ? new Date(test.createdAt).toLocaleDateString() : "N/A"}</td>
-                        <td>${actions}</td>
-                    </tr>
+                if (isBQT) {
+                    actions = `
+                        <button onclick="window.editTest('${key}')" class="btn-edit" style="font-size:11px; padding:3px 10px;">✏️ Sửa</button>
+                        <button onclick="window.startTest('${key}')" class="btn-create" style="font-size:11px; padding:3px 10px; background:#10b981;">📝 Làm</button>
+                        <button onclick="window.deleteTest('${key}')" class="btn-delete" style="font-size:11px; padding:3px 10px;">🗑️ Xóa</button>
+                    `;
+                } else if (isAdmin) {
+                    actions = `<span class="badge-default">Chỉ xem</span>`;
+                } else {
+                    actions = `<button onclick="window.startTest('${key}')" class="btn-create" style="font-size:11px; padding:3px 10px; background:#10b981;">📝 Làm test</button>`;
+                }
+                
+                // Xác định màu trạng thái
+                let statusColor = "#10b981";
+                let statusIcon = "🟢";
+                if (status === "Đã đóng") {
+                    statusColor = "#ef4444";
+                    statusIcon = "🔴";
+                } else if (status === "Sắp diễn ra") {
+                    statusColor = "#f59e0b";
+                    statusIcon = "🟡";
+                }
+                
+                html += `
+                    <div style="background:#f8fafc; border-radius:8px; padding:14px 18px; border:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                        <div style="flex:1; min-width:200px;">
+                            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                                <span style="font-weight:600; color:#0f172a;">${index + 1}. ${test.title || "Không có tiêu đề"}</span>
+                                <span style="font-size:11px; background:${statusColor}20; color:${statusColor}; padding:2px 10px; border-radius:12px;">
+                                    ${statusIcon} ${status}
+                                </span>
+                            </div>
+                            <div style="font-size:13px; color:#64748b; margin-top:4px;">
+                                📝 ${questionCount} câu hỏi &nbsp;|&nbsp; 🎯 Điểm đạt: ${test.passScore || 50}% &nbsp;|&nbsp; ⏳ Hạn nộp: ${deadline}
+                            </div>
+                            <div style="font-size:12px; color:#94a3b8; margin-top:2px;">
+                                📅 Tạo: ${test.createdAt ? new Date(test.createdAt).toLocaleDateString() : "N/A"}
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                            ${actions}
+                        </div>
+                    </div>
                 `;
             });
+            
+            html += `</div>`;
+            container.innerHTML = html;
         });
     }
 
-    // Giữ lại các hàm editTest, deleteTest, startTest để dùng khi cần
+    // ============================================================
+    // CẬP NHẬT HẠN NỘP
+    // ============================================================
+    window.updateDeadline = function() {
+        const user = JSON.parse(localStorage.getItem("currentUser"));
+        if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền sửa!");
+        
+        const current = document.getElementById("testDeadline")?.textContent || "Chưa cập nhật";
+        const newDeadline = prompt("📅 Nhập hạn nộp mới (VD: 23:59 15/07/2026):", current);
+        if (newDeadline === null) return;
+        if (!newDeadline.trim()) return alert("⚠️ Vui lòng nhập hạn nộp!");
+        
+        try {
+            update(ref(db, "system_config/test_deadline"), {
+                deadline: newDeadline.trim(),
+                updatedAt: new Date().toISOString()
+            });
+            document.getElementById("testDeadline").textContent = newDeadline.trim();
+            alert("✅ Đã cập nhật hạn nộp!");
+        } catch (e) {
+            console.error(e);
+            alert("⚠️ Lỗi khi cập nhật!");
+        }
+    };
+
+    // ============================================================
+    // TẢI HẠN NỘP
+    // ============================================================
+    function loadDeadline() {
+        const el = document.getElementById("testDeadline");
+        if (!el) return;
+        get(ref(db, "system_config/test_deadline")).then(snapshot => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                el.textContent = data.deadline || "Chưa cập nhật";
+            } else {
+                el.textContent = "Chưa cập nhật";
+            }
+        }).catch(() => {});
+    }
+
+    // ============================================================
+    // CÁC HÀM XỬ LÝ TEST (GIỮ LẠI)
+    // ============================================================
     window.editTest = async function(key) {
         const user = JSON.parse(localStorage.getItem("currentUser"));
         if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền sửa test!");
@@ -1257,7 +1381,7 @@
 
     console.log("✅ Dashboard đã tải thành công!");
     console.log("📢 Hàm addNotice đã sẵn sàng!");
-    console.log("📝 Trang Test đã chuyển sang dùng Google Form!");
+    console.log("📝 Trang Test đã chuyển sang giao diện mới!");
     console.log("🎮 Chơi game: Vào menu Game và nhấn Space để chơi!");
 </script>
 
