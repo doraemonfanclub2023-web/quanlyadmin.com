@@ -573,7 +573,7 @@
     };
 
     // ============================================================
-    // QUẢN LÝ TEST KỸ NĂNG - CÓ POPUP + MÃ NHÚNG
+    // QUẢN LÝ TEST KỸ NĂNG - FULL CHỨC NĂNG
     // ============================================================
     function getTestsPage(user) {
         const canManage = user.role === "Ban Quản Trị";
@@ -621,7 +621,7 @@
     }
 
     // ============================================================
-    // HIỂN THỊ POPUP TẠO TEST (CÓ MÃ NHÚNG)
+    // HIỂN THỊ POPUP TẠO TEST (TÁCH 2 LOẠI)
     // ============================================================
     window.showCreateTestForm = function() {
         const user = JSON.parse(localStorage.getItem("currentUser"));
@@ -650,7 +650,19 @@
                         <input type="text" id="newTestDeadline" placeholder="Hạn nộp (VD: 23:59 15/07/2026)" style="flex:1; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
                     </div>
                     
-                    <div style="border:1px solid #0284c7; border-radius:8px; padding:16px; background:#f0f9ff;">
+                    <div style="border:1px solid #e2e8f0; border-radius:8px; padding:12px; background:#f8fafc;">
+                        <p style="font-size:14px; font-weight:600; margin-bottom:8px;">📌 Chọn loại test:</p>
+                        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:6px 12px; background:#e0f2fe; border-radius:6px;">
+                                <input type="radio" name="testType" value="embed" checked onchange="window.toggleTestType()" /> 📄 Dùng mã nhúng (Google Form)
+                            </label>
+                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:6px 12px; background:#fef3c7; border-radius:6px;">
+                                <input type="radio" name="testType" value="manual" onchange="window.toggleTestType()" /> 📝 Nhập câu hỏi trực tiếp
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div id="embedSection" style="border:1px solid #0284c7; border-radius:8px; padding:16px; background:#f0f9ff;">
                         <h4 style="margin-bottom:8px; color:#0284c7;">📄 Mã nhúng form</h4>
                         <p style="font-size:13px; color:#64748b; margin-bottom:8px;">
                             Dán mã nhúng Google Form vào ô bên dưới:
@@ -659,7 +671,7 @@
                                   style="min-height:80px; width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:8px; font-family:monospace; font-size:13px; background:white;"></textarea>
                     </div>
                     
-                    <div style="border:1px solid #e2e8f0; border-radius:8px; padding:16px; background:#f8fafc;">
+                    <div id="manualSection" style="border:1px solid #e2e8f0; border-radius:8px; padding:16px; background:#f8fafc; display:none;">
                         <h4 style="margin-bottom:10px;">📝 Nhập câu hỏi</h4>
                         <p style="font-size:13px; color:#64748b; margin-bottom:10px;">
                             <strong>Câu hỏi</strong><br />
@@ -680,6 +692,7 @@
         *c. Đáp án C (đúng)
         d. Đáp án D' style="min-height:200px; width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:8px; font-family:monospace; font-size:14px;"></textarea>
                     </div>
+                    
                     <button onclick="window.createTestFromPopup()" class="btn-create" style="padding:12px 24px; font-size:16px;">📤 Tạo test</button>
                 </div>
             </div>
@@ -692,8 +705,25 @@
         }, 100);
     };
 
+    // ===== TOGGLE GIỮA 2 LOẠI TEST =====
+    window.toggleTestType = function() {
+        const embedSection = document.getElementById('embedSection');
+        const manualSection = document.getElementById('manualSection');
+        const selected = document.querySelector('input[name="testType"]:checked');
+        
+        if (selected) {
+            if (selected.value === 'embed') {
+                if (embedSection) embedSection.style.display = 'block';
+                if (manualSection) manualSection.style.display = 'none';
+            } else {
+                if (embedSection) embedSection.style.display = 'none';
+                if (manualSection) manualSection.style.display = 'block';
+            }
+        }
+    };
+
     // ============================================================
-    // TẠO TEST TỪ POPUP (CÓ LƯU MÃ NHÚNG)
+    // TẠO TEST TỪ POPUP
     // ============================================================
     window.createTestFromPopup = async function() {
         const user = JSON.parse(localStorage.getItem("currentUser"));
@@ -703,18 +733,26 @@
         const desc = document.getElementById("newTestDesc")?.value.trim();
         const passScore = parseInt(document.getElementById("newTestPassScore")?.value) || 50;
         const deadline = document.getElementById("newTestDeadline")?.value.trim() || "Không thời hạn";
-        const embedCode = document.getElementById("newTestEmbedCode")?.value.trim();
-        const questionsText = document.getElementById("newTestQuestions")?.value;
-
-        if (!title || !desc) return alert("⚠️ Vui lòng nhập tiêu đề và mô tả!");
-        if (!questionsText || !questionsText.trim()) return alert("⚠️ Vui lòng nhập câu hỏi!");
-
-        const questions = parseQuestions(questionsText);
-        if (questions.length === 0) return alert("⚠️ Không tìm thấy câu hỏi hợp lệ!");
         
-        for (let i = 0; i < questions.length; i++) {
-            if (questions[i].options.length < 4) return alert("⚠️ Câu " + (i + 1) + " thiếu đáp án! Cần a, b, c, d.");
-            if (!questions[i].options.some(o => o.startsWith('*'))) return alert("⚠️ Câu " + (i + 1) + " chưa có đáp án đúng!");
+        const testType = document.querySelector('input[name="testType"]:checked')?.value || 'embed';
+        
+        let embedCode = '';
+        let questions = [];
+        
+        if (testType === 'embed') {
+            embedCode = document.getElementById("newTestEmbedCode")?.value.trim();
+            if (!embedCode) return alert("⚠️ Vui lòng dán mã nhúng Google Form!");
+        } else {
+            const questionsText = document.getElementById("newTestQuestions")?.value;
+            if (!questionsText || !questionsText.trim()) return alert("⚠️ Vui lòng nhập câu hỏi!");
+            
+            questions = parseQuestions(questionsText);
+            if (questions.length === 0) return alert("⚠️ Không tìm thấy câu hỏi hợp lệ!");
+            
+            for (let i = 0; i < questions.length; i++) {
+                if (questions[i].options.length < 4) return alert("⚠️ Câu " + (i + 1) + " thiếu đáp án! Cần a, b, c, d.");
+                if (!questions[i].options.some(o => o.startsWith('*'))) return alert("⚠️ Câu " + (i + 1) + " chưa có đáp án đúng!");
+            }
         }
 
         try {
@@ -723,12 +761,13 @@
                 questions: questions,
                 passScore, deadline,
                 embedCode: embedCode || "",
-                totalQuestions: questions.length,
+                testType: testType,
+                totalQuestions: testType === 'manual' ? questions.length : 0,
                 status: "Đang mở",
                 createdBy: user.username,
                 createdAt: new Date().toISOString()
             });
-            alert("✅ Tạo test thành công! (" + questions.length + " câu)");
+            alert("✅ Tạo test thành công!" + (testType === 'embed' ? ' (Dùng mã nhúng)' : ' (' + questions.length + ' câu hỏi)'));
             
             const overlay = document.querySelector('div[style*="position:fixed"][style*="z-index:9999"]');
             if (overlay) overlay.remove();
@@ -782,7 +821,7 @@
     }
 
     // ============================================================
-    // TẢI DANH SÁCH TEST (HIỂN THỊ MÃ NHÚNG)
+    // TẢI DANH SÁCH TEST
     // ============================================================
     function loadTests() {
         const container = document.getElementById("testListContainer");
@@ -810,6 +849,11 @@
                 const deadline = test.deadline || "Không thời hạn";
                 const qCount = test.totalQuestions || test.questions?.length || "0";
                 const hasEmbed = test.embedCode && test.embedCode.trim().length > 0;
+                const isManual = test.testType === 'manual' || (!hasEmbed && test.questions?.length > 0);
+                
+                let typeLabel = '';
+                if (hasEmbed) typeLabel = `<span style="font-size:11px; background:#0284c7; color:white; padding:2px 8px; border-radius:12px; margin-left:8px;">📄 Form</span>`;
+                else if (isManual) typeLabel = `<span style="font-size:11px; background:#f59e0b; color:white; padding:2px 8px; border-radius:12px; margin-left:8px;">📝 Câu hỏi</span>`;
                 
                 let actions = "";
                 if (isBQT) {
@@ -828,7 +872,7 @@
                     <div style="background:#f8fafc; border-radius:8px; padding:12px 16px; border:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                         <div>
                             <span style="font-weight:600; color:#0f172a;">${index + 1}. ${test.title || "Không có tiêu đề"}</span>
-                            ${hasEmbed ? `<span style="font-size:11px; background:#8b5cf6; color:white; padding:2px 8px; border-radius:12px; margin-left:8px;">📄 Form</span>` : ''}
+                            ${typeLabel}
                             <div style="font-size:13px; color:#64748b; margin-top:2px;">
                                 ⏳ ${deadline} &nbsp;|&nbsp; 📝 ${qCount} câu &nbsp;|&nbsp; 🎯 ${test.passScore || 50}%
                             </div>
@@ -899,26 +943,34 @@
             if (newPass === null) return;
             const newDeadline = prompt("✏️ Sửa hạn nộp:", test.deadline || "Không thời hạn");
             if (newDeadline === null) return;
-            const newEmbed = prompt("✏️ Sửa mã nhúng (bỏ trống nếu không có):", test.embedCode || "");
-            if (newEmbed === null) return;
             
-            let qText = "";
-            if (test.questions && test.questions.length > 0) {
-                test.questions.forEach((q, idx) => {
-                    qText += "Câu " + (idx + 1) + ": " + q.question + "\n";
-                    q.options.forEach(o => qText += o + "\n");
-                    qText += "\n";
-                });
-            }
+            const testType = test.testType || (test.embedCode ? 'embed' : 'manual');
+            let newEmbed = test.embedCode || "";
+            let newQuestions = test.questions || [];
             
-            const newQText = prompt("✏️ Sửa câu hỏi (giữ nguyên định dạng):", qText);
-            if (newQText === null) return;
-            
-            const newQuestions = parseQuestions(newQText);
-            if (newQuestions.length === 0) return alert("⚠️ Không tìm thấy câu hỏi hợp lệ!");
-            for (let i = 0; i < newQuestions.length; i++) {
-                if (newQuestions[i].options.length < 4) return alert("⚠️ Câu " + (i + 1) + " thiếu đáp án!");
-                if (!newQuestions[i].options.some(o => o.startsWith('*'))) return alert("⚠️ Câu " + (i + 1) + " chưa có đáp án đúng!");
+            if (testType === 'embed') {
+                const embedInput = prompt("✏️ Sửa mã nhúng (bỏ trống nếu không có):", test.embedCode || "");
+                if (embedInput === null) return;
+                newEmbed = embedInput.trim();
+            } else {
+                let qText = "";
+                if (test.questions && test.questions.length > 0) {
+                    test.questions.forEach((q, idx) => {
+                        qText += "Câu " + (idx + 1) + ": " + q.question + "\n";
+                        q.options.forEach(o => qText += o + "\n");
+                        qText += "\n";
+                    });
+                }
+                const newQText = prompt("✏️ Sửa câu hỏi (giữ nguyên định dạng):", qText);
+                if (newQText === null) return;
+                
+                const parsed = parseQuestions(newQText);
+                if (parsed.length === 0) return alert("⚠️ Không tìm thấy câu hỏi hợp lệ!");
+                for (let i = 0; i < parsed.length; i++) {
+                    if (parsed[i].options.length < 4) return alert("⚠️ Câu " + (i + 1) + " thiếu đáp án!");
+                    if (!parsed[i].options.some(o => o.startsWith('*'))) return alert("⚠️ Câu " + (i + 1) + " chưa có đáp án đúng!");
+                }
+                newQuestions = parsed;
             }
             
             await update(ref(db, 'tests/' + key), {
@@ -927,8 +979,8 @@
                 questions: newQuestions,
                 passScore: parseInt(newPass) || 50,
                 deadline: newDeadline.trim(),
-                embedCode: newEmbed.trim() || "",
-                totalQuestions: newQuestions.length,
+                embedCode: newEmbed || "",
+                totalQuestions: testType === 'manual' ? newQuestions.length : 0,
                 updatedAt: new Date().toISOString()
             });
             alert("✅ Cập nhật test thành công!");
@@ -1513,7 +1565,7 @@
     });
 
     console.log("✅ Dashboard đã tải thành công!");
-    console.log("📝 BQT có thể tạo test với mã nhúng form!");
+    console.log("📝 BQT có thể tạo test với 2 loại: mã nhúng hoặc nhập câu hỏi!");
 </script>
 
 </body>
