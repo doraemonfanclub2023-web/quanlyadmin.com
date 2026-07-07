@@ -119,6 +119,7 @@
     // HÀM SHOW PAGE CHÍNH
     // ============================================================
     window.showPage = function(pageId) {
+        console.log("📄 Đang chuyển đến trang:", pageId);
         const user = checkAuth();
         if (!user) return;
 
@@ -146,27 +147,45 @@
         const content = document.getElementById("pageContent");
         if (!content) return;
 
-        const pages = {
-            home: getHomePage(),
-            users: getUsersPage(user),
-            notices: getNoticesPage(user),
-            documents: getDocumentsPage(user),
-            tests: getTestsPage(user),
-            games: getGamesPage(user),
-            settings: getSettingsPage(user),
-            profile: getProfilePage(user)
-        };
-
-        content.innerHTML = pages[pageId] || "<h2>Trang đang phát triển</h2>";
-
-        if (pageId === "home") loadHomeData();
-        if (pageId === "users") loadUsers();
-        if (pageId === "notices") loadNotices();
-        if (pageId === "documents") loadDocuments();
-        if (pageId === "tests") loadTests();
-        if (pageId === "games") { loadGames(); loadScores(); initGameCanvas(); }
-        if (pageId === "settings") loadSettings();
-        if (pageId === "profile") loadProfile();
+        // Xác định trang cần hiển thị
+        switch(pageId) {
+            case "home":
+                content.innerHTML = getHomePage();
+                loadHomeData();
+                break;
+            case "users":
+                content.innerHTML = getUsersPage(user);
+                loadUsers();
+                break;
+            case "notices":
+                content.innerHTML = getNoticesPage(user);
+                loadNotices();
+                break;
+            case "documents":
+                content.innerHTML = getDocumentsPage(user);
+                loadDocuments();
+                break;
+            case "tests":
+                content.innerHTML = getTestsPage(user);
+                loadTests();
+                break;
+            case "games":
+                content.innerHTML = getGamesPage(user);
+                loadGames();
+                loadScores();
+                initGameCanvas();
+                break;
+            case "settings":
+                content.innerHTML = getSettingsPage(user);
+                loadSettings();
+                break;
+            case "profile":
+                content.innerHTML = getProfilePage(user);
+                loadProfile();
+                break;
+            default:
+                content.innerHTML = "<h2>Trang đang phát triển</h2>";
+        }
     };
 
     // ============================================================
@@ -394,10 +413,8 @@
     }
 
     window.addNotice = async function() {
-        console.log("🔥 Bắt đầu đăng thông báo...");
         try {
             const user = JSON.parse(localStorage.getItem("currentUser"));
-            console.log("👤 User:", user);
             if (!user) {
                 alert("⚠️ Vui lòng đăng nhập lại!");
                 return;
@@ -410,49 +427,31 @@
             const titleInput = document.getElementById("noticeTitle");
             const contentInput = document.getElementById("noticeContent");
 
-            console.log("📝 Title input:", titleInput);
-            console.log("📝 Content input:", contentInput);
-
             if (!titleInput || !contentInput) {
                 alert("⚠️ Không tìm thấy form nhập liệu! Vui lòng tải lại trang.");
-                console.error("❌ Input không tồn tại!");
                 return;
             }
 
             const title = titleInput.value.trim();
             const content = contentInput.value.trim();
 
-            console.log("📌 Tiêu đề:", title);
-            console.log("📄 Nội dung:", content);
-
-            if (!title) {
-                alert("⚠️ Vui lòng nhập tiêu đề!");
-                return;
-            }
-            if (!content) {
-                alert("⚠️ Vui lòng nhập nội dung!");
-                return;
-            }
+            if (!title) return alert("⚠️ Vui lòng nhập tiêu đề!");
+            if (!content) return alert("⚠️ Vui lòng nhập nội dung!");
 
             const d = new Date();
             const date = String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear();
             const time = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
 
-            const noticeData = {
+            await push(ref(db, "notices"), {
                 title: title,
                 content: content,
                 date: date + " " + time,
                 author: user.name || user.username || "Unknown"
-            };
-            console.log("📦 Dữ liệu gửi lên Firebase:", noticeData);
-
-            await push(ref(db, "notices"), noticeData);
+            });
 
             alert("✅ Đăng thông báo thành công!");
             titleInput.value = "";
             contentInput.value = "";
-            console.log("✅ Đã xóa input và làm mới");
-
         } catch (e) {
             console.error("❌ LỖI đăng thông báo:", e);
             alert("⚠️ Lỗi khi đăng thông báo: " + e.message);
@@ -621,9 +620,10 @@
     };
 
     // ============================================================
-    // QUẢN LÝ TEST KỸ NĂNG (ĐÃ SỬA LỖI)
+    // QUẢN LÝ TEST KỸ NĂNG
     // ============================================================
     function getTestsPage(user) {
+        console.log("📝 Đang tạo trang Tests...");
         const canManage = user.role === "Ban Quản Trị";
         let html = `<h2>📝 Quản lý test kỹ năng</h2>`;
         if (canManage) {
@@ -836,15 +836,22 @@ d. Đáp án D' style="min-height:180px; width:100%; padding:10px; border:1px so
     };
 
     function loadTests() {
+        console.log("📝 Đang tải danh sách tests...");
         const tbody = document.getElementById("testTableBody");
-        if (!tbody) return;
+        if (!tbody) {
+            console.warn("⚠️ Không tìm thấy testTableBody!");
+            return;
+        }
         const user = JSON.parse(localStorage.getItem("currentUser"));
         const isBQT = user?.role === "Ban Quản Trị";
         const isAdmin = user?.role === "Admin";
 
         onValue(ref(db, "tests"), snapshot => {
             tbody.innerHTML = "";
-            if (!snapshot.exists()) { tbody.innerHTML = '<tr><td colspan="6">Chưa có bài test nào</td></tr>'; return; }
+            if (!snapshot.exists()) { 
+                tbody.innerHTML = '<tr><td colspan="6">📭 Chưa có bài test nào</td></tr>';
+                return; 
+            }
             snapshot.forEach(child => {
                 const test = child.val();
                 const key = child.key;
@@ -948,7 +955,8 @@ d. Đáp án D' style="min-height:180px; width:100%; padding:10px; border:1px so
         ctx.fillStyle = '#4d4d6c';
         ctx.fillRect(0, groundY, 800, 3);
         drawDoraemon(ctx, playerX, playerY, playerWidth, playerHeight);
-        document.getElementById('gameHighScore').textContent = gameHighScore;
+        const highEl = document.getElementById('gameHighScore');
+        if (highEl) highEl.textContent = gameHighScore;
         console.log('✅ Canvas đã sẵn sàng!');
     }
 
@@ -1124,6 +1132,7 @@ d. Đáp án D' style="min-height:180px; width:100%; padding:10px; border:1px so
     }
 
     function getGamesPage(user) {
+        console.log("🎮 Đang tạo trang Games...");
         const canManage = user.role === "Ban Quản Trị";
         let html = `<h2>🎮 Game nội bộ</h2>`;
         html += `
@@ -1385,7 +1394,7 @@ d. Đáp án D' style="min-height:180px; width:100%; padding:10px; border:1px so
 
     console.log("✅ Dashboard đã tải thành công!");
     console.log("📢 Hàm addNotice đã sẵn sàng!");
-    console.log("📝 Hàm addTest đã sẵn sàng!");
+    console.log("📝 Hàm addTest và loadTests đã sẵn sàng!");
     console.log("🎮 Chơi game: Vào menu Game và nhấn Space để chơi!");
 </script>
 
