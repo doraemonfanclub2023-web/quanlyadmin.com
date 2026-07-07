@@ -50,6 +50,9 @@
 
 <script type="module" src="js/firebase.js"></script>
 <script type="module">
+    // ============================================================
+    // IMPORT
+    // ============================================================
     import { db, ref, get, set, update, remove, push, onValue } from "./js/firebase.js";
 
     // ============================================================
@@ -571,7 +574,7 @@
     };
 
     // ============================================================
-    // QUẢN LÝ TEST KỸ NĂNG - FULL CHỨC NĂNG CHO BQT
+    // QUẢN LÝ TEST KỸ NĂNG - GIAO DIỆN ĐÚNG NHƯ ẢNH
     // ============================================================
     function getTestsPage(user) {
         const canManage = user.role === "Ban Quản Trị";
@@ -597,43 +600,6 @@
                     </div>
                 </div>
                 
-                ${canManage ? `
-                <!-- ===== FORM TẠO TEST MỚI ===== -->
-                <div style="background:white; border-radius:12px; padding:20px; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04); border:2px solid #0284c7;">
-                    <h3 style="font-size:16px; color:#0f172a; margin:0 0 12px 0;">📝 Tạo bài test mới</h3>
-                    <div style="display:flex; flex-direction:column; gap:12px;">
-                        <input type="text" id="newTestTitle" placeholder="Tiêu đề bài test" style="padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
-                        <textarea id="newTestDesc" placeholder="Mô tả bài test..." style="min-height:60px; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;"></textarea>
-                        <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                            <input type="number" id="newTestPassScore" placeholder="Điểm đạt (VD: 50)" style="flex:1; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
-                            <input type="text" id="newTestDeadline" placeholder="Hạn nộp (VD: 23:59 15/07/2026)" style="flex:1; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
-                        </div>
-                        <div style="border:1px solid #e2e8f0; border-radius:8px; padding:16px; background:#f8fafc;">
-                            <h4 style="margin-bottom:10px;">📝 Nhập câu hỏi (mỗi câu cách nhau bằng dòng trống)</h4>
-                            <p style="font-size:13px; color:#64748b; margin-bottom:10px;">
-                                Định dạng: <strong>Câu hỏi</strong><br />
-                                a. Đáp án A<br />
-                                *b. Đáp án B (đúng)<br />
-                                c. Đáp án C<br />
-                                d. Đáp án D
-                            </p>
-                            <textarea id="newTestQuestions" placeholder='Câu 1: Nội dung câu hỏi?
-                    a. Đáp án A
-                    *b. Đáp án B (đúng)
-                    c. Đáp án C
-                    d. Đáp án D
-
-                    Câu 2: Nội dung câu hỏi thứ hai?
-                    a. Đáp án A
-                    b. Đáp án B
-                    *c. Đáp án C (đúng)
-                    d. Đáp án D' style="min-height:200px; width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:8px; font-family:monospace; font-size:14px;"></textarea>
-                        </div>
-                        <button onclick="window.createTest()" class="btn-create" style="align-self:flex-start; padding:10px 24px;">📤 Tạo test</button>
-                    </div>
-                </div>
-                ` : `<p style="color:#94a3b8; margin-bottom:16px;">🔒 Chỉ Ban Quản Trị mới có quyền tạo/sửa test.</p>`}
-                
                 <!-- Danh sách bài test -->
                 <div style="background:white; border-radius:12px; padding:16px 20px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
@@ -648,97 +614,6 @@
         `;
         
         return html;
-    }
-
-    // ============================================================
-    // TẠO TEST MỚI
-    // ============================================================
-    window.createTest = async function() {
-        const user = JSON.parse(localStorage.getItem("currentUser"));
-        if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền tạo test!");
-
-        const title = document.getElementById("newTestTitle")?.value.trim();
-        const desc = document.getElementById("newTestDesc")?.value.trim();
-        const passScore = parseInt(document.getElementById("newTestPassScore")?.value) || 50;
-        const deadline = document.getElementById("newTestDeadline")?.value.trim() || "Không thời hạn";
-        const questionsText = document.getElementById("newTestQuestions")?.value;
-
-        if (!title || !desc) return alert("⚠️ Vui lòng nhập tiêu đề và mô tả!");
-        if (!questionsText || !questionsText.trim()) return alert("⚠️ Vui lòng nhập câu hỏi!");
-
-        const questions = parseQuestions(questionsText);
-        if (questions.length === 0) return alert("⚠️ Không tìm thấy câu hỏi hợp lệ!");
-        
-        // Kiểm tra mỗi câu hỏi
-        for (let i = 0; i < questions.length; i++) {
-            if (questions[i].options.length < 4) return alert("⚠️ Câu " + (i + 1) + " thiếu đáp án! Cần a, b, c, d.");
-            if (!questions[i].options.some(o => o.startsWith('*'))) return alert("⚠️ Câu " + (i + 1) + " chưa có đáp án đúng!");
-        }
-
-        try {
-            await push(ref(db, "tests"), {
-                title, desc,
-                questions: questions,
-                passScore, deadline,
-                totalQuestions: questions.length,
-                status: "Đang mở",
-                createdBy: user.username,
-                createdAt: new Date().toISOString()
-            });
-            alert("✅ Tạo test thành công! (" + questions.length + " câu)");
-            // Reset form
-            document.getElementById("newTestTitle").value = "";
-            document.getElementById("newTestDesc").value = "";
-            document.getElementById("newTestPassScore").value = "";
-            document.getElementById("newTestDeadline").value = "";
-            document.getElementById("newTestQuestions").value = "";
-        } catch (e) {
-            console.error(e);
-            alert("⚠️ Lỗi khi tạo test!");
-        }
-    };
-
-    // ============================================================
-    // PARSE CÂU HỎI
-    // ============================================================
-    function parseQuestions(text) {
-        const lines = text.split('\n');
-        const questions = [];
-        let currentQ = null;
-        let currentOpts = [];
-        
-        for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed) continue;
-            
-            // Kiểm tra câu hỏi
-            const qMatch = trimmed.match(/^(Câu\s*)?(\d+)[:\.]\s*(.*)/i);
-            if (qMatch) {
-                if (currentQ && currentOpts.length > 0) {
-                    questions.push({ question: currentQ, options: currentOpts });
-                }
-                currentQ = qMatch[3] || trimmed;
-                currentOpts = [];
-            } else {
-                // Kiểm tra đáp án
-                const oMatch = trimmed.match(/^([a-dA-D])[\.\)]\s*(.*)/i);
-                if (oMatch && currentQ !== null) {
-                    let opt = oMatch[1].toLowerCase() + '. ' + oMatch[2];
-                    if (oMatch[2].trim().startsWith('*')) {
-                        opt = '*' + opt;
-                    }
-                    currentOpts.push(opt);
-                } else {
-                    if (currentQ !== null && currentOpts.length === 0) {
-                        currentQ += ' ' + trimmed;
-                    }
-                }
-            }
-        }
-        if (currentQ && currentOpts.length > 0) {
-            questions.push({ question: currentQ, options: currentOpts });
-        }
-        return questions;
     }
 
     // ============================================================
@@ -854,9 +729,44 @@
         }
     };
 
-    // ============================================================
-    // XÓA TEST
-    // ============================================================
+    function parseQuestions(text) {
+        const lines = text.split('\n');
+        const questions = [];
+        let currentQ = null;
+        let currentOpts = [];
+        
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            
+            const qMatch = trimmed.match(/^(Câu\s*)?(\d+)[:\.]\s*(.*)/i);
+            if (qMatch) {
+                if (currentQ && currentOpts.length > 0) {
+                    questions.push({ question: currentQ, options: currentOpts });
+                }
+                currentQ = qMatch[3] || trimmed;
+                currentOpts = [];
+            } else {
+                const oMatch = trimmed.match(/^([a-dA-D])[\.\)]\s*(.*)/i);
+                if (oMatch && currentQ !== null) {
+                    let opt = oMatch[1].toLowerCase() + '. ' + oMatch[2];
+                    if (oMatch[2].trim().startsWith('*')) {
+                        opt = '*' + opt;
+                    }
+                    currentOpts.push(opt);
+                } else {
+                    if (currentQ !== null && currentOpts.length === 0) {
+                        currentQ += ' ' + trimmed;
+                    }
+                }
+            }
+        }
+        if (currentQ && currentOpts.length > 0) {
+            questions.push({ question: currentQ, options: currentOpts });
+        }
+        return questions;
+    }
+
     window.deleteTest = async function(key) {
         const user = JSON.parse(localStorage.getItem("currentUser"));
         if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền xóa test!");
@@ -864,9 +774,6 @@
         try { await remove(ref(db, 'tests/' + key)); alert("✅ Đã xóa test!"); } catch (e) { console.error(e); alert("⚠️ Lỗi khi xóa!"); }
     };
 
-    // ============================================================
-    // LÀM TEST (CHO USER)
-    // ============================================================
     window.startTest = async function(key) {
         alert("📝 Tính năng làm test đang phát triển!");
     };
@@ -906,7 +813,105 @@
     }
 
     // ============================================================
-    // GAME (GIỮ NGUYÊN)
+    // CÀI ĐẶT
+    // ============================================================
+    function getSettingsPage(user) {
+        if (user.role !== "Ban Quản Trị") return '<h2>⛔ Bạn không có quyền truy cập trang này</h2>';
+        return `
+            <h2>⚙️ Cài đặt hệ thống</h2>
+            <div class="account-form-box">
+                <h3>🛡️ Bảo trì hệ thống</h3>
+                <div class="inline-form">
+                    <select id="maintenanceSelect">
+                        <option value="off">🟢 Bình thường</option>
+                        <option value="on">🔴 Bảo trì</option>
+                    </select>
+                    <button onclick="window.saveSettings()" class="btn-create">Lưu</button>
+                </div>
+            </div>
+            <div class="account-form-box">
+                <h3>💾 Sao lưu dữ liệu</h3>
+                <button onclick="window.backupData()" class="btn-create" style="background:#3b82f6;">📥 Xuất file backup</button>
+            </div>
+        `;
+    }
+
+    function loadSettings() {
+        const select = document.getElementById("maintenanceSelect");
+        if (!select) return;
+        get(ref(db, "system_config/maintenance")).then(s => { if (s.exists()) select.value = s.val(); }).catch(() => {});
+    }
+
+    window.saveSettings = async function() {
+        const val = document.getElementById("maintenanceSelect")?.value || "off";
+        try {
+            await update(ref(db, "system_config"), {
+                maintenance: val,
+                lastUpdated: new Date().toLocaleString()
+            });
+            alert("✅ Đã lưu cài đặt!");
+        } catch (e) { console.error(e); alert("⚠️ Lỗi khi lưu!"); }
+    };
+
+    window.backupData = async function() {
+        try {
+            const snap = await get(ref(db));
+            if (!snap.exists()) return alert("Không có dữ liệu để backup!");
+            const a = document.createElement("a");
+            a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(snap.val(), null, 4));
+            a.download = "backup_" + new Date().toISOString().slice(0, 10) + ".json";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } catch (e) { console.error(e); alert("⚠️ Lỗi backup!"); }
+    };
+
+    // ============================================================
+    // HỒ SƠ CÁ NHÂN
+    // ============================================================
+    function getProfilePage(user) {
+        return `
+            <h2>👤 Hồ sơ cá nhân</h2>
+            <div class="account-form-box" style="max-width:500px;">
+                <div class="form-group"><label>Mã tài khoản</label><input type="text" id="profileUsername" value="${user.username}" readonly style="background:#f1f5f9;" /></div>
+                <div class="form-group"><label>Họ và tên</label><input type="text" id="profileName" value="${user.name || ""}" /></div>
+                <div class="form-group"><label>Chức vụ</label><input type="text" id="profileRole" value="${user.role}" readonly style="background:#f1f5f9;" /></div>
+                <button onclick="window.updateProfile()" class="btn-create">Cập nhật</button>
+            </div>
+        `;
+    }
+
+    function loadProfile() {
+        const user = JSON.parse(localStorage.getItem("currentUser"));
+        if (!user) return;
+        const el = document.getElementById("profileName");
+        if (el) el.value = user.name || "";
+    }
+
+    window.updateProfile = async function() {
+        const user = JSON.parse(localStorage.getItem("currentUser"));
+        if (!user) return;
+        const name = document.getElementById("profileName")?.value.trim();
+        if (!name) return alert("⚠️ Họ và tên không được để trống!");
+        try {
+            await update(ref(db, 'users/' + user.username), { name });
+            user.name = name;
+            localStorage.setItem("currentUser", JSON.stringify(user));
+            document.querySelector(".user-info .name").textContent = name;
+            alert("✅ Cập nhật thành công!");
+        } catch (e) { console.error(e); alert("⚠️ Lỗi khi cập nhật!"); }
+    };
+
+    // ============================================================
+    // ĐĂNG XUẤT
+    // ============================================================
+    window.logout = function() {
+        localStorage.removeItem("currentUser");
+        window.location.href = "index.html";
+    };
+
+    // ============================================================
+    // GAME (RÚT GỌN ĐỂ DỄ ĐỌC)
     // ============================================================
     let gameRunning = false, gameScore = 0, gameHighScore = parseInt(localStorage.getItem('doraemonHighScore')) || 0;
     let gameSpeed = 6, obstacles = [], frameId = null, isJumping = false, jumpVelocity = 0;
@@ -1319,105 +1324,7 @@
     }
 
     // ============================================================
-    // CÀI ĐẶT
-    // ============================================================
-    function getSettingsPage(user) {
-        if (user.role !== "Ban Quản Trị") return '<h2>⛔ Bạn không có quyền truy cập trang này</h2>';
-        return `
-            <h2>⚙️ Cài đặt hệ thống</h2>
-            <div class="account-form-box">
-                <h3>🛡️ Bảo trì hệ thống</h3>
-                <div class="inline-form">
-                    <select id="maintenanceSelect">
-                        <option value="off">🟢 Bình thường</option>
-                        <option value="on">🔴 Bảo trì</option>
-                    </select>
-                    <button onclick="window.saveSettings()" class="btn-create">Lưu</button>
-                </div>
-            </div>
-            <div class="account-form-box">
-                <h3>💾 Sao lưu dữ liệu</h3>
-                <button onclick="window.backupData()" class="btn-create" style="background:#3b82f6;">📥 Xuất file backup</button>
-            </div>
-        `;
-    }
-
-    function loadSettings() {
-        const select = document.getElementById("maintenanceSelect");
-        if (!select) return;
-        get(ref(db, "system_config/maintenance")).then(s => { if (s.exists()) select.value = s.val(); }).catch(() => {});
-    }
-
-    window.saveSettings = async function() {
-        const val = document.getElementById("maintenanceSelect")?.value || "off";
-        try {
-            await update(ref(db, "system_config"), {
-                maintenance: val,
-                lastUpdated: new Date().toLocaleString()
-            });
-            alert("✅ Đã lưu cài đặt!");
-        } catch (e) { console.error(e); alert("⚠️ Lỗi khi lưu!"); }
-    };
-
-    window.backupData = async function() {
-        try {
-            const snap = await get(ref(db));
-            if (!snap.exists()) return alert("Không có dữ liệu để backup!");
-            const a = document.createElement("a");
-            a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(snap.val(), null, 4));
-            a.download = "backup_" + new Date().toISOString().slice(0, 10) + ".json";
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-        } catch (e) { console.error(e); alert("⚠️ Lỗi backup!"); }
-    };
-
-    // ============================================================
-    // HỒ SƠ CÁ NHÂN
-    // ============================================================
-    function getProfilePage(user) {
-        return `
-            <h2>👤 Hồ sơ cá nhân</h2>
-            <div class="account-form-box" style="max-width:500px;">
-                <div class="form-group"><label>Mã tài khoản</label><input type="text" id="profileUsername" value="${user.username}" readonly style="background:#f1f5f9;" /></div>
-                <div class="form-group"><label>Họ và tên</label><input type="text" id="profileName" value="${user.name || ""}" /></div>
-                <div class="form-group"><label>Chức vụ</label><input type="text" id="profileRole" value="${user.role}" readonly style="background:#f1f5f9;" /></div>
-                <button onclick="window.updateProfile()" class="btn-create">Cập nhật</button>
-            </div>
-        `;
-    }
-
-    function loadProfile() {
-        const user = JSON.parse(localStorage.getItem("currentUser"));
-        if (!user) return;
-        const el = document.getElementById("profileName");
-        if (el) el.value = user.name || "";
-    }
-
-    window.updateProfile = async function() {
-        const user = JSON.parse(localStorage.getItem("currentUser"));
-        if (!user) return;
-        const name = document.getElementById("profileName")?.value.trim();
-        if (!name) return alert("⚠️ Họ và tên không được để trống!");
-        try {
-            await update(ref(db, 'users/' + user.username), { name });
-            user.name = name;
-            localStorage.setItem("currentUser", JSON.stringify(user));
-            document.querySelector(".user-info .name").textContent = name;
-            alert("✅ Cập nhật thành công!");
-        } catch (e) { console.error(e); alert("⚠️ Lỗi khi cập nhật!"); }
-    };
-
-    // ============================================================
-    // ĐĂNG XUẤT
-    // ============================================================
-    window.logout = function() {
-        localStorage.removeItem("currentUser");
-        window.location.href = "index.html";
-    };
-
-    // ============================================================
-    // ĐIỀU KHIỂN PHÍM SPACE
+    // PHÍM SPACE
     // ============================================================
     document.addEventListener('keydown', function(e) {
         if (e.key === ' ' || e.key === 'Space') {
@@ -1435,7 +1342,7 @@
     });
 
     console.log("✅ Dashboard đã tải thành công!");
-    console.log("📝 BQT có thể tạo/sửa/xóa test ngay trong web!");
+    console.log("📝 Giao diện Test đã sửa theo ảnh của bạn!");
 </script>
 
 </body>
