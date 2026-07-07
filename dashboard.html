@@ -50,9 +50,6 @@
 
 <script type="module" src="js/firebase.js"></script>
 <script type="module">
-    // ============================================================
-    // IMPORT
-    // ============================================================
     import { db, ref, get, set, update, remove, push, onValue } from "./js/firebase.js";
 
     // ============================================================
@@ -68,7 +65,7 @@
     }
 
     // ============================================================
-    // TOGGLE MENU CHO MOBILE
+    // TOGGLE MENU
     // ============================================================
     window.toggleMenu = function() {
         const sidebar = document.querySelector('.sidebar');
@@ -93,9 +90,7 @@
                 const page = this.dataset.page;
                 if (page) {
                     window.showPage(page);
-                    if (window.innerWidth <= 768) {
-                        window.toggleMenu();
-                    }
+                    if (window.innerWidth <= 768) window.toggleMenu();
                 }
             });
         });
@@ -105,18 +100,15 @@
 
     window.addEventListener('resize', function() {
         if (window.innerWidth > 768) {
-            const sidebar = document.querySelector('.sidebar');
-            const overlay = document.querySelector('.sidebar-overlay');
-            if (sidebar) sidebar.classList.remove('open');
-            if (overlay) overlay.classList.remove('active');
+            document.querySelector('.sidebar')?.classList.remove('open');
+            document.querySelector('.sidebar-overlay')?.classList.remove('active');
         }
     });
 
     // ============================================================
-    // HÀM SHOW PAGE CHÍNH
+    // SHOW PAGE
     // ============================================================
     window.showPage = function(pageId) {
-        console.log("📄 Đang chuyển đến trang:", pageId);
         const user = checkAuth();
         if (!user) return;
 
@@ -145,45 +137,20 @@
         if (!content) return;
 
         switch(pageId) {
-            case "home":
-                content.innerHTML = getHomePage();
-                loadHomeData();
-                break;
-            case "users":
-                content.innerHTML = getUsersPage(user);
-                loadUsers();
-                break;
-            case "notices":
-                content.innerHTML = getNoticesPage(user);
-                loadNotices();
-                break;
-            case "documents":
-                content.innerHTML = getDocumentsPage(user);
-                loadDocuments();
-                break;
+            case "home": content.innerHTML = getHomePage(); loadHomeData(); break;
+            case "users": content.innerHTML = getUsersPage(user); loadUsers(); break;
+            case "notices": content.innerHTML = getNoticesPage(user); loadNotices(); break;
+            case "documents": content.innerHTML = getDocumentsPage(user); loadDocuments(); break;
             case "tests":
-                console.log("✅ ĐANG VÀO TRANG TEST KỸ NĂNG!");
+                console.log("✅ VÀO TRANG TEST!");
                 content.innerHTML = getTestsPage(user);
                 loadTests();
                 loadDeadline();
                 break;
-            case "games":
-                console.log("🎮 ĐANG VÀO TRANG GAME!");
-                content.innerHTML = getGamesPage(user);
-                loadGames();
-                loadScores();
-                initGameCanvas();
-                break;
-            case "settings":
-                content.innerHTML = getSettingsPage(user);
-                loadSettings();
-                break;
-            case "profile":
-                content.innerHTML = getProfilePage(user);
-                loadProfile();
-                break;
-            default:
-                content.innerHTML = "<h2>Trang đang phát triển</h2>";
+            case "games": content.innerHTML = getGamesPage(user); loadGames(); loadScores(); initGameCanvas(); break;
+            case "settings": content.innerHTML = getSettingsPage(user); loadSettings(); break;
+            case "profile": content.innerHTML = getProfilePage(user); loadProfile(); break;
+            default: content.innerHTML = "<h2>Trang đang phát triển</h2>";
         }
     };
 
@@ -335,7 +302,7 @@
     };
 
     // ============================================================
-    // QUẢN LÝ THÔNG BÁO
+    // THÔNG BÁO
     // ============================================================
     function getNoticesPage(user) {
         const canManage = user.role !== "Admin";
@@ -414,26 +381,15 @@
     window.addNotice = async function() {
         try {
             const user = JSON.parse(localStorage.getItem("currentUser"));
-            if (!user) {
-                alert("⚠️ Vui lòng đăng nhập lại!");
-                return;
-            }
-            if (user.role === "Admin") {
-                alert("⛔ Admin không có quyền đăng thông báo!");
-                return;
-            }
+            if (!user) return alert("⚠️ Vui lòng đăng nhập lại!");
+            if (user.role === "Admin") return alert("⛔ Admin không có quyền đăng thông báo!");
 
             const titleInput = document.getElementById("noticeTitle");
             const contentInput = document.getElementById("noticeContent");
-
-            if (!titleInput || !contentInput) {
-                alert("⚠️ Không tìm thấy form nhập liệu! Vui lòng tải lại trang.");
-                return;
-            }
+            if (!titleInput || !contentInput) return alert("⚠️ Không tìm thấy form nhập liệu!");
 
             const title = titleInput.value.trim();
             const content = contentInput.value.trim();
-
             if (!title) return alert("⚠️ Vui lòng nhập tiêu đề!");
             if (!content) return alert("⚠️ Vui lòng nhập nội dung!");
 
@@ -442,8 +398,7 @@
             const time = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
 
             await push(ref(db, "notices"), {
-                title: title,
-                content: content,
+                title, content,
                 date: date + " " + time,
                 author: user.name || user.username || "Unknown"
             });
@@ -451,10 +406,7 @@
             alert("✅ Đăng thông báo thành công!");
             titleInput.value = "";
             contentInput.value = "";
-        } catch (e) {
-            console.error("❌ LỖI đăng thông báo:", e);
-            alert("⚠️ Lỗi khi đăng thông báo: " + e.message);
-        }
+        } catch (e) { console.error(e); alert("⚠️ Lỗi khi đăng thông báo!"); }
     };
 
     window.deleteNotice = async function(key) {
@@ -619,21 +571,20 @@
     };
 
     // ============================================================
-    // QUẢN LÝ TEST KỸ NĂNG - THEO ẢNH "giao diện giữa.png"
+    // QUẢN LÝ TEST KỸ NĂNG - FULL CHỨC NĂNG CHO BQT
     // ============================================================
     function getTestsPage(user) {
-        console.log("📝 Đang tạo trang Tests...");
         const canManage = user.role === "Ban Quản Trị";
         
         let html = `
             <div style="max-width:900px; margin:0 auto;">
                 <h2>📋 Thông tin bài test</h2>
                 
-                <!-- Thời hạn bài test -->
+                <!-- Thời hạn -->
                 <div style="background:white; border-radius:12px; padding:16px 20px; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
                     <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
                         <span style="font-weight:600; color:#0f172a; font-size:15px;">⏰ Thời hạn bài test:</span>
-                        <span id="testDeadline" style="color:#64748b;">Chưa cập nhật</span>
+                        <span id="testDeadline" style="color:#64748b;">Không thời hạn</span>
                         ${canManage ? `<button onclick="window.updateDeadline()" class="btn-edit" style="font-size:11px; padding:2px 10px;">✏️ Sửa</button>` : ''}
                     </div>
                 </div>
@@ -645,6 +596,43 @@
                         <span style="color:#64748b;">Lưu bài test</span>
                     </div>
                 </div>
+                
+                ${canManage ? `
+                <!-- ===== FORM TẠO TEST MỚI ===== -->
+                <div style="background:white; border-radius:12px; padding:20px; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04); border:2px solid #0284c7;">
+                    <h3 style="font-size:16px; color:#0f172a; margin:0 0 12px 0;">📝 Tạo bài test mới</h3>
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <input type="text" id="newTestTitle" placeholder="Tiêu đề bài test" style="padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
+                        <textarea id="newTestDesc" placeholder="Mô tả bài test..." style="min-height:60px; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;"></textarea>
+                        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                            <input type="number" id="newTestPassScore" placeholder="Điểm đạt (VD: 50)" style="flex:1; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
+                            <input type="text" id="newTestDeadline" placeholder="Hạn nộp (VD: 23:59 15/07/2026)" style="flex:1; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
+                        </div>
+                        <div style="border:1px solid #e2e8f0; border-radius:8px; padding:16px; background:#f8fafc;">
+                            <h4 style="margin-bottom:10px;">📝 Nhập câu hỏi (mỗi câu cách nhau bằng dòng trống)</h4>
+                            <p style="font-size:13px; color:#64748b; margin-bottom:10px;">
+                                Định dạng: <strong>Câu hỏi</strong><br />
+                                a. Đáp án A<br />
+                                *b. Đáp án B (đúng)<br />
+                                c. Đáp án C<br />
+                                d. Đáp án D
+                            </p>
+                            <textarea id="newTestQuestions" placeholder='Câu 1: Nội dung câu hỏi?
+                    a. Đáp án A
+                    *b. Đáp án B (đúng)
+                    c. Đáp án C
+                    d. Đáp án D
+
+                    Câu 2: Nội dung câu hỏi thứ hai?
+                    a. Đáp án A
+                    b. Đáp án B
+                    *c. Đáp án C (đúng)
+                    d. Đáp án D' style="min-height:200px; width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:8px; font-family:monospace; font-size:14px;"></textarea>
+                        </div>
+                        <button onclick="window.createTest()" class="btn-create" style="align-self:flex-start; padding:10px 24px;">📤 Tạo test</button>
+                    </div>
+                </div>
+                ` : `<p style="color:#94a3b8; margin-bottom:16px;">🔒 Chỉ Ban Quản Trị mới có quyền tạo/sửa test.</p>`}
                 
                 <!-- Danh sách bài test -->
                 <div style="background:white; border-radius:12px; padding:16px 20px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
@@ -663,53 +651,129 @@
     }
 
     // ============================================================
+    // TẠO TEST MỚI
+    // ============================================================
+    window.createTest = async function() {
+        const user = JSON.parse(localStorage.getItem("currentUser"));
+        if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền tạo test!");
+
+        const title = document.getElementById("newTestTitle")?.value.trim();
+        const desc = document.getElementById("newTestDesc")?.value.trim();
+        const passScore = parseInt(document.getElementById("newTestPassScore")?.value) || 50;
+        const deadline = document.getElementById("newTestDeadline")?.value.trim() || "Không thời hạn";
+        const questionsText = document.getElementById("newTestQuestions")?.value;
+
+        if (!title || !desc) return alert("⚠️ Vui lòng nhập tiêu đề và mô tả!");
+        if (!questionsText || !questionsText.trim()) return alert("⚠️ Vui lòng nhập câu hỏi!");
+
+        const questions = parseQuestions(questionsText);
+        if (questions.length === 0) return alert("⚠️ Không tìm thấy câu hỏi hợp lệ!");
+        
+        // Kiểm tra mỗi câu hỏi
+        for (let i = 0; i < questions.length; i++) {
+            if (questions[i].options.length < 4) return alert("⚠️ Câu " + (i + 1) + " thiếu đáp án! Cần a, b, c, d.");
+            if (!questions[i].options.some(o => o.startsWith('*'))) return alert("⚠️ Câu " + (i + 1) + " chưa có đáp án đúng!");
+        }
+
+        try {
+            await push(ref(db, "tests"), {
+                title, desc,
+                questions: questions,
+                passScore, deadline,
+                totalQuestions: questions.length,
+                status: "Đang mở",
+                createdBy: user.username,
+                createdAt: new Date().toISOString()
+            });
+            alert("✅ Tạo test thành công! (" + questions.length + " câu)");
+            // Reset form
+            document.getElementById("newTestTitle").value = "";
+            document.getElementById("newTestDesc").value = "";
+            document.getElementById("newTestPassScore").value = "";
+            document.getElementById("newTestDeadline").value = "";
+            document.getElementById("newTestQuestions").value = "";
+        } catch (e) {
+            console.error(e);
+            alert("⚠️ Lỗi khi tạo test!");
+        }
+    };
+
+    // ============================================================
+    // PARSE CÂU HỎI
+    // ============================================================
+    function parseQuestions(text) {
+        const lines = text.split('\n');
+        const questions = [];
+        let currentQ = null;
+        let currentOpts = [];
+        
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            
+            // Kiểm tra câu hỏi
+            const qMatch = trimmed.match(/^(Câu\s*)?(\d+)[:\.]\s*(.*)/i);
+            if (qMatch) {
+                if (currentQ && currentOpts.length > 0) {
+                    questions.push({ question: currentQ, options: currentOpts });
+                }
+                currentQ = qMatch[3] || trimmed;
+                currentOpts = [];
+            } else {
+                // Kiểm tra đáp án
+                const oMatch = trimmed.match(/^([a-dA-D])[\.\)]\s*(.*)/i);
+                if (oMatch && currentQ !== null) {
+                    let opt = oMatch[1].toLowerCase() + '. ' + oMatch[2];
+                    if (oMatch[2].trim().startsWith('*')) {
+                        opt = '*' + opt;
+                    }
+                    currentOpts.push(opt);
+                } else {
+                    if (currentQ !== null && currentOpts.length === 0) {
+                        currentQ += ' ' + trimmed;
+                    }
+                }
+            }
+        }
+        if (currentQ && currentOpts.length > 0) {
+            questions.push({ question: currentQ, options: currentOpts });
+        }
+        return questions;
+    }
+
+    // ============================================================
     // TẢI DANH SÁCH TEST
     // ============================================================
     function loadTests() {
-        console.log("📝 Đang tải danh sách tests...");
         const container = document.getElementById("testListContainer");
-        if (!container) {
-            console.warn("⚠️ Không tìm thấy testListContainer!");
-            return;
-        }
+        if (!container) return;
+        
         const user = JSON.parse(localStorage.getItem("currentUser"));
         const isBQT = user?.role === "Ban Quản Trị";
         const isAdmin = user?.role === "Admin";
 
         onValue(ref(db, "tests"), snapshot => {
-            if (!snapshot.exists()) { 
-                container.innerHTML = `
-                    <div style="text-align:center; color:#94a3b8; padding:20px;">
-                        📭 Chưa có bài test nào
-                    </div>
-                `;
-                const countEl = document.getElementById("totalTestsCount");
-                if (countEl) countEl.textContent = "0";
-                return; 
+            if (!snapshot.exists()) {
+                container.innerHTML = `<div style="text-align:center; color:#94a3b8; padding:20px;">📭 Chưa có bài test nào</div>`;
+                document.getElementById("totalTestsCount").textContent = "0";
+                return;
             }
             
             const tests = [];
-            snapshot.forEach(child => {
-                tests.push({ key: child.key, ...child.val() });
-            });
-            
-            const countEl = document.getElementById("totalTestsCount");
-            if (countEl) countEl.textContent = tests.length;
-            
+            snapshot.forEach(child => tests.push({ key: child.key, ...child.val() }));
+            document.getElementById("totalTestsCount").textContent = tests.length;
             tests.reverse();
             
             let html = `<div style="display:flex; flex-direction:column; gap:10px;">`;
-            
             tests.forEach((test, index) => {
                 const key = test.key;
-                const deadline = test.deadline || "Chưa cập nhật";
-                const questionCount = test.totalQuestions || test.questions?.length || "0";
+                const deadline = test.deadline || "Không thời hạn";
+                const qCount = test.totalQuestions || test.questions?.length || "0";
                 
                 let actions = "";
                 if (isBQT) {
                     actions = `
                         <button onclick="window.editTest('${key}')" class="btn-edit" style="font-size:11px; padding:2px 10px;">✏️ Sửa</button>
-                        <button onclick="window.startTest('${key}')" class="btn-create" style="font-size:11px; padding:2px 10px; background:#10b981;">📝 Làm test</button>
                         <button onclick="window.deleteTest('${key}')" class="btn-delete" style="font-size:11px; padding:2px 10px;">🗑️ Xóa</button>
                     `;
                 } else if (isAdmin) {
@@ -718,40 +782,94 @@
                     actions = `<button onclick="window.startTest('${key}')" class="btn-create" style="font-size:11px; padding:2px 10px; background:#10b981;">📝 Làm test</button>`;
                 }
                 
-                let statusColor = "#10b981";
-                let statusIcon = "🟢";
-                const status = test.status || "Đang mở";
-                if (status === "Đã đóng") {
-                    statusColor = "#ef4444";
-                    statusIcon = "🔴";
-                } else if (status === "Sắp diễn ra") {
-                    statusColor = "#f59e0b";
-                    statusIcon = "🟡";
-                }
-                
                 html += `
                     <div style="background:#f8fafc; border-radius:8px; padding:12px 16px; border:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                         <div>
                             <span style="font-weight:600; color:#0f172a;">${index + 1}. ${test.title || "Không có tiêu đề"}</span>
                             <div style="font-size:13px; color:#64748b; margin-top:2px;">
-                                ⏳ ${deadline}
-                                <span style="font-size:11px; background:${statusColor}20; color:${statusColor}; padding:2px 10px; border-radius:12px; margin-left:8px;">
-                                    ${statusIcon} ${status}
-                                </span>
-                                <span style="font-size:12px; color:#94a3b8; margin-left:8px;">📝 ${questionCount} câu</span>
+                                ⏳ ${deadline} &nbsp;|&nbsp; 📝 ${qCount} câu &nbsp;|&nbsp; 🎯 ${test.passScore || 50}%
                             </div>
                         </div>
-                        <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                            ${actions}
-                        </div>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap;">${actions}</div>
                     </div>
                 `;
             });
-            
             html += `</div>`;
             container.innerHTML = html;
         });
     }
+
+    // ============================================================
+    // SỬA TEST
+    // ============================================================
+    window.editTest = async function(key) {
+        const user = JSON.parse(localStorage.getItem("currentUser"));
+        if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền sửa test!");
+        
+        try {
+            const snap = await get(ref(db, 'tests/' + key));
+            if (!snap.exists()) return alert("Bài test không tồn tại!");
+            const test = snap.val();
+            
+            const newTitle = prompt("✏️ Sửa tiêu đề:", test.title);
+            if (newTitle === null) return;
+            const newDesc = prompt("✏️ Sửa mô tả:", test.desc);
+            if (newDesc === null) return;
+            const newPass = prompt("✏️ Sửa điểm đạt:", test.passScore);
+            if (newPass === null) return;
+            const newDeadline = prompt("✏️ Sửa hạn nộp:", test.deadline || "Không thời hạn");
+            if (newDeadline === null) return;
+            
+            // Chuyển câu hỏi thành text để sửa
+            let qText = "";
+            test.questions.forEach((q, idx) => {
+                qText += "Câu " + (idx + 1) + ": " + q.question + "\n";
+                q.options.forEach(o => qText += o + "\n");
+                qText += "\n";
+            });
+            
+            const newQText = prompt("✏️ Sửa câu hỏi (giữ nguyên định dạng):", qText);
+            if (newQText === null) return;
+            
+            const newQuestions = parseQuestions(newQText);
+            if (newQuestions.length === 0) return alert("⚠️ Không tìm thấy câu hỏi hợp lệ!");
+            for (let i = 0; i < newQuestions.length; i++) {
+                if (newQuestions[i].options.length < 4) return alert("⚠️ Câu " + (i + 1) + " thiếu đáp án!");
+                if (!newQuestions[i].options.some(o => o.startsWith('*'))) return alert("⚠️ Câu " + (i + 1) + " chưa có đáp án đúng!");
+            }
+            
+            await update(ref(db, 'tests/' + key), {
+                title: newTitle.trim(),
+                desc: newDesc.trim(),
+                questions: newQuestions,
+                passScore: parseInt(newPass) || 50,
+                deadline: newDeadline.trim(),
+                totalQuestions: newQuestions.length,
+                updatedAt: new Date().toISOString()
+            });
+            alert("✅ Cập nhật test thành công!");
+        } catch (e) {
+            console.error(e);
+            alert("⚠️ Lỗi khi sửa test!");
+        }
+    };
+
+    // ============================================================
+    // XÓA TEST
+    // ============================================================
+    window.deleteTest = async function(key) {
+        const user = JSON.parse(localStorage.getItem("currentUser"));
+        if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền xóa test!");
+        if (!confirm("🗑️ Xóa test này?")) return;
+        try { await remove(ref(db, 'tests/' + key)); alert("✅ Đã xóa test!"); } catch (e) { console.error(e); alert("⚠️ Lỗi khi xóa!"); }
+    };
+
+    // ============================================================
+    // LÀM TEST (CHO USER)
+    // ============================================================
+    window.startTest = async function(key) {
+        alert("📝 Tính năng làm test đang phát triển!");
+    };
 
     // ============================================================
     // CẬP NHẬT HẠN NỘP
@@ -760,64 +878,35 @@
         const user = JSON.parse(localStorage.getItem("currentUser"));
         if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền sửa!");
         
-        const current = document.getElementById("testDeadline")?.textContent || "Chưa cập nhật";
+        const current = document.getElementById("testDeadline")?.textContent || "Không thời hạn";
         const newDeadline = prompt("📅 Nhập hạn nộp mới (VD: 23:59 15/07/2026):", current);
         if (newDeadline === null) return;
         if (!newDeadline.trim()) return alert("⚠️ Vui lòng nhập hạn nộp!");
         
-        try {
-            update(ref(db, "system_config/test_deadline"), {
-                deadline: newDeadline.trim(),
-                updatedAt: new Date().toISOString()
-            });
+        update(ref(db, "system_config/test_deadline"), {
+            deadline: newDeadline.trim(),
+            updatedAt: new Date().toISOString()
+        }).then(() => {
             document.getElementById("testDeadline").textContent = newDeadline.trim();
             alert("✅ Đã cập nhật hạn nộp!");
-        } catch (e) {
-            console.error(e);
+        }).catch(err => {
+            console.error(err);
             alert("⚠️ Lỗi khi cập nhật!");
-        }
+        });
     };
 
-    // ============================================================
-    // TẢI HẠN NỘP
-    // ============================================================
     function loadDeadline() {
         const el = document.getElementById("testDeadline");
         if (!el) return;
         get(ref(db, "system_config/test_deadline")).then(snapshot => {
             if (snapshot.exists()) {
-                const data = snapshot.val();
-                el.textContent = data.deadline || "Chưa cập nhật";
-            } else {
-                el.textContent = "Chưa cập nhật";
+                el.textContent = snapshot.val().deadline || "Không thời hạn";
             }
         }).catch(() => {});
     }
 
     // ============================================================
-    // CÁC HÀM XỬ LÝ TEST (GIỮ LẠI)
-    // ============================================================
-    window.editTest = async function(key) {
-        const user = JSON.parse(localStorage.getItem("currentUser"));
-        if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền sửa test!");
-        alert("📝 Vui lòng vào Google Form để chỉnh sửa test!");
-    };
-
-    window.deleteTest = async function(key) {
-        const user = JSON.parse(localStorage.getItem("currentUser"));
-        if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền xóa test!");
-        if (!confirm("🗑️ Xóa test này?")) return;
-        try { await remove(ref(db, 'tests/' + key)); alert("✅ Đã xóa test!"); } catch (e) { console.error(e); alert("⚠️ Lỗi khi xóa!"); }
-    };
-
-    window.startTest = async function(key) {
-        const user = JSON.parse(localStorage.getItem("currentUser"));
-        if (!user) return;
-        alert("📝 Vui lòng vào Google Form để làm test!");
-    };
-
-    // ============================================================
-    // GAME DORAEMON RUN
+    // GAME (GIỮ NGUYÊN)
     // ============================================================
     let gameRunning = false, gameScore = 0, gameHighScore = parseInt(localStorage.getItem('doraemonHighScore')) || 0;
     let gameSpeed = 6, obstacles = [], frameId = null, isJumping = false, jumpVelocity = 0;
@@ -828,63 +917,60 @@
     function drawDoraemon(ctx, x, y, w, h) {
         ctx.fillStyle = '#2196F3';
         ctx.beginPath();
-        ctx.arc(x + w / 2, y + h / 2 - 5, w / 2, 0, Math.PI * 2);
+        ctx.arc(x + w/2, y + h/2 - 5, w/2, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = '#FFFFFF';
         ctx.beginPath();
-        ctx.arc(x + w / 2, y + h / 2 + 5, w / 3, 0, Math.PI * 2);
+        ctx.arc(x + w/2, y + h/2 + 5, w/3, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = '#2196F3';
         ctx.beginPath();
-        ctx.arc(x + w / 2, y + 5, w / 2.5, 0, Math.PI * 2);
+        ctx.arc(x + w/2, y + 5, w/2.5, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = '#FFFFFF';
         ctx.beginPath();
-        ctx.arc(x + w / 2 - 5, y + 8, 8, 0, Math.PI * 2);
+        ctx.arc(x + w/2 - 5, y + 8, 8, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(x + w / 2 + 5, y + 8, 8, 0, Math.PI * 2);
+        ctx.arc(x + w/2 + 5, y + 8, 8, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = '#000000';
         ctx.beginPath();
-        ctx.arc(x + w / 2 - 7, y + 8, 3, 0, Math.PI * 2);
+        ctx.arc(x + w/2 - 7, y + 8, 3, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(x + w / 2 + 3, y + 8, 3, 0, Math.PI * 2);
+        ctx.arc(x + w/2 + 3, y + 8, 3, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = '#FF1744';
         ctx.beginPath();
-        ctx.arc(x + w / 2 - 2, y + 14, 3, 0, Math.PI * 2);
+        ctx.arc(x + w/2 - 2, y + 14, 3, 0, Math.PI * 2);
         ctx.fill();
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.arc(x + w / 2 - 2, y + 18, 5, 0.1, Math.PI - 0.1);
+        ctx.arc(x + w/2 - 2, y + 18, 5, 0.1, Math.PI - 0.1);
         ctx.stroke();
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 1;
         for (let i = -1; i <= 1; i += 2) {
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.moveTo(x + w / 2 + i * 10, y + 10);
-            ctx.lineTo(x + w / 2 + i * 25, y + 5 + i * 5);
+            ctx.moveTo(x + w/2 + i * 10, y + 10);
+            ctx.lineTo(x + w/2 + i * 25, y + 5 + i * 5);
             ctx.stroke();
             ctx.beginPath();
-            ctx.moveTo(x + w / 2 + i * 10, y + 14);
-            ctx.lineTo(x + w / 2 + i * 25, y + 14 + i * 5);
+            ctx.moveTo(x + w/2 + i * 10, y + 14);
+            ctx.lineTo(x + w/2 + i * 25, y + 14 + i * 5);
             ctx.stroke();
         }
         ctx.fillStyle = '#FFD700';
         ctx.beginPath();
-        ctx.arc(x + w / 2, y + h - 2, 6, 0, Math.PI * 2);
+        ctx.arc(x + w/2, y + h - 2, 6, 0, Math.PI * 2);
         ctx.fill();
     }
 
     function initGameCanvas() {
         const canvas = document.getElementById('gameCanvas');
-        if (!canvas) {
-            console.log('⏳ Chưa có canvas, đợi vào trang Game...');
-            return;
-        }
+        if (!canvas) return;
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, 800, 350);
         ctx.fillStyle = '#1a1a2e';
@@ -894,17 +980,12 @@
         ctx.fillStyle = '#4d4d6c';
         ctx.fillRect(0, groundY, 800, 3);
         drawDoraemon(ctx, playerX, playerY, playerWidth, playerHeight);
-        const highEl = document.getElementById('gameHighScore');
-        if (highEl) highEl.textContent = gameHighScore;
-        console.log('✅ Canvas đã sẵn sàng!');
+        document.getElementById('gameHighScore').textContent = gameHighScore;
     }
 
     window.startGame = function() {
         const canvas = document.getElementById('gameCanvas');
-        if (!canvas) {
-            alert('⚠️ Vui lòng vào trang Game trước khi bắt đầu!');
-            return;
-        }
+        if (!canvas) return alert('⚠️ Vui lòng vào trang Game!');
         if (gameRunning) return;
         gameRunning = true;
         gameScore = 0;
@@ -936,7 +1017,7 @@
             } else if (obs.type === 'bird') {
                 ctx.fillStyle = '#FF6F00';
                 ctx.beginPath();
-                ctx.arc(obs.x + obs.width / 2, obs.y + obs.height / 2, obs.width / 2, 0, Math.PI * 2);
+                ctx.arc(obs.x + obs.width/2, obs.y + obs.height/2, obs.width/2, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.fillStyle = '#E65100';
                 ctx.fillRect(obs.x + 2, obs.y - 5, 10, 6);
@@ -944,7 +1025,7 @@
             } else {
                 ctx.fillStyle = '#78909C';
                 ctx.beginPath();
-                ctx.ellipse(obs.x + obs.width / 2, obs.y + obs.height / 2, obs.width / 2, obs.height / 2, 0, 0, Math.PI * 2);
+                ctx.ellipse(obs.x + obs.width/2, obs.y + obs.height/2, obs.width/2, obs.height/2, 0, 0, Math.PI * 2);
                 ctx.fill();
             }
         }
@@ -965,16 +1046,21 @@
             if (isJumping) {
                 playerY += jumpVelocity;
                 jumpVelocity += gravity;
-                if (playerY >= groundY - playerHeight) { playerY = groundY - playerHeight;
+                if (playerY >= groundY - playerHeight) {
+                    playerY = groundY - playerHeight;
                     isJumping = false;
-                    jumpVelocity = 0; }
+                    jumpVelocity = 0;
+                }
             }
             if (Math.random() < 0.02 + gameSpeed / 400) createObstacle();
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 const obs = obstacles[i];
                 obs.x -= gameSpeed;
-                if (!obs.scored && obs.x + obs.width < playerX) { obs.scored = true;
-                    gameScore += 10; if (scoreEl) scoreEl.textContent = gameScore; }
+                if (!obs.scored && obs.x + obs.width < playerX) {
+                    obs.scored = true;
+                    gameScore += 10;
+                    if (scoreEl) scoreEl.textContent = gameScore;
+                }
                 if (obs.x < playerX + playerWidth - 10 && obs.x + obs.width > playerX + 10 &&
                     obs.y < playerY + playerHeight - 5 && obs.y + obs.height > playerY + 5) {
                     gameRunning = false;
@@ -985,7 +1071,9 @@
                         document.getElementById('gameHighScore').textContent = gameHighScore;
                         saveScore(gameScore);
                         alert('🎉 KỶ LỤC MỚI! ' + gameScore + ' điểm!');
-                    } else { alert('💀 Game Over! Điểm: ' + gameScore); }
+                    } else {
+                        alert('💀 Game Over! Điểm: ' + gameScore);
+                    }
                     obstacles = [];
                     return;
                 }
@@ -1007,8 +1095,7 @@
 
     window.resetGame = function() {
         gameRunning = false;
-        if (frameId) { cancelAnimationFrame(frameId);
-            frameId = null; }
+        if (frameId) { cancelAnimationFrame(frameId); frameId = null; }
         obstacles = [];
         gameScore = 0;
         gameSpeed = 6;
@@ -1034,8 +1121,7 @@
 
     window.exitGame = function() {
         gameRunning = false;
-        if (frameId) { cancelAnimationFrame(frameId);
-            frameId = null; }
+        if (frameId) { cancelAnimationFrame(frameId); frameId = null; }
         window.showPage('games');
     };
 
@@ -1043,8 +1129,16 @@
         const user = JSON.parse(localStorage.getItem('currentUser'));
         if (!user) return;
         const title = document.getElementById('currentGameTitle')?.textContent || 'Doraemon Run';
-        try { await push(ref(db, "gameScores"), { gameTitle: title, username: user.username, userName: user.name || user.username, score, createdAt: new Date().toISOString() });
-            loadScores(); } catch (e) { console.error('Lỗi lưu điểm:', e); }
+        try {
+            await push(ref(db, "gameScores"), {
+                gameTitle: title,
+                username: user.username,
+                userName: user.name || user.username,
+                score,
+                createdAt: new Date().toISOString()
+            });
+            loadScores();
+        } catch (e) { console.error('Lỗi lưu điểm:', e); }
     }
 
     function loadScores() {
@@ -1052,7 +1146,10 @@
         if (!tbody) return;
         onValue(ref(db, "gameScores"), snapshot => {
             tbody.innerHTML = '';
-            if (!snapshot.exists()) { tbody.innerHTML = '<tr><td colspan="5">Chưa có điểm nào</td></tr>'; return; }
+            if (!snapshot.exists()) {
+                tbody.innerHTML = '<tr><td colspan="5">Chưa có điểm nào</td></tr>';
+                return;
+            }
             const scores = [];
             snapshot.forEach(child => scores.push(child.val()));
             scores.sort((a, b) => (b.score || 0) - (a.score || 0));
@@ -1071,7 +1168,6 @@
     }
 
     function getGamesPage(user) {
-        console.log("🎮 Đang tạo trang Games...");
         const canManage = user.role === "Ban Quản Trị";
         let html = `<h2>🎮 Game nội bộ</h2>`;
         html += `
@@ -1133,10 +1229,16 @@
         if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền tạo game!");
         const title = document.getElementById("gameTitle")?.value.trim() || 'Doraemon Run';
         const desc = document.getElementById("gameDesc")?.value.trim() || 'Chạy cùng Doraemon!';
-        try { await push(ref(db, "games"), { title, desc, type: 'Doraemon Run', createdBy: user.username, createdAt: new Date().toISOString() });
+        try {
+            await push(ref(db, "games"), {
+                title, desc,
+                type: 'Doraemon Run',
+                createdBy: user.username,
+                createdAt: new Date().toISOString()
+            });
             alert("✅ Tạo game thành công!");
-            window.showPage('games'); } catch (e) { console.error(e);
-            alert("⚠️ Lỗi khi tạo game!"); }
+            window.showPage('games');
+        } catch (e) { console.error(e); alert("⚠️ Lỗi khi tạo game!"); }
     };
 
     window.playGame = async function(key) {
@@ -1145,21 +1247,17 @@
             if (!snap.exists()) return alert("Game không tồn tại!");
             const game = snap.val();
             currentGameTitle = game.title || 'Doraemon Run';
-            const titleEl = document.getElementById('currentGameTitle');
-            if (titleEl) titleEl.textContent = currentGameTitle;
+            document.getElementById('currentGameTitle').textContent = currentGameTitle;
             window.showPage('games');
             setTimeout(initGameCanvas, 300);
-        } catch (e) { console.error(e);
-            alert("⚠️ Lỗi khi chơi game!"); }
+        } catch (e) { console.error(e); alert("⚠️ Lỗi khi chơi game!"); }
     };
 
     window.deleteGame = async function(key) {
         const user = JSON.parse(localStorage.getItem('currentUser'));
         if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền xóa game!");
         if (!confirm("Xóa game này?")) return;
-        try { await remove(ref(db, 'games/' + key));
-            alert("✅ Đã xóa game!"); } catch (e) { console.error(e);
-            alert("⚠️ Lỗi khi xóa game!"); }
+        try { await remove(ref(db, 'games/' + key)); alert("✅ Đã xóa game!"); } catch (e) { console.error(e); alert("⚠️ Lỗi khi xóa game!"); }
     };
 
     function loadGames() {
@@ -1171,7 +1269,10 @@
 
         onValue(ref(db, "games"), snapshot => {
             tbody.innerHTML = "";
-            if (!snapshot.exists()) { tbody.innerHTML = '<tr><td colspan="5">Chưa có game nào</td></tr>'; return; }
+            if (!snapshot.exists()) {
+                tbody.innerHTML = '<tr><td colspan="5">Chưa có game nào</td></tr>';
+                return;
+            }
             snapshot.forEach(child => {
                 const game = child.val();
                 const key = child.key;
@@ -1249,9 +1350,13 @@
 
     window.saveSettings = async function() {
         const val = document.getElementById("maintenanceSelect")?.value || "off";
-        try { await update(ref(db, "system_config"), { maintenance: val, lastUpdated: new Date().toLocaleString() });
-            alert("✅ Đã lưu cài đặt!"); } catch (e) { console.error(e);
-            alert("⚠️ Lỗi khi lưu!"); }
+        try {
+            await update(ref(db, "system_config"), {
+                maintenance: val,
+                lastUpdated: new Date().toLocaleString()
+            });
+            alert("✅ Đã lưu cài đặt!");
+        } catch (e) { console.error(e); alert("⚠️ Lỗi khi lưu!"); }
     };
 
     window.backupData = async function() {
@@ -1264,8 +1369,7 @@
             document.body.appendChild(a);
             a.click();
             a.remove();
-        } catch (e) { console.error(e);
-            alert("⚠️ Lỗi backup!"); }
+        } catch (e) { console.error(e); alert("⚠️ Lỗi backup!"); }
     };
 
     // ============================================================
@@ -1301,8 +1405,7 @@
             localStorage.setItem("currentUser", JSON.stringify(user));
             document.querySelector(".user-info .name").textContent = name;
             alert("✅ Cập nhật thành công!");
-        } catch (e) { console.error(e);
-            alert("⚠️ Lỗi khi cập nhật!"); }
+        } catch (e) { console.error(e); alert("⚠️ Lỗi khi cập nhật!"); }
     };
 
     // ============================================================
@@ -1332,9 +1435,7 @@
     });
 
     console.log("✅ Dashboard đã tải thành công!");
-    console.log("📢 Hàm addNotice đã sẵn sàng!");
-    console.log("📝 Trang Test đã cập nhật theo ảnh giao diện giữa.png!");
-    console.log("🎮 Chơi game: Vào menu Game và nhấn Space để chơi!");
+    console.log("📝 BQT có thể tạo/sửa/xóa test ngay trong web!");
 </script>
 
 </body>
