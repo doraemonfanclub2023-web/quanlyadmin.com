@@ -209,11 +209,26 @@
         const content = document.getElementById("pageContent");
         if (!content) return;
 
+        // ===== XÓA NỘI DUNG CŨ =====
+        content.innerHTML = "";
+
         switch(pageId) {
-            case "home": content.innerHTML = getHomePage(); loadHomeData(); break;
-            case "users": content.innerHTML = getUsersPage(user); loadUsers(); break;
-            case "notices": content.innerHTML = getNoticesPage(user); loadNotices(); break;
-            case "documents": content.innerHTML = getDocumentsPage(user); loadDocuments(); break;
+            case "home": 
+                content.innerHTML = getHomePage(); 
+                loadHomeData(); 
+                break;
+            case "users": 
+                content.innerHTML = getUsersPage(user); 
+                loadUsers(); 
+                break;
+            case "notices": 
+                content.innerHTML = getNoticesPage(user); 
+                loadNotices(); 
+                break;
+            case "documents": 
+                content.innerHTML = getDocumentsPage(user); 
+                loadDocuments(); 
+                break;
             case "tests":
                 content.innerHTML = getTestsPage(user);
                 loadTests();
@@ -224,14 +239,22 @@
                 content.innerHTML = getGamesPage(user);
                 loadGames();
                 loadScores();
+                // ===== CHỈ GỌI CANVAS KHI VÀO GAME =====
                 setTimeout(function() {
                     canvasReady = false;
                     initGameCanvas();
                 }, 300);
                 break;
-            case "settings": content.innerHTML = getSettingsPage(user); loadSettings(); break;
-            case "profile": content.innerHTML = getProfilePage(user); loadProfile(); break;
-            default: content.innerHTML = "<h2>Trang đang phát triển</h2>";
+            case "settings": 
+                content.innerHTML = getSettingsPage(user); 
+                loadSettings(); 
+                break;
+            case "profile": 
+                content.innerHTML = getProfilePage(user); 
+                loadProfile(); 
+                break;
+            default: 
+                content.innerHTML = "<h2>Trang đang phát triển</h2>";
         }
     };
 
@@ -498,7 +521,7 @@
     };
 
     // ============================================================
-    // QUẢN LÝ VĂN BẢN (CÓ ĐÍNH KÈM FILE)
+    // QUẢN LÝ VĂN BẢN
     // ============================================================
     function getDocumentsPage(user) {
         const canManage = user.role !== "Admin";
@@ -524,8 +547,6 @@
                             <input type="text" id="docNguoiKy" placeholder="Người ký..." style="flex:1; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
                             <input type="date" id="docNgayBanHanh" style="flex:1; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
                         </div>
-                        
-                        <!-- ===== ĐÍNH KÈM FILE ===== -->
                         <div style="border:1px dashed #0284c7; border-radius:8px; padding:16px; background:#f0f9ff; margin-top:4px;">
                             <h4 style="margin:0 0 10px 0; color:#0284c7; font-size:14px;">📎 Đính kèm file</h4>
                             <div style="display:flex; gap:12px; flex-wrap:wrap;">
@@ -536,7 +557,6 @@
                                 💡 Dán link Google Drive, OneDrive hoặc URL file PDF để đính kèm.
                             </p>
                         </div>
-                        
                         <button onclick="window.addDocument()" class="btn-create" style="align-self:flex-start; padding:10px 24px;">📤 Đăng văn bản</button>
                     </div>
                 </div>
@@ -1352,7 +1372,7 @@
     };
 
     // ============================================================
-    // GAME - ĐÃ SỬA LỖI CANVAS
+    // GAME - CHỈ HOẠT ĐỘNG KHI Ở TRANG GAME
     // ============================================================
     let gameRunning = false, gameScore = 0, gameHighScore = parseInt(localStorage.getItem('doraemonHighScore')) || 0;
     let gameSpeed = 6, obstacles = [], frameId = null, isJumping = false, jumpVelocity = 0;
@@ -1360,6 +1380,7 @@
     let playerY = groundY - playerHeight;
     let currentGameTitle = 'Doraemon Run';
     let canvasReady = false;
+    let isOnGamePage = false; // ===== THÊM BIẾN KIỂM TRA =====
 
     function drawDoraemon(ctx, x, y, w, h) {
         ctx.fillStyle = '#2196F3';
@@ -1415,8 +1436,12 @@
         ctx.fill();
     }
 
-    // ===== KHỞI TẠO CANVAS - KHÔNG ALERT =====
+    // ===== KHỞI TẠO CANVAS - KIỂM TRA TRANG GAME =====
     function initGameCanvas() {
+        if (!isOnGamePage) {
+            console.log('⏳ Không ở trang Game, bỏ qua khởi tạo canvas.');
+            return;
+        }
         const canvas = document.getElementById('gameCanvas');
         if (!canvas) {
             console.log('⏳ Chưa có canvas, đợi vào trang Game...');
@@ -1441,18 +1466,24 @@
         console.log('✅ Canvas đã sẵn sàng!');
     }
 
-    // ===== BẮT ĐẦU GAME - KHÔNG ALERT =====
+    // ===== BẮT ĐẦU GAME - CHỈ KHI Ở TRANG GAME =====
     window.startGame = function() {
+        // ===== KIỂM TRA TRANG GAME =====
+        if (!isOnGamePage) {
+            showToast('🎮 Vui lòng vào trang Game trước!', 'warning');
+            return;
+        }
+        
         const canvas = document.getElementById('gameCanvas');
         if (!canvas) {
-            console.warn('⚠️ Canvas chưa sẵn sàng! Vui lòng vào trang Game.');
-            showToast('🎮 Vui lòng vào trang Game trước!', 'warning');
+            showToast('⚠️ Không tìm thấy canvas!', 'error');
             return;
         }
         if (gameRunning) {
             console.log('⏳ Game đang chạy!');
             return;
         }
+        
         canvasReady = false;
         initGameCanvas();
         
@@ -1594,6 +1625,7 @@
     window.exitGame = function() {
         gameRunning = false;
         if (frameId) { cancelAnimationFrame(frameId); frameId = null; }
+        isOnGamePage = false;
         window.showPage('games');
     };
 
@@ -1641,6 +1673,7 @@
 
     function getGamesPage(user) {
         console.log("🎮 Đang tạo trang Games...");
+        isOnGamePage = true; // ===== ĐÁNH DẤU ĐANG Ở TRANG GAME =====
         const canManage = user.role === "Ban Quản Trị";
         let html = `<h2>🎮 Game nội bộ</h2>`;
         html += `
@@ -1798,21 +1831,24 @@
     document.addEventListener('keydown', function(e) {
         if (e.key === ' ' || e.key === 'Space') {
             e.preventDefault();
-            if (!gameRunning) window.startGame();
-            else window.jumpGame();
+            // ===== CHỈ CHO PHÉP KHI Ở TRANG GAME =====
+            if (isOnGamePage) {
+                if (!gameRunning) window.startGame();
+                else window.jumpGame();
+            }
         }
     });
 
     document.addEventListener('click', function(e) {
-        if (e.target.id === 'gameCanvas') {
+        if (e.target.id === 'gameCanvas' && isOnGamePage) {
             if (!gameRunning) window.startGame();
             else window.jumpGame();
         }
     });
 
     console.log("✅ Dashboard đã tải thành công!");
-    console.log("🎮 Lỗi canvas đã được sửa!");
-    console.log("📝 Đã thêm Toast thông báo!");
+    console.log("🎮 Lỗi canvas đã được sửa hoàn toàn!");
+    console.log("📝 Game chỉ hoạt động khi ở trang Game!");
 </script>
 
 </body>
