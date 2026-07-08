@@ -149,7 +149,12 @@
                 loadTests();
                 loadDeadline();
                 break;
-            case "games": content.innerHTML = getGamesPage(user); loadGames(); loadScores(); initGameCanvas(); break;
+            case "games":
+                content.innerHTML = getGamesPage(user);
+                loadGames();
+                loadScores();
+                initGameCanvas();
+                break;
             case "settings": content.innerHTML = getSettingsPage(user); loadSettings(); break;
             case "profile": content.innerHTML = getProfilePage(user); loadProfile(); break;
             default: content.innerHTML = "<h2>Trang đang phát triển</h2>";
@@ -419,7 +424,7 @@
     };
 
     // ============================================================
-    // QUẢN LÝ VĂN BẢN
+    // QUẢN LÝ VĂN BẢN (CÓ ĐÍNH KÈM FILE)
     // ============================================================
     function getDocumentsPage(user) {
         const canManage = user.role !== "Admin";
@@ -430,8 +435,8 @@
                     <h3>📝 Thêm văn bản mới</h3>
                     <div style="display:flex; flex-direction:column; gap:12px;">
                         <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                            <input type="text" id="docSoVanBan" placeholder="Số văn bản (VD: 06/QĐ-BQT)" style="flex:1;" />
-                            <select id="docLoai" style="flex:1;">
+                            <input type="text" id="docSoVanBan" placeholder="Số văn bản (VD: 06/QĐ-BQT)" style="flex:1; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
+                            <select id="docLoai" style="flex:1; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;">
                                 <option value="Quyết định">📄 Quyết định</option>
                                 <option value="Công văn">📨 Công văn</option>
                                 <option value="Nghị quyết">📋 Nghị quyết</option>
@@ -439,13 +444,26 @@
                                 <option value="Quy chế">⚖️ Quy chế</option>
                             </select>
                         </div>
-                        <input type="text" id="docTieuDe" placeholder="Tiêu đề văn bản..." />
-                        <textarea id="docNoiDung" placeholder="Nội dung văn bản..." style="min-height:100px;"></textarea>
+                        <input type="text" id="docTieuDe" placeholder="Tiêu đề văn bản..." style="padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
+                        <textarea id="docNoiDung" placeholder="Nội dung văn bản..." style="min-height:100px; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px; resize:vertical;"></textarea>
                         <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                            <input type="text" id="docNguoiKy" placeholder="Người ký..." style="flex:1;" />
-                            <input type="date" id="docNgayBanHanh" style="flex:1;" />
+                            <input type="text" id="docNguoiKy" placeholder="Người ký..." style="flex:1; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
+                            <input type="date" id="docNgayBanHanh" style="flex:1; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
                         </div>
-                        <button onclick="window.addDocument()" class="btn-create" style="align-self:flex-start;">📤 Đăng văn bản</button>
+                        
+                        <!-- ===== ĐÍNH KÈM FILE ===== -->
+                        <div style="border:1px dashed #0284c7; border-radius:8px; padding:16px; background:#f0f9ff; margin-top:4px;">
+                            <h4 style="margin:0 0 10px 0; color:#0284c7; font-size:14px;">📎 Đính kèm file</h4>
+                            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                                <input type="url" id="docFileUrl" placeholder="Link file đính kèm (Google Drive, PDF...)" style="flex:2; min-width:200px; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
+                                <input type="text" id="docFileName" placeholder="Tên file hiển thị" style="flex:1; min-width:120px; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
+                            </div>
+                            <p style="font-size:12px; color:#64748b; margin-top:8px; margin-bottom:0;">
+                                💡 Dán link Google Drive, OneDrive hoặc URL file PDF để đính kèm.
+                            </p>
+                        </div>
+                        
+                        <button onclick="window.addDocument()" class="btn-create" style="align-self:flex-start; padding:10px 24px;">📤 Đăng văn bản</button>
                     </div>
                 </div>
             `;
@@ -454,8 +472,8 @@
         }
         html += `
             <div style="margin-bottom:16px; display:flex; gap:12px; flex-wrap:wrap;">
-                <input type="text" id="docSearch" placeholder="🔍 Tìm kiếm theo số, tiêu đề..." />
-                <select id="docFilterType">
+                <input type="text" id="docSearch" placeholder="🔍 Tìm kiếm theo số, tiêu đề..." style="flex:1; min-width:200px; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
+                <select id="docFilterType" style="padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;">
                     <option value="all">📋 Tất cả loại</option>
                     <option value="Quyết định">📄 Quyết định</option>
                     <option value="Công văn">📨 Công văn</option>
@@ -467,8 +485,18 @@
             </div>
             <div class="table-container">
                 <table class="table">
-                    <thead><tr><th>Số văn bản</th><th>Loại</th><th>Tiêu đề</th><th>Ngày ban hành</th><th>Người ký</th><th>Thao tác</th></tr></thead>
-                    <tbody id="docTableBody"><tr><td colspan="6">Đang tải...</td></tr></tbody>
+                    <thead>
+                        <tr>
+                            <th>Số văn bản</th>
+                            <th>Loại</th>
+                            <th>Tiêu đề</th>
+                            <th>Ngày ban hành</th>
+                            <th>Người ký</th>
+                            <th style="text-align:center;">📎 File</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="docTableBody"><tr><td colspan="7">Đang tải...</td></tr></tbody>
                 </table>
             </div>
         `;
@@ -480,11 +508,20 @@
         if (!tbody) return;
         const user = JSON.parse(localStorage.getItem("currentUser"));
         const isAdmin = user?.role === "Admin";
-        const colors = { "Quyết định": "#3b82f6", "Công văn": "#10b981", "Nghị quyết": "#f59e0b", "Biên bản": "#8b5cf6", "Quy chế": "#ef4444" };
+        const colors = { 
+            "Quyết định": "#3b82f6", 
+            "Công văn": "#10b981", 
+            "Nghị quyết": "#f59e0b", 
+            "Biên bản": "#8b5cf6", 
+            "Quy chế": "#ef4444" 
+        };
 
         onValue(ref(db, "documents"), snapshot => {
             tbody.innerHTML = "";
-            if (!snapshot.exists()) { tbody.innerHTML = '<tr><td colspan="6">Chưa có văn bản nào</td></tr>'; return; }
+            if (!snapshot.exists()) { 
+                tbody.innerHTML = '<tr><td colspan="7">📭 Chưa có văn bản nào</td></tr>'; 
+                return; 
+            }
             const docs = [];
             snapshot.forEach(child => {
                 const data = child.val();
@@ -493,8 +530,19 @@
                 }
             });
             docs.reverse().forEach(doc => {
-                const actions = isAdmin ? '<span class="badge-default">Chỉ xem</span>' : `<button onclick="window.deleteDocument('${doc.key}')" class="btn-delete">Xóa</button>`;
+                const actions = isAdmin ? 
+                    '<span class="badge-default">Chỉ xem</span>' : 
+                    `<button onclick="window.deleteDocument('${doc.key}')" class="btn-delete">🗑️ Xóa</button>`;
+                
                 const color = colors[doc.loai] || "#64748b";
+                
+                // === XỬ LÝ HIỂN THỊ FILE ĐÍNH KÈM ===
+                let fileHtml = '—';
+                if (doc.fileUrl && doc.fileUrl.trim().length > 0) {
+                    const displayName = doc.fileName || '📎 Tải file';
+                    fileHtml = `<a href="${doc.fileUrl}" target="_blank" style="color:#0284c7; text-decoration:none; font-size:18px; display:inline-block; padding:4px 8px; border-radius:6px; background:#e0f2fe;" title="${displayName}">📎</a>`;
+                }
+                
                 tbody.innerHTML += `
                     <tr>
                         <td><strong>${doc.soVanBan || "N/A"}</strong></td>
@@ -502,6 +550,7 @@
                         <td>${doc.tieuDe || ""}</td>
                         <td>${doc.ngayBanHanh || "N/A"}</td>
                         <td>${doc.nguoiKy || "N/A"}</td>
+                        <td style="text-align:center; font-size:18px;">${fileHtml}</td>
                         <td>${actions}</td>
                     </tr>
                 `;
@@ -512,22 +561,46 @@
     window.addDocument = async function() {
         const user = JSON.parse(localStorage.getItem("currentUser"));
         if (!user || user.role === "Admin") return alert("⛔ Bạn không có quyền thêm văn bản!");
+        
         const so = document.getElementById("docSoVanBan")?.value.trim();
         const loai = document.getElementById("docLoai")?.value;
         const tieuDe = document.getElementById("docTieuDe")?.value.trim();
         const noiDung = document.getElementById("docNoiDung")?.value.trim();
         const nguoiKy = document.getElementById("docNguoiKy")?.value.trim();
         const ngay = document.getElementById("docNgayBanHanh")?.value;
+        
+        // === LẤY THÔNG TIN FILE ĐÍNH KÈM ===
+        const fileUrl = document.getElementById("docFileUrl")?.value.trim();
+        const fileName = document.getElementById("docFileName")?.value.trim() || "Tải file";
+        
         if (!so || !tieuDe || !noiDung) return alert("⚠️ Vui lòng nhập Số văn bản, Tiêu đề và Nội dung!");
+        
         try {
-            await push(ref(db, "documents"), { soVanBan: so, loai: loai || "Khác", tieuDe, noiDung, nguoiKy: nguoiKy || user.name || user.username, ngayBanHanh: ngay || new Date().toISOString().split("T")[0], trangThai: "Hiệu lực", createdAt: new Date().toISOString() });
+            await push(ref(db, "documents"), { 
+                soVanBan: so, 
+                loai: loai || "Khác", 
+                tieuDe, 
+                noiDung, 
+                nguoiKy: nguoiKy || user.name || user.username, 
+                ngayBanHanh: ngay || new Date().toISOString().split("T")[0], 
+                trangThai: "Hiệu lực", 
+                createdAt: new Date().toISOString(),
+                // === LƯU FILE ĐÍNH KÈM ===
+                fileUrl: fileUrl || "",
+                fileName: fileName || "Tải file"
+            });
             alert("✅ Đăng văn bản thành công!");
             document.getElementById("docSoVanBan").value = "";
             document.getElementById("docTieuDe").value = "";
             document.getElementById("docNoiDung").value = "";
             document.getElementById("docNguoiKy").value = "";
             document.getElementById("docNgayBanHanh").value = "";
-        } catch (e) { console.error(e); alert("⚠️ Lỗi khi đăng văn bản!"); }
+            document.getElementById("docFileUrl").value = "";
+            document.getElementById("docFileName").value = "";
+        } catch (e) { 
+            console.error(e); 
+            alert("⚠️ Lỗi khi đăng văn bản!"); 
+        }
     };
 
     window.deleteDocument = async function(key) {
@@ -543,19 +616,37 @@
         if (!keyword && filter === "all") { loadDocuments(); return; }
         const tbody = document.getElementById("docTableBody");
         if (!tbody) return;
-        const colors = { "Quyết định": "#3b82f6", "Công văn": "#10b981", "Nghị quyết": "#f59e0b", "Biên bản": "#8b5cf6", "Quy chế": "#ef4444" };
+        const colors = { 
+            "Quyết định": "#3b82f6", 
+            "Công văn": "#10b981", 
+            "Nghị quyết": "#f59e0b", 
+            "Biên bản": "#8b5cf6", 
+            "Quy chế": "#ef4444" 
+        };
         get(ref(db, "documents")).then(snapshot => {
             tbody.innerHTML = "";
-            if (!snapshot.exists()) { tbody.innerHTML = '<tr><td colspan="6">Không có kết quả</td></tr>'; return; }
+            if (!snapshot.exists()) { 
+                tbody.innerHTML = '<tr><td colspan="7">Không có kết quả</td></tr>'; 
+                return; 
+            }
             let found = false;
             snapshot.forEach(child => {
                 const doc = child.val();
                 let match = true;
                 if (filter !== "all" && doc.loai !== filter) match = false;
-                if (keyword && !doc.soVanBan?.toLowerCase().includes(keyword) && !doc.tieuDe?.toLowerCase().includes(keyword)) match = false;
+                if (keyword && !doc.soVanBan?.toLowerCase().includes(keyword) && 
+                    !doc.tieuDe?.toLowerCase().includes(keyword)) match = false;
                 if (match) {
                     found = true;
                     const color = colors[doc.loai] || "#64748b";
+                    
+                    // === XỬ LÝ HIỂN THỊ FILE KHI TÌM KIẾM ===
+                    let fileHtml = '—';
+                    if (doc.fileUrl && doc.fileUrl.trim().length > 0) {
+                        const displayName = doc.fileName || '📎 Tải file';
+                        fileHtml = `<a href="${doc.fileUrl}" target="_blank" style="color:#0284c7; text-decoration:none; font-size:18px; display:inline-block; padding:4px 8px; border-radius:6px; background:#e0f2fe;" title="${displayName}">📎</a>`;
+                    }
+                    
                     tbody.innerHTML += `
                         <tr>
                             <td><strong>${doc.soVanBan || "N/A"}</strong></td>
@@ -563,13 +654,14 @@
                             <td>${doc.tieuDe || ""}</td>
                             <td>${doc.ngayBanHanh || "N/A"}</td>
                             <td>${doc.nguoiKy || "N/A"}</td>
+                            <td style="text-align:center; font-size:18px;">${fileHtml}</td>
                             <td><button onclick="alert('📄 ${doc.tieuDe}\\n\\n${doc.noiDung || "Không có nội dung"}')" class="btn-edit">Xem</button></td>
                         </tr>
                     `;
                 }
             });
-            if (!found) tbody.innerHTML = '<tr><td colspan="6">Không tìm thấy văn bản phù hợp</td></tr>';
-        }).catch(() => tbody.innerHTML = '<tr><td colspan="6">⚠️ Lỗi tìm kiếm</td></tr>');
+            if (!found) tbody.innerHTML = '<tr><td colspan="7">Không tìm thấy văn bản phù hợp</td></tr>';
+        }).catch(() => tbody.innerHTML = '<tr><td colspan="7">⚠️ Lỗi tìm kiếm</td></tr>');
     };
 
     // ============================================================
@@ -621,7 +713,7 @@
     }
 
     // ============================================================
-    // HIỂN THỊ POPUP TẠO TEST (SỬA LỖI NÚT X)
+    // HIỂN THỊ POPUP TẠO TEST
     // ============================================================
     window.showCreateTestForm = function() {
         const user = JSON.parse(localStorage.getItem("currentUser"));
@@ -706,13 +798,11 @@
         }, 100);
     };
 
-    // ===== ĐÓNG POPUP =====
     window.closeTestPopup = function() {
         const overlay = document.getElementById('testPopupOverlay');
         if (overlay) overlay.remove();
     };
 
-    // ===== TOGGLE GIỮA 2 LOẠI TEST =====
     window.toggleTestType = function() {
         const embedSection = document.getElementById('embedSection');
         const manualSection = document.getElementById('manualSection');
@@ -729,9 +819,6 @@
         }
     };
 
-    // ============================================================
-    // TẠO TEST TỪ POPUP
-    // ============================================================
     window.createTestFromPopup = async function() {
         const user = JSON.parse(localStorage.getItem("currentUser"));
         if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền tạo test!");
@@ -786,9 +873,6 @@
         }
     };
 
-    // ============================================================
-    // PARSE CÂU HỎI
-    // ============================================================
     function parseQuestions(text) {
         const lines = text.split('\n');
         const questions = [];
@@ -827,9 +911,6 @@
         return questions;
     }
 
-    // ============================================================
-    // TẢI DANH SÁCH TEST (CÓ NÚT LÀM BÀI CHO ADMIN)
-    // ============================================================
     function loadTests() {
         const container = document.getElementById("testListContainer");
         if (!container) return;
@@ -897,17 +978,12 @@
         });
     }
 
-    // ============================================================
-    // XEM FORM NHÚNG
-    // ============================================================
     window.viewEmbed = async function(key) {
         try {
             const snap = await get(ref(db, 'tests/' + key));
             if (!snap.exists()) return alert("Bài test không tồn tại!");
             const test = snap.val();
-            
             if (!test.embedCode) return alert("⚠️ Bài test này chưa có mã nhúng!");
-            
             const overlay = document.createElement('div');
             overlay.id = 'embedPopupOverlay';
             overlay.style.cssText = `
@@ -916,7 +992,6 @@
                 display:flex; justify-content:center; align-items:center;
                 padding:20px;
             `;
-            
             overlay.innerHTML = `
                 <div style="background:white; border-radius:16px; padding:20px; max-width:900px; width:100%; max-height:90vh; overflow-y:auto; position:relative;">
                     <button onclick="this.parentElement.parentElement.remove()" 
@@ -928,25 +1003,19 @@
                 </div>
             `;
             document.body.appendChild(overlay);
-            
         } catch (e) {
             console.error(e);
             alert("⚠️ Lỗi khi xem form!");
         }
     };
 
-    // ============================================================
-    // SỬA TEST
-    // ============================================================
     window.editTest = async function(key) {
         const user = JSON.parse(localStorage.getItem("currentUser"));
         if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền sửa test!");
-        
         try {
             const snap = await get(ref(db, 'tests/' + key));
             if (!snap.exists()) return alert("Bài test không tồn tại!");
             const test = snap.val();
-            
             const newTitle = prompt("✏️ Sửa tiêu đề:", test.title);
             if (newTitle === null) return;
             const newDesc = prompt("✏️ Sửa mô tả:", test.desc);
@@ -955,11 +1024,9 @@
             if (newPass === null) return;
             const newDeadline = prompt("✏️ Sửa hạn nộp:", test.deadline || "Không thời hạn");
             if (newDeadline === null) return;
-            
             const testType = test.testType || (test.embedCode ? 'embed' : 'manual');
             let newEmbed = test.embedCode || "";
             let newQuestions = test.questions || [];
-            
             if (testType === 'embed') {
                 const embedInput = prompt("✏️ Sửa mã nhúng (bỏ trống nếu không có):", test.embedCode || "");
                 if (embedInput === null) return;
@@ -975,7 +1042,6 @@
                 }
                 const newQText = prompt("✏️ Sửa câu hỏi (giữ nguyên định dạng):", qText);
                 if (newQText === null) return;
-                
                 const parsed = parseQuestions(newQText);
                 if (parsed.length === 0) return alert("⚠️ Không tìm thấy câu hỏi hợp lệ!");
                 for (let i = 0; i < parsed.length; i++) {
@@ -984,7 +1050,6 @@
                 }
                 newQuestions = parsed;
             }
-            
             await update(ref(db, 'tests/' + key), {
                 title: newTitle.trim(),
                 desc: newDesc.trim(),
@@ -1002,9 +1067,6 @@
         }
     };
 
-    // ============================================================
-    // XÓA TEST
-    // ============================================================
     window.deleteTest = async function(key) {
         const user = JSON.parse(localStorage.getItem("currentUser"));
         if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền xóa test!");
@@ -1012,58 +1074,43 @@
         try { await remove(ref(db, 'tests/' + key)); alert("✅ Đã xóa test!"); } catch (e) { console.error(e); alert("⚠️ Lỗi khi xóa!"); }
     };
 
-    // ============================================================
-    // LÀM BÀI TEST
-    // ============================================================
     window.startTest = async function(key) {
         const user = JSON.parse(localStorage.getItem("currentUser"));
         if (!user) return alert("⚠️ Vui lòng đăng nhập!");
-        
         try {
             const snap = await get(ref(db, 'tests/' + key));
             if (!snap.exists()) return alert("Bài test không tồn tại!");
             const test = snap.val();
-            
-            // Kiểm tra nếu có mã nhúng thì mở form
             if (test.embedCode && test.embedCode.trim().length > 0) {
                 window.viewEmbed(key);
                 return;
             }
-            
-            // Nếu không có câu hỏi
             if (!test.questions || test.questions.length === 0) {
                 alert("⚠️ Bài test này chưa có câu hỏi!");
                 return;
             }
-            
             if (!confirm('📝 ' + test.title + '\n\n' + test.desc + '\n\nSố câu hỏi: ' + test.questions.length + '\nĐiểm đạt: ' + test.passScore + '%\n\nBắt đầu làm test?')) return;
-            
             let score = 0;
             const answers = [];
-            
             for (let i = 0; i < test.questions.length; i++) {
                 const q = test.questions[i];
                 const opts = q.options.map((o, idx) => {
                     const letter = String.fromCharCode(65 + idx);
                     return letter + '. ' + (o.startsWith('*') ? o.substring(1) : o);
                 }).join('\n');
-                
                 let ans = prompt('📝 Câu ' + (i + 1) + '/' + test.questions.length + '\n\n' + q.question + '\n\n' + opts + '\n\nNhập đáp án (A, B, C, D):');
                 if (ans === null) break;
-                
                 ans = ans.trim().toUpperCase();
                 let idx = -1;
                 if (ans === 'A') idx = 0;
                 else if (ans === 'B') idx = 1;
                 else if (ans === 'C') idx = 2;
                 else if (ans === 'D') idx = 3;
-                
                 if (idx === -1 || idx >= q.options.length) {
                     alert('⚠️ Đáp án không hợp lệ! Vui lòng nhập A, B, C hoặc D.');
                     i--;
                     continue;
                 }
-                
                 const correct = q.options[idx].startsWith('*');
                 if (correct) score++;
                 answers.push({
@@ -1072,14 +1119,12 @@
                     correct: correct
                 });
             }
-            
             const finalScore = Math.round((score / test.questions.length) * 100);
             const passed = finalScore >= test.passScore;
             const rank = finalScore >= 90 ? "🏆 Xuất sắc" : 
                         finalScore >= 75 ? "⭐ Giỏi" : 
                         finalScore >= 50 ? "📖 Khá" : 
                         finalScore >= 30 ? "📝 Trung bình" : "❌ Yếu";
-            
             let msg = '📊 KẾT QUẢ\n\n';
             msg += 'Điểm: ' + finalScore + '/100\n';
             msg += 'Xếp loại: ' + rank + '\n';
@@ -1090,7 +1135,6 @@
                 msg += '   Đáp án: ' + a.selected + '\n';
             });
             alert(msg);
-            
             await push(ref(db, "testResults"), {
                 testId: key,
                 testTitle: test.title,
@@ -1104,25 +1148,19 @@
                 answers: answers,
                 createdAt: new Date().toISOString()
             });
-            
         } catch (e) {
             console.error(e);
             alert("⚠️ Lỗi khi làm test!");
         }
     };
 
-    // ============================================================
-    // CẬP NHẬT HẠN NỘP
-    // ============================================================
     window.updateDeadline = function() {
         const user = JSON.parse(localStorage.getItem("currentUser"));
         if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền sửa!");
-        
         const current = document.getElementById("testDeadline")?.textContent || "Không thời hạn";
         const newDeadline = prompt("📅 Nhập hạn nộp mới (VD: 23:59 15/07/2026):", current);
         if (newDeadline === null) return;
         if (!newDeadline.trim()) return alert("⚠️ Vui lòng nhập hạn nộp!");
-        
         update(ref(db, "system_config/test_deadline"), {
             deadline: newDeadline.trim(),
             updatedAt: new Date().toISOString()
@@ -1244,7 +1282,7 @@
     };
 
     // ============================================================
-    // GAME (RÚT GỌN)
+    // GAME (RÚT GỌN - ĐÃ SỬA LỖI CANVAS)
     // ============================================================
     let gameRunning = false, gameScore = 0, gameHighScore = parseInt(localStorage.getItem('doraemonHighScore')) || 0;
     let gameSpeed = 6, obstacles = [], frameId = null, isJumping = false, jumpVelocity = 0;
@@ -1308,7 +1346,11 @@
 
     function initGameCanvas() {
         const canvas = document.getElementById('gameCanvas');
-        if (!canvas) return;
+        if (!canvas) {
+            // === SỬA: KHÔNG HIỂN THỊ ALERT ===
+            console.log('⏳ Chưa có canvas, đợi vào trang Game...');
+            return;
+        }
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, 800, 350);
         ctx.fillStyle = '#1a1a2e';
@@ -1319,11 +1361,16 @@
         ctx.fillRect(0, groundY, 800, 3);
         drawDoraemon(ctx, playerX, playerY, playerWidth, playerHeight);
         document.getElementById('gameHighScore').textContent = gameHighScore;
+        console.log('✅ Canvas đã sẵn sàng!');
     }
 
     window.startGame = function() {
         const canvas = document.getElementById('gameCanvas');
-        if (!canvas) return alert('⚠️ Vui lòng vào trang Game!');
+        if (!canvas) {
+            // === SỬA: KHÔNG HIỂN THỊ ALERT ===
+            console.warn('⚠️ Canvas chưa sẵn sàng! Vui lòng vào trang Game.');
+            return;
+        }
         if (gameRunning) return;
         gameRunning = true;
         gameScore = 0;
@@ -1675,8 +1722,8 @@
     });
 
     console.log("✅ Dashboard đã tải thành công!");
-    console.log("📝 Admin đã có nút Làm bài!");
-    console.log("✅ Nút X đã được sửa!");
+    console.log("📝 Đã thêm tính năng đính kèm file văn bản!");
+    console.log("✅ Đã sửa lỗi canvas!");
 </script>
 
 </body>
