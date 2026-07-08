@@ -22,12 +22,18 @@
 
             <div class="form-group">
                 <label>Mã tài khoản</label>
-                <input type="text" id="username" placeholder="VD: BQT001" />
+                <input type="text" id="username" placeholder="VD: BQT001" autocomplete="username" />
             </div>
 
             <div class="form-group">
                 <label>Mật khẩu</label>
-                <input type="password" id="password" placeholder="Nhập mật khẩu..." />
+                <input type="password" id="password" placeholder="Nhập mật khẩu..." autocomplete="current-password" />
+            </div>
+
+            <!-- ===== NHỚ TÔI ===== -->
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:18px;">
+                <input type="checkbox" id="rememberMe" style="width:18px; height:18px; cursor:pointer; accent-color:#0284c7;" />
+                <label for="rememberMe" style="color:#475569; font-size:14px; cursor:pointer;">🔒 Nhớ tôi</label>
             </div>
 
             <button id="loginBtn">ĐĂNG NHẬP</button>
