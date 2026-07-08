@@ -519,7 +519,7 @@
     };
 
     // ============================================================
-    // QUẢN LÝ VĂN BẢN
+    // QUẢN LÝ VĂN BẢN (CÓ NÚT SỬA CHO BQT)
     // ============================================================
     function getDocumentsPage(user) {
         const canManage = user.role !== "Admin";
@@ -595,11 +595,13 @@
         return html;
     }
 
+    // ===== TẢI DANH SÁCH VĂN BẢN (CÓ NÚT SỬA) =====
     function loadDocuments() {
         const tbody = document.getElementById("docTableBody");
         if (!tbody) return;
         const user = JSON.parse(localStorage.getItem("currentUser"));
         const isAdmin = user?.role === "Admin";
+        const isBQT = user?.role === "Ban Quản Trị";
         const colors = { 
             "Quyết định": "#3b82f6", 
             "Công văn": "#10b981", 
@@ -622,9 +624,18 @@
                 }
             });
             docs.reverse().forEach(doc => {
-                const actions = isAdmin ? 
-                    '<span class="badge-default">Chỉ xem</span>' : 
-                    `<button onclick="window.deleteDocument('${doc.key}')" class="btn-delete">🗑️ Xóa</button>`;
+                // ===== XÁC ĐỊNH QUYỀN =====
+                let actions = "";
+                if (isBQT) {
+                    actions = `
+                        <button onclick="window.editDocument('${doc.key}')" class="btn-edit" style="font-size:11px; padding:2px 10px; background:#8b5cf6;">✏️ Sửa</button>
+                        <button onclick="window.deleteDocument('${doc.key}')" class="btn-delete" style="font-size:11px; padding:2px 10px;">🗑️ Xóa</button>
+                    `;
+                } else if (isAdmin) {
+                    actions = '<span class="badge-default">Chỉ xem</span>';
+                } else {
+                    actions = `<span class="badge-default">Chỉ xem</span>`;
+                }
                 
                 const color = colors[doc.loai] || "#64748b";
                 
@@ -649,6 +660,7 @@
         });
     }
 
+    // ===== THÊM VĂN BẢN =====
     window.addDocument = async function() {
         const user = JSON.parse(localStorage.getItem("currentUser"));
         if (!user || user.role === "Admin") return alert("⛔ Bạn không có quyền thêm văn bản!");
@@ -659,7 +671,6 @@
         const noiDung = document.getElementById("docNoiDung")?.value.trim();
         const nguoiKy = document.getElementById("docNguoiKy")?.value.trim();
         const ngay = document.getElementById("docNgayBanHanh")?.value;
-        
         const fileUrl = document.getElementById("docFileUrl")?.value.trim();
         const fileName = document.getElementById("docFileName")?.value.trim() || "Tải file";
         
@@ -692,6 +703,7 @@
         }
     };
 
+    // ===== XÓA VĂN BẢN =====
     window.deleteDocument = async function(key) {
         const user = JSON.parse(localStorage.getItem("currentUser"));
         if (!user || user.role === "Admin") return alert("⛔ Bạn không có quyền xóa văn bản!");
@@ -699,12 +711,127 @@
         try { await remove(ref(db, 'documents/' + key)); alert("✅ Đã xóa văn bản!"); } catch (e) { console.error(e); alert("⚠️ Lỗi khi xóa!"); }
     };
 
+    // ===== SỬA VĂN BẢN =====
+    window.editDocument = async function(key) {
+        const user = JSON.parse(localStorage.getItem("currentUser"));
+        if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền sửa văn bản!");
+        
+        try {
+            const snap = await get(ref(db, 'documents/' + key));
+            if (!snap.exists()) return alert("Văn bản không tồn tại!");
+            const doc = snap.val();
+            
+            const overlay = document.createElement('div');
+            overlay.id = 'editDocOverlay';
+            overlay.style.cssText = `
+                position:fixed; top:0; left:0; width:100%; height:100%;
+                background:rgba(0,0,0,0.5); z-index:9999;
+                display:flex; justify-content:center; align-items:center;
+                padding:20px;
+            `;
+            
+            overlay.innerHTML = `
+                <div style="background:white; border-radius:16px; padding:30px; max-width:750px; width:100%; max-height:90vh; overflow-y:auto; position:relative;">
+                    <button onclick="this.closest('#editDocOverlay').remove()" 
+                            style="position:absolute; top:10px; right:15px; background:#ef4444; color:white; border:none; border-radius:50%; width:30px; height:30px; font-size:18px; cursor:pointer;">✕</button>
+                    
+                    <h3 style="margin-bottom:16px;">✏️ Sửa văn bản</h3>
+                    
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                            <input type="text" id="editDocSoVanBan" value="${doc.soVanBan || ''}" placeholder="Số văn bản" style="flex:1; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
+                            <select id="editDocLoai" style="flex:1; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;">
+                                <option value="Quyết định" ${doc.loai === 'Quyết định' ? 'selected' : ''}>📄 Quyết định</option>
+                                <option value="Công văn" ${doc.loai === 'Công văn' ? 'selected' : ''}>📨 Công văn</option>
+                                <option value="Nghị quyết" ${doc.loai === 'Nghị quyết' ? 'selected' : ''}>📋 Nghị quyết</option>
+                                <option value="Biên bản" ${doc.loai === 'Biên bản' ? 'selected' : ''}>📑 Biên bản</option>
+                                <option value="Quy chế" ${doc.loai === 'Quy chế' ? 'selected' : ''}>⚖️ Quy chế</option>
+                            </select>
+                        </div>
+                        <input type="text" id="editDocTieuDe" value="${doc.tieuDe || ''}" placeholder="Tiêu đề văn bản..." style="padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
+                        <textarea id="editDocNoiDung" placeholder="Nội dung văn bản..." style="min-height:100px; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px; resize:vertical;">${doc.noiDung || ''}</textarea>
+                        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                            <input type="text" id="editDocNguoiKy" value="${doc.nguoiKy || ''}" placeholder="Người ký..." style="flex:1; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
+                            <input type="date" id="editDocNgayBanHanh" value="${doc.ngayBanHanh || ''}" style="flex:1; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
+                        </div>
+                        
+                        <div style="border:1px dashed #0284c7; border-radius:8px; padding:16px; background:#f0f9ff;">
+                            <h4 style="margin:0 0 10px 0; color:#0284c7; font-size:14px;">📎 Đính kèm file</h4>
+                            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                                <input type="url" id="editDocFileUrl" value="${doc.fileUrl || ''}" placeholder="Link file đính kèm" style="flex:2; min-width:200px; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
+                                <input type="text" id="editDocFileName" value="${doc.fileName || 'Tải file'}" placeholder="Tên file hiển thị" style="flex:1; min-width:120px; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
+                            </div>
+                        </div>
+                        
+                        <div style="display:flex; gap:12px; margin-top:8px;">
+                            <button onclick="window.saveEditDocument('${key}')" class="btn-create" style="padding:12px 24px;">💾 Lưu thay đổi</button>
+                            <button onclick="this.closest('#editDocOverlay').remove()" class="btn-delete" style="padding:12px 24px;">❌ Hủy</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            
+            setTimeout(() => {
+                const input = document.getElementById('editDocSoVanBan');
+                if (input) input.focus();
+            }, 100);
+            
+        } catch (e) {
+            console.error(e);
+            alert("⚠️ Lỗi khi mở form sửa văn bản!");
+        }
+    };
+
+    // ===== LƯU SỬA VĂN BẢN =====
+    window.saveEditDocument = async function(key) {
+        const user = JSON.parse(localStorage.getItem("currentUser"));
+        if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền sửa văn bản!");
+        
+        const so = document.getElementById("editDocSoVanBan")?.value.trim();
+        const loai = document.getElementById("editDocLoai")?.value;
+        const tieuDe = document.getElementById("editDocTieuDe")?.value.trim();
+        const noiDung = document.getElementById("editDocNoiDung")?.value.trim();
+        const nguoiKy = document.getElementById("editDocNguoiKy")?.value.trim();
+        const ngay = document.getElementById("editDocNgayBanHanh")?.value;
+        const fileUrl = document.getElementById("editDocFileUrl")?.value.trim();
+        const fileName = document.getElementById("editDocFileName")?.value.trim() || "Tải file";
+        
+        if (!so || !tieuDe || !noiDung) return alert("⚠️ Vui lòng nhập Số văn bản, Tiêu đề và Nội dung!");
+        
+        try {
+            await update(ref(db, 'documents/' + key), {
+                soVanBan: so,
+                loai: loai || "Khác",
+                tieuDe: tieuDe,
+                noiDung: noiDung,
+                nguoiKy: nguoiKy || user.name || user.username,
+                ngayBanHanh: ngay || new Date().toISOString().split("T")[0],
+                fileUrl: fileUrl || "",
+                fileName: fileName || "Tải file",
+                updatedAt: new Date().toISOString(),
+                updatedBy: user.username
+            });
+            alert("✅ Cập nhật văn bản thành công!");
+            
+            const overlay = document.getElementById('editDocOverlay');
+            if (overlay) overlay.remove();
+            
+        } catch (e) {
+            console.error(e);
+            alert("⚠️ Lỗi khi cập nhật văn bản!");
+        }
+    };
+
+    // ===== TÌM KIẾM VĂN BẢN (CÓ NÚT SỬA) =====
     window.searchDocuments = function() {
         const keyword = document.getElementById("docSearch")?.value.trim().toLowerCase();
         const filter = document.getElementById("docFilterType")?.value;
         if (!keyword && filter === "all") { loadDocuments(); return; }
         const tbody = document.getElementById("docTableBody");
         if (!tbody) return;
+        const user = JSON.parse(localStorage.getItem("currentUser"));
+        const isBQT = user?.role === "Ban Quản Trị";
         const colors = { 
             "Quyết định": "#3b82f6", 
             "Công văn": "#10b981", 
@@ -729,6 +856,16 @@
                     found = true;
                     const color = colors[doc.loai] || "#64748b";
                     
+                    let actions = "";
+                    if (isBQT) {
+                        actions = `
+                            <button onclick="window.editDocument('${doc.key}')" class="btn-edit" style="font-size:11px; padding:2px 10px; background:#8b5cf6;">✏️ Sửa</button>
+                            <button onclick="alert('📄 ${doc.tieuDe}\\n\\n${doc.noiDung || "Không có nội dung"}')" class="btn-edit">Xem</button>
+                        `;
+                    } else {
+                        actions = `<button onclick="alert('📄 ${doc.tieuDe}\\n\\n${doc.noiDung || "Không có nội dung"}')" class="btn-edit">Xem</button>`;
+                    }
+                    
                     let fileHtml = '—';
                     if (doc.fileUrl && doc.fileUrl.trim().length > 0) {
                         const displayName = doc.fileName || '📎 Tải file';
@@ -743,7 +880,7 @@
                             <td>${doc.ngayBanHanh || "N/A"}</td>
                             <td>${doc.nguoiKy || "N/A"}</td>
                             <td style="text-align:center; font-size:18px;">${fileHtml}</td>
-                            <td><button onclick="alert('📄 ${doc.tieuDe}\\n\\n${doc.noiDung || "Không có nội dung"}')" class="btn-edit">Xem</button></td>
+                            <td>${actions}</td>
                         </tr>
                     `;
                 }
@@ -1819,18 +1956,17 @@
     }
 
     // ============================================================
-    // ĐIỀU KHIỂN PHÍM SPACE - KHÔNG ẢNH HƯỞNG ĐẾN SOẠN VĂN BẢN
+    // ĐIỀU KHIỂN PHÍM SPACE - KHÔNG ẢNH HƯỞNG SOẠN VĂN BẢN
     // ============================================================
     document.addEventListener('keydown', function(e) {
         // Bỏ qua nếu đang ở ô nhập liệu (input, textarea, select)
         const tag = e.target.tagName.toLowerCase();
         if (tag === 'input' || tag === 'textarea' || tag === 'select') {
-            return; // Cho phép gõ bình thường, Space tạo khoảng trắng
+            return;
         }
 
         if (e.key === ' ' || e.key === 'Space') {
             e.preventDefault();
-            // Chỉ cho phép game khi ở trang Game
             if (isOnGamePage) {
                 if (!gameRunning) window.startGame();
                 else window.jumpGame();
@@ -1838,7 +1974,6 @@
         }
     });
 
-    // ===== CLICK CANVAS - CHỈ KHI Ở TRANG GAME =====
     document.addEventListener('click', function(e) {
         if (e.target.id === 'gameCanvas' && isOnGamePage) {
             if (!gameRunning) window.startGame();
@@ -1847,8 +1982,8 @@
     });
 
     console.log("✅ Dashboard đã tải thành công!");
+    console.log("📝 BQT đã có nút Sửa văn bản!");
     console.log("🎮 Lỗi phím Space đã được sửa!");
-    console.log("📝 Space vẫn tạo khoảng trắng khi soạn văn bản!");
 </script>
 
 </body>
