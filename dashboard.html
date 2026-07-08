@@ -5,6 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dora Admin 2.0</title>
     <link rel="stylesheet" href="style.css" />
+    <style>
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .toast-notification {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #0f172a;
+            color: white;
+            padding: 14px 24px;
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            z-index: 99999;
+            font-size: 14px;
+            font-weight: 500;
+            max-width: 350px;
+            animation: slideIn 0.3s ease;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            border-left: 4px solid #0284c7;
+        }
+        .toast-success { border-left-color: #10b981; }
+        .toast-warning { border-left-color: #f59e0b; }
+        .toast-error { border-left-color: #ef4444; }
+    </style>
 </head>
 <body>
 
@@ -76,6 +102,50 @@
         if (sidebar) sidebar.classList.toggle('open');
         if (overlay) overlay.classList.toggle('active');
     };
+
+    // ============================================================
+    // TOAST THÔNG BÁO
+    // ============================================================
+    function showToast(message, type = 'info') {
+        const oldToast = document.querySelector('.toast-notification');
+        if (oldToast) oldToast.remove();
+        
+        const toast = document.createElement('div');
+        const colors = {
+            info: '#0f172a',
+            success: '#065f46',
+            warning: '#92400e',
+            error: '#7f1d1d'
+        };
+        const borderColors = {
+            info: '#0284c7',
+            success: '#10b981',
+            warning: '#f59e0b',
+            error: '#ef4444'
+        };
+        toast.className = `toast-notification toast-${type}`;
+        toast.style.cssText = `
+            position: fixed; bottom: 30px; right: 30px;
+            background: ${colors[type] || colors.info};
+            color: white; padding: 14px 24px;
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            z-index: 99999; font-size: 14px; font-weight: 500;
+            max-width: 350px;
+            animation: slideIn 0.3s ease;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            border-left: 4px solid ${borderColors[type] || borderColors.info};
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(20px)';
+            toast.style.transition = 'all 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
 
     // ============================================================
     // KHỞI TẠO
@@ -150,10 +220,14 @@
                 loadDeadline();
                 break;
             case "games":
+                console.log("🎮 ĐANG VÀO TRANG GAME!");
                 content.innerHTML = getGamesPage(user);
                 loadGames();
                 loadScores();
-                initGameCanvas();
+                setTimeout(function() {
+                    canvasReady = false;
+                    initGameCanvas();
+                }, 300);
                 break;
             case "settings": content.innerHTML = getSettingsPage(user); loadSettings(); break;
             case "profile": content.innerHTML = getProfilePage(user); loadProfile(); break;
@@ -536,7 +610,6 @@
                 
                 const color = colors[doc.loai] || "#64748b";
                 
-                // === XỬ LÝ HIỂN THỊ FILE ĐÍNH KÈM ===
                 let fileHtml = '—';
                 if (doc.fileUrl && doc.fileUrl.trim().length > 0) {
                     const displayName = doc.fileName || '📎 Tải file';
@@ -569,7 +642,6 @@
         const nguoiKy = document.getElementById("docNguoiKy")?.value.trim();
         const ngay = document.getElementById("docNgayBanHanh")?.value;
         
-        // === LẤY THÔNG TIN FILE ĐÍNH KÈM ===
         const fileUrl = document.getElementById("docFileUrl")?.value.trim();
         const fileName = document.getElementById("docFileName")?.value.trim() || "Tải file";
         
@@ -585,7 +657,6 @@
                 ngayBanHanh: ngay || new Date().toISOString().split("T")[0], 
                 trangThai: "Hiệu lực", 
                 createdAt: new Date().toISOString(),
-                // === LƯU FILE ĐÍNH KÈM ===
                 fileUrl: fileUrl || "",
                 fileName: fileName || "Tải file"
             });
@@ -640,7 +711,6 @@
                     found = true;
                     const color = colors[doc.loai] || "#64748b";
                     
-                    // === XỬ LÝ HIỂN THỊ FILE KHI TÌM KIẾM ===
                     let fileHtml = '—';
                     if (doc.fileUrl && doc.fileUrl.trim().length > 0) {
                         const displayName = doc.fileName || '📎 Tải file';
@@ -1282,13 +1352,14 @@
     };
 
     // ============================================================
-    // GAME (RÚT GỌN - ĐÃ SỬA LỖI CANVAS)
+    // GAME - ĐÃ SỬA LỖI CANVAS
     // ============================================================
     let gameRunning = false, gameScore = 0, gameHighScore = parseInt(localStorage.getItem('doraemonHighScore')) || 0;
     let gameSpeed = 6, obstacles = [], frameId = null, isJumping = false, jumpVelocity = 0;
     const gravity = 0.6, playerX = 80, playerWidth = 40, playerHeight = 50, groundY = 300;
     let playerY = groundY - playerHeight;
     let currentGameTitle = 'Doraemon Run';
+    let canvasReady = false;
 
     function drawDoraemon(ctx, x, y, w, h) {
         ctx.fillStyle = '#2196F3';
@@ -1344,11 +1415,15 @@
         ctx.fill();
     }
 
+    // ===== KHỞI TẠO CANVAS - KHÔNG ALERT =====
     function initGameCanvas() {
         const canvas = document.getElementById('gameCanvas');
         if (!canvas) {
-            // === SỬA: KHÔNG HIỂN THỊ ALERT ===
             console.log('⏳ Chưa có canvas, đợi vào trang Game...');
+            return;
+        }
+        if (canvasReady) {
+            console.log('✅ Canvas đã sẵn sàng, bỏ qua khởi tạo lại!');
             return;
         }
         const ctx = canvas.getContext('2d');
@@ -1360,18 +1435,27 @@
         ctx.fillStyle = '#4d4d6c';
         ctx.fillRect(0, groundY, 800, 3);
         drawDoraemon(ctx, playerX, playerY, playerWidth, playerHeight);
-        document.getElementById('gameHighScore').textContent = gameHighScore;
+        const highEl = document.getElementById('gameHighScore');
+        if (highEl) highEl.textContent = gameHighScore;
+        canvasReady = true;
         console.log('✅ Canvas đã sẵn sàng!');
     }
 
+    // ===== BẮT ĐẦU GAME - KHÔNG ALERT =====
     window.startGame = function() {
         const canvas = document.getElementById('gameCanvas');
         if (!canvas) {
-            // === SỬA: KHÔNG HIỂN THỊ ALERT ===
             console.warn('⚠️ Canvas chưa sẵn sàng! Vui lòng vào trang Game.');
+            showToast('🎮 Vui lòng vào trang Game trước!', 'warning');
             return;
         }
-        if (gameRunning) return;
+        if (gameRunning) {
+            console.log('⏳ Game đang chạy!');
+            return;
+        }
+        canvasReady = false;
+        initGameCanvas();
+        
         gameRunning = true;
         gameScore = 0;
         obstacles = [];
@@ -1379,6 +1463,7 @@
         playerY = groundY - playerHeight;
         isJumping = false;
         jumpVelocity = 0;
+        
         const ctx = canvas.getContext('2d');
         const scoreEl = document.getElementById('gameScore');
         const startBtn = document.getElementById('gameStartBtn');
@@ -1502,6 +1587,8 @@
             ctx.fillRect(0, groundY, 800, 3);
             drawDoraemon(ctx, playerX, playerY, playerWidth, playerHeight);
         }
+        canvasReady = false;
+        showToast('🔄 Đã reset game!', 'info');
     };
 
     window.exitGame = function() {
@@ -1553,6 +1640,7 @@
     }
 
     function getGamesPage(user) {
+        console.log("🎮 Đang tạo trang Games...");
         const canManage = user.role === "Ban Quản Trị";
         let html = `<h2>🎮 Game nội bộ</h2>`;
         html += `
@@ -1561,7 +1649,7 @@
                     <h3 style="color:#fff; margin:0;">🎮 <span id="currentGameTitle">${currentGameTitle}</span></h3>
                     <button onclick="window.exitGame()" class="btn-delete" style="background:#ef4444;">❌ Thoát game</button>
                 </div>
-                <canvas id="gameCanvas" width="800" height="350" style="width:100%; max-width:800px; height:auto; border-radius:8px; background:#1a1a2e; display:block; margin:0 auto;"></canvas>
+                <canvas id="gameCanvas" width="800" height="350" style="width:100%; max-width:800px; height:auto; border-radius:8px; background:#1a1a2e; display:block; margin:0 auto; cursor:pointer;"></canvas>
                 <div style="display:flex; justify-content:space-between; color:#fff; margin-top:10px; font-size:16px; flex-wrap:wrap; gap:10px;">
                     <span>🏆 Điểm: <strong id="gameScore">0</strong></span>
                     <span>🥇 Cao nhất: <strong id="gameHighScore">${gameHighScore}</strong></span>
@@ -1571,7 +1659,9 @@
                     <button onclick="window.jumpGame()" class="btn-create" style="background:#f59e0b;">⬆️ Nhảy (Space)</button>
                     <button onclick="window.resetGame()" class="btn-delete" style="background:#64748b;">🔄 Chơi lại</button>
                 </div>
-                <p style="color:#94a3b8; font-size:12px; margin-top:8px;">⌨️ <strong>Phím Space</strong> để Bắt đầu / Nhảy | Click chuột vào màn hình để nhảy</p>
+                <p style="color:#94a3b8; font-size:12px; margin-top:8px;">
+                    ⌨️ <strong>Phím Space</strong> để Bắt đầu / Nhảy | Click chuột vào màn hình để nhảy
+                </p>
             </div>
         `;
         if (canManage) {
@@ -1605,7 +1695,6 @@
                 </div>
             </div>
         `;
-        setTimeout(initGameCanvas, 200);
         return html;
     }
 
@@ -1722,8 +1811,8 @@
     });
 
     console.log("✅ Dashboard đã tải thành công!");
-    console.log("📝 Đã thêm tính năng đính kèm file văn bản!");
-    console.log("✅ Đã sửa lỗi canvas!");
+    console.log("🎮 Lỗi canvas đã được sửa!");
+    console.log("📝 Đã thêm Toast thông báo!");
 </script>
 
 </body>
