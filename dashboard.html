@@ -53,6 +53,7 @@
             <a href="#" data-page="notices">📢 Thông báo</a>
             <a href="#" data-page="documents">📄 Văn bản</a>
             <a href="#" data-page="tests">📝 Test kỹ năng</a>
+            <a href="#" data-page="feedback">💬 Góp ý</a>
             <a href="#" data-page="games">🎮 Game</a>
             <a href="#" data-page="settings">⚙️ Cài đặt</a>
             <a href="#" data-page="profile">👤 Hồ sơ</a>
@@ -200,6 +201,7 @@
             notices: "📢 Quản lý thông báo",
             documents: "📄 Quản lý văn bản",
             tests: "📝 Quản lý test kỹ năng",
+            feedback: "💬 Góp ý & Báo lỗi",
             games: "🎮 Game nội bộ",
             settings: "⚙️ Cài đặt hệ thống",
             profile: "👤 Hồ sơ cá nhân"
@@ -232,6 +234,12 @@
                 content.innerHTML = getTestsPage(user);
                 loadTests();
                 loadDeadline();
+                break;
+            case "feedback":
+                content.innerHTML = getFeedbackPage(user);
+                if (user.role === "Ban Quản Trị") {
+                    loadFeedbacks();
+                }
                 break;
             case "games":
                 console.log("🎮 ĐANG VÀO TRANG GAME!");
@@ -278,6 +286,10 @@
                     <h3>📝 Bài test</h3>
                     <h1 id="totalTests">...</h1>
                 </div>
+                <div class="card" onclick="window.showPage('feedback')" style="cursor:pointer;">
+                    <h3>💬 Góp ý</h3>
+                    <h1 id="totalFeedbacks">...</h1>
+                </div>
             </div>
             <div class="account-form-box">
                 <h3>📋 Hoạt động gần đây</h3>
@@ -291,6 +303,7 @@
         onValue(ref(db, "notices"), s => document.getElementById("totalNotices").textContent = s.exists() ? Object.keys(s.val()).length : "0");
         onValue(ref(db, "documents"), s => document.getElementById("totalDocs").textContent = s.exists() ? Object.keys(s.val()).length : "0");
         onValue(ref(db, "tests"), s => document.getElementById("totalTests").textContent = s.exists() ? Object.keys(s.val()).length : "0");
+        onValue(ref(db, "feedbacks"), s => document.getElementById("totalFeedbacks").textContent = s.exists() ? Object.keys(s.val()).length : "0");
     }
 
     // ============================================================
@@ -519,7 +532,7 @@
     };
 
     // ============================================================
-    // QUẢN LÝ VĂN BẢN (CÓ NÚT SỬA CHO BQT)
+    // QUẢN LÝ VĂN BẢN
     // ============================================================
     function getDocumentsPage(user) {
         const canManage = user.role !== "Admin";
@@ -595,7 +608,6 @@
         return html;
     }
 
-    // ===== TẢI DANH SÁCH VĂN BẢN (CÓ NÚT SỬA) =====
     function loadDocuments() {
         const tbody = document.getElementById("docTableBody");
         if (!tbody) return;
@@ -624,7 +636,6 @@
                 }
             });
             docs.reverse().forEach(doc => {
-                // ===== XÁC ĐỊNH QUYỀN =====
                 let actions = "";
                 if (isBQT) {
                     actions = `
@@ -660,7 +671,6 @@
         });
     }
 
-    // ===== THÊM VĂN BẢN =====
     window.addDocument = async function() {
         const user = JSON.parse(localStorage.getItem("currentUser"));
         if (!user || user.role === "Admin") return alert("⛔ Bạn không có quyền thêm văn bản!");
@@ -703,7 +713,6 @@
         }
     };
 
-    // ===== XÓA VĂN BẢN =====
     window.deleteDocument = async function(key) {
         const user = JSON.parse(localStorage.getItem("currentUser"));
         if (!user || user.role === "Admin") return alert("⛔ Bạn không có quyền xóa văn bản!");
@@ -711,7 +720,6 @@
         try { await remove(ref(db, 'documents/' + key)); alert("✅ Đã xóa văn bản!"); } catch (e) { console.error(e); alert("⚠️ Lỗi khi xóa!"); }
     };
 
-    // ===== SỬA VĂN BẢN =====
     window.editDocument = async function(key) {
         const user = JSON.parse(localStorage.getItem("currentUser"));
         if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền sửa văn bản!");
@@ -783,7 +791,6 @@
         }
     };
 
-    // ===== LƯU SỬA VĂN BẢN =====
     window.saveEditDocument = async function(key) {
         const user = JSON.parse(localStorage.getItem("currentUser"));
         if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền sửa văn bản!");
@@ -823,7 +830,6 @@
         }
     };
 
-    // ===== TÌM KIẾM VĂN BẢN (CÓ NÚT SỬA) =====
     window.searchDocuments = function() {
         const keyword = document.getElementById("docSearch")?.value.trim().toLowerCase();
         const filter = document.getElementById("docFilterType")?.value;
@@ -890,6 +896,245 @@
     };
 
     // ============================================================
+    // QUẢN LÝ GÓP Ý / BÁO LỖI
+    // ============================================================
+    function getFeedbackPage(user) {
+        const isBQT = user.role === "Ban Quản Trị";
+        
+        let html = `
+            <div style="max-width:900px; margin:0 auto;">
+                <h2>💬 Góp ý & Báo lỗi</h2>
+                <p style="color:#64748b; margin-bottom:20px;">Gửi góp ý hoặc báo lỗi để giúp hệ thống hoàn thiện hơn.</p>
+                
+                <div class="account-form-box">
+                    <h3>📝 Gửi góp ý / Báo lỗi</h3>
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                            <select id="feedbackType" style="flex:1; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;">
+                                <option value="gop-y">💡 Góp ý</option>
+                                <option value="bao-loi">🐛 Báo lỗi</option>
+                                <option value="de-xuat">🚀 Đề xuất tính năng</option>
+                            </select>
+                            <input type="text" id="feedbackTitle" placeholder="Tiêu đề..." style="flex:2; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px;" />
+                        </div>
+                        <textarea id="feedbackContent" placeholder="Nội dung chi tiết..." style="min-height:120px; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:14px; resize:vertical;"></textarea>
+                        <button onclick="window.submitFeedback()" class="btn-create" style="align-self:flex-start; padding:10px 24px;">📤 Gửi góp ý</button>
+                    </div>
+                </div>
+        `;
+
+        if (isBQT) {
+            html += `
+                <div style="margin-top:24px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
+                        <h3 style="margin:0;">📋 Danh sách góp ý</h3>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <button onclick="window.filterFeedback('all')" class="btn-create" style="background:#64748b; font-size:12px; padding:4px 12px;">Tất cả</button>
+                            <button onclick="window.filterFeedback('pending')" class="btn-create" style="background:#f59e0b; font-size:12px; padding:4px 12px;">⏳ Chờ xử lý</button>
+                            <button onclick="window.filterFeedback('done')" class="btn-create" style="background:#10b981; font-size:12px; padding:4px 12px;">✅ Đã xử lý</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Loại</th>
+                                    <th>Tiêu đề</th>
+                                    <th>Người gửi</th>
+                                    <th>Ngày</th>
+                                    <th>Trạng thái</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="feedbackTableBody"><tr><td colspan="7">Đang tải...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        } else {
+            html += `
+                <div style="background:#f8fafc; border-radius:12px; padding:16px; margin-top:16px; border:1px solid #e2e8f0;">
+                    <p style="color:#64748b; margin:0;">📌 Góp ý của bạn sẽ được BQT xem xét và phản hồi.</p>
+                </div>
+            `;
+        }
+
+        html += `</div>`;
+        return html;
+    }
+
+    window.submitFeedback = async function() {
+        const user = JSON.parse(localStorage.getItem("currentUser"));
+        if (!user) return alert("⚠️ Vui lòng đăng nhập!");
+
+        const type = document.getElementById("feedbackType")?.value;
+        const title = document.getElementById("feedbackTitle")?.value.trim();
+        const content = document.getElementById("feedbackContent")?.value.trim();
+
+        if (!title || !content) {
+            return alert("⚠️ Vui lòng nhập tiêu đề và nội dung!");
+        }
+
+        const typeLabels = {
+            "gop-y": "💡 Góp ý",
+            "bao-loi": "🐛 Báo lỗi",
+            "de-xuat": "🚀 Đề xuất"
+        };
+
+        try {
+            await push(ref(db, "feedbacks"), {
+                type: type,
+                typeLabel: typeLabels[type] || type,
+                title: title,
+                content: content,
+                username: user.username,
+                userName: user.name || user.username,
+                status: "pending",
+                createdAt: new Date().toISOString()
+            });
+
+            alert("✅ Gửi góp ý thành công! Cảm ơn bạn đã đóng góp.");
+            document.getElementById("feedbackTitle").value = "";
+            document.getElementById("feedbackContent").value = "";
+
+            const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+            if (currentUser?.role === "Ban Quản Trị") {
+                loadFeedbacks();
+            }
+        } catch (e) {
+            console.error(e);
+            alert("⚠️ Lỗi khi gửi góp ý!");
+        }
+    };
+
+    let feedbackFilter = "all";
+
+    function loadFeedbacks() {
+        const tbody = document.getElementById("feedbackTableBody");
+        if (!tbody) return;
+
+        onValue(ref(db, "feedbacks"), snapshot => {
+            tbody.innerHTML = "";
+            if (!snapshot.exists()) {
+                tbody.innerHTML = '<tr><td colspan="7">📭 Chưa có góp ý nào</td></tr>';
+                return;
+            }
+
+            const feedbacks = [];
+            snapshot.forEach(child => {
+                const data = child.val();
+                if (data && typeof data === 'object') {
+                    feedbacks.push({ key: child.key, ...data });
+                }
+            });
+
+            feedbacks.reverse();
+
+            let filtered = feedbacks;
+            if (feedbackFilter === "pending") {
+                filtered = feedbacks.filter(f => f.status === "pending");
+            } else if (feedbackFilter === "done") {
+                filtered = feedbacks.filter(f => f.status === "done");
+            }
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7">📭 Không có góp ý nào</td></tr>';
+                return;
+            }
+
+            const typeColors = {
+                "gop-y": "#8b5cf6",
+                "bao-loi": "#ef4444",
+                "de-xuat": "#3b82f6"
+            };
+
+            filtered.forEach((f, index) => {
+                const typeColor = typeColors[f.type] || "#64748b";
+                const statusLabel = f.status === "done" ? "✅ Đã xử lý" : "⏳ Chờ xử lý";
+                const statusColor = f.status === "done" ? "#10b981" : "#f59e0b";
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td><span style="background:${typeColor}; color:white; padding:2px 10px; border-radius:12px; font-size:11px;">${f.typeLabel || f.type}</span></td>
+                        <td><strong>${f.title}</strong></td>
+                        <td>${f.userName || f.username}</td>
+                        <td style="font-size:12px; color:#64748b;">${f.createdAt ? new Date(f.createdAt).toLocaleDateString() : "N/A"}</td>
+                        <td><span style="background:${statusColor}20; color:${statusColor}; padding:2px 10px; border-radius:12px; font-size:12px;">${statusLabel}</span></td>
+                        <td>
+                            ${f.status === "pending" ? `<button onclick="window.resolveFeedback('${f.key}')" class="btn-create" style="font-size:11px; padding:2px 10px; background:#10b981;">✅ Xử lý</button>` : ''}
+                            <button onclick="window.viewFeedback('${f.key}')" class="btn-edit" style="font-size:11px; padding:2px 10px;">👁️ Xem</button>
+                            <button onclick="window.deleteFeedback('${f.key}')" class="btn-delete" style="font-size:11px; padding:2px 10px;">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        });
+    }
+
+    window.filterFeedback = function(filter) {
+        feedbackFilter = filter;
+        loadFeedbacks();
+    };
+
+    window.viewFeedback = async function(key) {
+        try {
+            const snap = await get(ref(db, 'feedbacks/' + key));
+            if (!snap.exists()) return alert("Góp ý không tồn tại!");
+            const f = snap.val();
+
+            const statusLabel = f.status === "done" ? "✅ Đã xử lý" : "⏳ Chờ xử lý";
+            alert(
+                `📋 CHI TIẾT GÓP Ý\n\n` +
+                `Loại: ${f.typeLabel || f.type}\n` +
+                `Tiêu đề: ${f.title}\n` +
+                `Người gửi: ${f.userName || f.username}\n` +
+                `Ngày: ${f.createdAt ? new Date(f.createdAt).toLocaleString() : "N/A"}\n` +
+                `Trạng thái: ${statusLabel}\n\n` +
+                `Nội dung:\n${f.content}`
+            );
+        } catch (e) {
+            console.error(e);
+            alert("⚠️ Lỗi khi xem góp ý!");
+        }
+    };
+
+    window.resolveFeedback = async function(key) {
+        const user = JSON.parse(localStorage.getItem("currentUser"));
+        if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ BQT mới có quyền này!");
+
+        if (!confirm("Đánh dấu góp ý này là đã xử lý?")) return;
+
+        try {
+            await update(ref(db, 'feedbacks/' + key), {
+                status: "done",
+                resolvedAt: new Date().toISOString(),
+                resolvedBy: user.username
+            });
+            alert("✅ Đã đánh dấu xử lý!");
+        } catch (e) {
+            console.error(e);
+            alert("⚠️ Lỗi khi cập nhật!");
+        }
+    };
+
+    window.deleteFeedback = async function(key) {
+        const user = JSON.parse(localStorage.getItem("currentUser"));
+        if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ BQT mới có quyền xóa!");
+
+        if (!confirm("Xóa góp ý này?")) return;
+
+        try {
+            await remove(ref(db, 'feedbacks/' + key));
+            alert("✅ Đã xóa!");
+        } catch (e) {
+            console.error(e);
+            alert("⚠️ Lỗi khi xóa!");
+        }
+    };
+
+    // ============================================================
     // QUẢN LÝ TEST KỸ NĂNG
     // ============================================================
     function getTestsPage(user) {
@@ -937,9 +1182,6 @@
         return html;
     }
 
-    // ============================================================
-    // HIỂN THỊ POPUP TẠO TEST
-    // ============================================================
     window.showCreateTestForm = function() {
         const user = JSON.parse(localStorage.getItem("currentUser"));
         if (!user || user.role !== "Ban Quản Trị") return alert("⛔ Chỉ Ban Quản Trị mới có quyền tạo test!");
@@ -1507,7 +1749,7 @@
     };
 
     // ============================================================
-    // GAME - ĐÃ SỬA LỖI PHÍM SPACE
+    // GAME
     // ============================================================
     let gameRunning = false, gameScore = 0, gameHighScore = parseInt(localStorage.getItem('doraemonHighScore')) || 0;
     let gameSpeed = 6, obstacles = [], frameId = null, isJumping = false, jumpVelocity = 0;
@@ -1959,7 +2201,6 @@
     // ĐIỀU KHIỂN PHÍM SPACE - KHÔNG ẢNH HƯỞNG SOẠN VĂN BẢN
     // ============================================================
     document.addEventListener('keydown', function(e) {
-        // Bỏ qua nếu đang ở ô nhập liệu (input, textarea, select)
         const tag = e.target.tagName.toLowerCase();
         if (tag === 'input' || tag === 'textarea' || tag === 'select') {
             return;
@@ -1982,7 +2223,7 @@
     });
 
     console.log("✅ Dashboard đã tải thành công!");
-    console.log("📝 BQT đã có nút Sửa văn bản!");
+    console.log("📝 Đã thêm trang Góp ý & Báo lỗi!");
     console.log("🎮 Lỗi phím Space đã được sửa!");
 </script>
 
