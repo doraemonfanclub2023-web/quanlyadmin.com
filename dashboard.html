@@ -209,7 +209,6 @@
         const content = document.getElementById("pageContent");
         if (!content) return;
 
-        // ===== XÓA NỘI DUNG CŨ =====
         content.innerHTML = "";
 
         switch(pageId) {
@@ -239,7 +238,6 @@
                 content.innerHTML = getGamesPage(user);
                 loadGames();
                 loadScores();
-                // ===== CHỈ GỌI CANVAS KHI VÀO GAME =====
                 setTimeout(function() {
                     canvasReady = false;
                     initGameCanvas();
@@ -1372,7 +1370,7 @@
     };
 
     // ============================================================
-    // GAME - CHỈ HOẠT ĐỘNG KHI Ở TRANG GAME
+    // GAME - ĐÃ SỬA LỖI PHÍM SPACE
     // ============================================================
     let gameRunning = false, gameScore = 0, gameHighScore = parseInt(localStorage.getItem('doraemonHighScore')) || 0;
     let gameSpeed = 6, obstacles = [], frameId = null, isJumping = false, jumpVelocity = 0;
@@ -1380,7 +1378,7 @@
     let playerY = groundY - playerHeight;
     let currentGameTitle = 'Doraemon Run';
     let canvasReady = false;
-    let isOnGamePage = false; // ===== THÊM BIẾN KIỂM TRA =====
+    let isOnGamePage = false;
 
     function drawDoraemon(ctx, x, y, w, h) {
         ctx.fillStyle = '#2196F3';
@@ -1436,7 +1434,6 @@
         ctx.fill();
     }
 
-    // ===== KHỞI TẠO CANVAS - KIỂM TRA TRANG GAME =====
     function initGameCanvas() {
         if (!isOnGamePage) {
             console.log('⏳ Không ở trang Game, bỏ qua khởi tạo canvas.');
@@ -1466,14 +1463,11 @@
         console.log('✅ Canvas đã sẵn sàng!');
     }
 
-    // ===== BẮT ĐẦU GAME - CHỈ KHI Ở TRANG GAME =====
     window.startGame = function() {
-        // ===== KIỂM TRA TRANG GAME =====
         if (!isOnGamePage) {
             showToast('🎮 Vui lòng vào trang Game trước!', 'warning');
             return;
         }
-        
         const canvas = document.getElementById('gameCanvas');
         if (!canvas) {
             showToast('⚠️ Không tìm thấy canvas!', 'error');
@@ -1483,7 +1477,6 @@
             console.log('⏳ Game đang chạy!');
             return;
         }
-        
         canvasReady = false;
         initGameCanvas();
         
@@ -1673,7 +1666,7 @@
 
     function getGamesPage(user) {
         console.log("🎮 Đang tạo trang Games...");
-        isOnGamePage = true; // ===== ĐÁNH DẤU ĐANG Ở TRANG GAME =====
+        isOnGamePage = true;
         const canManage = user.role === "Ban Quản Trị";
         let html = `<h2>🎮 Game nội bộ</h2>`;
         html += `
@@ -1826,12 +1819,18 @@
     }
 
     // ============================================================
-    // PHÍM SPACE
+    // ĐIỀU KHIỂN PHÍM SPACE - KHÔNG ẢNH HƯỞNG ĐẾN SOẠN VĂN BẢN
     // ============================================================
     document.addEventListener('keydown', function(e) {
+        // Bỏ qua nếu đang ở ô nhập liệu (input, textarea, select)
+        const tag = e.target.tagName.toLowerCase();
+        if (tag === 'input' || tag === 'textarea' || tag === 'select') {
+            return; // Cho phép gõ bình thường, Space tạo khoảng trắng
+        }
+
         if (e.key === ' ' || e.key === 'Space') {
             e.preventDefault();
-            // ===== CHỈ CHO PHÉP KHI Ở TRANG GAME =====
+            // Chỉ cho phép game khi ở trang Game
             if (isOnGamePage) {
                 if (!gameRunning) window.startGame();
                 else window.jumpGame();
@@ -1839,6 +1838,7 @@
         }
     });
 
+    // ===== CLICK CANVAS - CHỈ KHI Ở TRANG GAME =====
     document.addEventListener('click', function(e) {
         if (e.target.id === 'gameCanvas' && isOnGamePage) {
             if (!gameRunning) window.startGame();
@@ -1847,8 +1847,8 @@
     });
 
     console.log("✅ Dashboard đã tải thành công!");
-    console.log("🎮 Lỗi canvas đã được sửa hoàn toàn!");
-    console.log("📝 Game chỉ hoạt động khi ở trang Game!");
+    console.log("🎮 Lỗi phím Space đã được sửa!");
+    console.log("📝 Space vẫn tạo khoảng trắng khi soạn văn bản!");
 </script>
 
 </body>
